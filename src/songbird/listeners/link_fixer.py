@@ -82,7 +82,10 @@ def _get_urls(text: str) -> list[str]:
 
 def _check_domain_setting(url: str, links_settings: LinksSettings) -> bool:
     domain = _get_domain_with_suffix(url)
-    return links_settings.root.get(domain) is not None
+    mapping = links_settings.root.get(domain)
+    if mapping is None:
+        return False
+    return mapping.chat is True
 
 
 def _get_domain_with_suffix(url: str) -> str:
