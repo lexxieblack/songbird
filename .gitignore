@@ -1,0 +1,16 @@
+.env
+uv.lock
+.vscode
+.venv
+.DS_Store
+.mypy_cache
+
+__pycache__
+scripts
+prompts
+
+.windsurf
+.codex
+.cursor
+.claude
+.copilot
