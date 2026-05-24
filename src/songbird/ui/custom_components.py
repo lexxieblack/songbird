@@ -38,8 +38,13 @@ class ForwardButton(_DirectionalButton):
         super().__init__(emoji=emojis.ARROW_RIGHT, view=view)
 
 
-def generate_container(title: str, components: list[Section], subtitle: str | None = None) -> Container:
-    container = Container(color=Color.red())
+def generate_container(
+    title: str,
+    components: Sequence[ViewItem],
+    subtitle: str | None = None,
+    color: Color | None = None,
+) -> Container:
+    container = Container(color=color)
 
     header = Section(TextDisplay(title), accessory=DeleteButton())
     if subtitle:

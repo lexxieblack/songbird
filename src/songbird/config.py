@@ -14,8 +14,10 @@ class BotSettings(BaseModel):
     command_prefix: str = "/"
     status: str = "online"
     activity: str = "Hello World"
+    short_description: str = "A Discord bot that embodies the persona of Song So Mi (Songbird) from Cyberpunk 2077, featuring AI-powered conversations, translation services, and computational knowledge queries, and more."
     owner_id: int | None = None
     feedback_channel_id: int | None = None
+    source_code_url: str | None = None
     debug_guild_id: int | None = Field(default=None, validation_alias="DEBUG_GUILD_ID")
 
 
@@ -28,7 +30,7 @@ class LLMSettings(BaseModel):
     message_count: int = 30
     system_prompt_path: str = "prompts/default.xml"
     summary_system_prompt: str = "Briefly summarize the given text concisely, capturing the main points and key details. Do not add any personal opinions or additional information. Keep the summary clear and to the point."
-    quickchat_system_prompt: str = "Your purpose is to provide precise and factual answers using your advanced data analysis capabilities. For this interaction, you have access to Google Search and URL lookups. Provide concise, direct answers, maintaining your characteristic dry wit and technical professionalism. When providing measurements, use metric units (e.g. kg, meter, celsius, etc.). Keep the answer concise and to the point, under 2000 characters Be brief."
+    quickchat_system_prompt: str = "Your purpose is to provide precise and factual answers using your advanced data analysis capabilities. For this interaction, you have access to Google Search and URL lookups. Provide concise, direct answers. When providing measurements, use metric units (e.g. kg, meter, celsius, etc.). Keep the answer concise and to the point, under 2000 characters. Be brief."
     api_key: str
 
 

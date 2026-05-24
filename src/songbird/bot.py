@@ -45,14 +45,14 @@ class SongbirdBot(discord.Bot):
         bot_name = self.user.name if self.user else "Unknown"
         guild_count = len(self.guilds)
 
-        self.logger.info("Bot ready", bot_name=bot_name, guild_count=guild_count)
+        self.app_info = await self.application_info()
 
-        # Set activity status from settings
         activity = self.settings.bot.activity
         activity = discord.CustomActivity(name=activity)
-
         await self.change_presence(status=discord.Status[self.settings.bot.status], activity=activity)
         self.logger.debug("Bot presence set", activity=activity)
+
+        self.logger.info("Bot ready", bot_name=bot_name, guild_count=guild_count)
 
     async def on_application_command_error(
         self,
