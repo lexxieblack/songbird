@@ -1,13 +1,7 @@
 log_level = "INFO"
 
-[bot]
-command_prefix = "/"
-status = "online"
-activity = "Testing new features"
-
 [llm]
 model = "gemma-4-31b-it"
-message_count = 30
 system_prompt_path = "prompts/system.xml"
 
 [links]

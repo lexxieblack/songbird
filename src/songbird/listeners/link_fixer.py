@@ -6,7 +6,7 @@ from tldextract import tldextract
 
 from songbird.bot import SongbirdBot
 from songbird.config import LinksSettings
-from songbird.ui.views.link_fixer import RestoreView
+from songbird.ui.views.link_fixer import RestoreLinkView
 from songbird.utils.logging import get_logger
 from songbird.utils.text import link
 
@@ -65,7 +65,9 @@ def load_fix(bot: SongbirdBot) -> None:
             domain = _get_domain_with_suffix(url)
             links_to_send.append(link(domain, url))
 
-        await message.reply(view=RestoreView(links=fixed_urls, original_message=message), allowed_mentions=AllowedMentions.none())
+        await message.reply(
+            ", ".join(links_to_send), view=RestoreLinkView(message, CACHED_MESSAGES), allowed_mentions=AllowedMentions.none()
+        )
 
 
 def unload_fix() -> None:
