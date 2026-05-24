@@ -2,6 +2,7 @@
 uv.lock
 .vscode
 .venv
+.idea
 .DS_Store
 .mypy_cache
 
@@ -9,8 +10,11 @@ __pycache__
 scripts
 prompts/system.xml
 
-.windsurf
-.codex
-.cursor
 .claude
+.codex
 .copilot
+.cursor
+.kilocode
+.windsurf
+AGENTS.md
+CLAUDE.md

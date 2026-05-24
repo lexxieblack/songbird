@@ -49,7 +49,7 @@ class SongbirdBot(discord.Bot):
 
         # Set activity status from settings
         activity = self.settings.bot.activity
-        activity = discord.Activity(name=activity)
+        activity = discord.CustomActivity(name=activity)
 
         await self.change_presence(status=discord.Status[self.settings.bot.status], activity=activity)
         self.logger.debug("Bot presence set", activity=activity)
@@ -163,6 +163,7 @@ class SongbirdBot(discord.Bot):
 
         # Clean up listeners
         from songbird.listeners import unload_listeners
+
         unload_listeners()
 
         # Call parent close

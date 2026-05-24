@@ -3,7 +3,7 @@ log_level = "INFO"
 [bot]
 command_prefix = "/"
 status = "online"
-status_text = "Testing new features"
+activity = "Testing new features"
 
 [llm]
 model = "gemma-4-31b-it"
