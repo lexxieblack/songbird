@@ -24,16 +24,18 @@ class _ButtonRow(ActionRow):
 class AboutView(DesignerView):
     def __init__(self, bot: SongbirdBot):
         super().__init__()
+        if not bot.user:
+            return
 
         love_message = f"-# *Made with :hearts: by <@{owner.id}>*" if (owner := bot.app_info.owner) else "-# *Made with :hearts:*"
 
         self.add_item(
             generate_container(
-                title=f"## About {bot.user.name}",  # type: ignore
+                title=f"## About {bot.user.name}",
                 components=[
                     Section(
                         TextDisplay(bot.settings.bot.short_description),
-                        accessory=Thumbnail(url=bot.user.display_avatar.url),  # type: ignore
+                        accessory=Thumbnail(url=bot.user.display_avatar.url),
                     ),
                     TextDisplay(love_message),
                     Separator(),

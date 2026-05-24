@@ -16,6 +16,7 @@ prompts/system.xml
 .copilot
 .cursor
 .kilocode
+.opencode
 .windsurf
 AGENTS.md
 CLAUDE.md
