@@ -1,6 +1,6 @@
 import contextlib
 
-from discord import ButtonStyle, HTTPException, Interaction, Message
+from discord import ButtonStyle, HTTPException, Interaction, Member, Message
 from discord.ui import Button, View, button
 
 
@@ -12,7 +12,14 @@ class RestoreLinkView(View):
 
     @button(label="Restore", style=ButtonStyle.secondary, emoji="⬅️")
     async def retore(self, _: Button, interaction: Interaction) -> None:
-        if interaction.user.id != self.original_message.author.id:  # type: ignore
+        if not interaction.user:
+            return
+
+        if (
+            interaction.user.id != self.original_message.author.id
+            or isinstance(interaction.user, Member)
+            and not interaction.user.guild_permissions.manage_messages
+        ):
             await interaction.response.send_message("❌ Only the person who posted the links can restore them!", ephemeral=True)
             return
 
