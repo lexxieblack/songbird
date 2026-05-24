@@ -26,7 +26,7 @@ class DatabaseSettings(BaseModel):
 class LLMSettings(BaseModel):
     model: str = "gemini-2.5-flash"
     message_count: int = 30
-    system_prompt_path: str = "system_prompt.md"
+    system_prompt_path: str = "prompts/default.xml"
     summary_system_prompt: str = "Briefly summarize the given text concisely, capturing the main points and key details. Do not add any personal opinions or additional information. Keep the summary clear and to the point."
     quickchat_system_prompt: str = "Your purpose is to provide precise and factual answers using your advanced data analysis capabilities. For this interaction, you have access to Google Search and URL lookups. Provide concise, direct answers, maintaining your characteristic dry wit and technical professionalism. When providing measurements, use metric units (e.g. kg, meter, celsius, etc.). Keep the answer concise and to the point, under 2000 characters Be brief."
     api_key: str

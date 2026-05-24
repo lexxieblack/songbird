@@ -7,7 +7,7 @@ uv.lock
 
 __pycache__
 scripts
-prompts
+prompts/system.xml
 
 .windsurf
 .codex
