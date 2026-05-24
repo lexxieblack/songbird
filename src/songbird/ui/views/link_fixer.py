@@ -25,9 +25,10 @@ class RestoreLinkView(View):
 
         await interaction.response.defer()
 
-        self.cached_messages.discard(self.original_message.id)
-        original = await self.original_message.channel.fetch_message(self.original_message.id)
-        await original.edit(suppress=False)
+        with contextlib.suppress(HTTPException):
+            self.cached_messages.discard(self.original_message.id)
+            original = await self.original_message.channel.fetch_message(self.original_message.id)
+            await original.edit(suppress=False)
 
         if interaction.message:
             with contextlib.suppress(HTTPException):

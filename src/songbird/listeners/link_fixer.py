@@ -66,7 +66,7 @@ def load_fix(bot: SongbirdBot) -> None:
             links_to_send.append(link(domain, url))
 
         await message.reply(
-            ", ".join(links_to_send), view=RestoreLinkView(message, CACHED_MESSAGES), allowed_mentions=AllowedMentions.none()
+            "\n".join(links_to_send), view=RestoreLinkView(message, CACHED_MESSAGES), allowed_mentions=AllowedMentions.none()
         )
 
 

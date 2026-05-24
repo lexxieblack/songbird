@@ -11,4 +11,5 @@ system_prompt_path = "prompts/system.xml"
 "reddit.com" = { swap = "rxddit.com", clean = true, chat = true }
 "tiktok.com" = { swap = "d.tiktokez.com", follow = true, clean = true, chat = true }
 "youtube.com" = { clean = true, clean_exceptions = ["t", "v"] }
+"youtu.be" = { clean = true, clean_exceptions = ["t", "v"] }
 "*" = { clean = true }
