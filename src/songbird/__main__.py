@@ -56,6 +56,7 @@ async def async_main(settings: "Settings", logger: "BoundLogger") -> None:
 
     # Load listeners
     load_listeners(bot)
+    logger.info("Listeners loaded")
 
     # Start the bot
     try:

@@ -14,7 +14,7 @@ def load_chat(bot: SongbirdBot) -> None:
     settings = bot.settings
     services = bot.services
 
-    @bot.event
+    @bot.listen()
     async def on_message(message: discord.Message) -> None:
         if message.author.bot or not message.content:
             return
@@ -61,7 +61,7 @@ def load_chat(bot: SongbirdBot) -> None:
 
                 response = await chat_handler.chat(
                     user_id=message.author.id,
-                    message=message.content,
+                    message=content,
                     username=message.author.name,
                     display_name=message.author.display_name,
                     guild_name=message.guild.name if message.guild else None,
@@ -85,7 +85,7 @@ def load_chat(bot: SongbirdBot) -> None:
 
                 response = await chat_handler.chat(
                     guild_id=message.guild.id,  # type: ignore
-                    message=message.content,
+                    message=content,
                     username=message.author.name,
                     display_name=message.author.display_name,
                     guild_name=message.guild.name if message.guild else None,

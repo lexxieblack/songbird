@@ -13,14 +13,14 @@ from songbird.utils.text import link
 logger = get_logger(__name__)
 
 
-CACHED_MESSAGES = set()
+CACHED_MESSAGES: set[int] = set()
 
 
 def load_fix(bot: SongbirdBot) -> None:
     settings = bot.settings
     services = bot.services
 
-    @bot.event
+    @bot.listen()
     async def on_message_edit(before: Message, after: Message) -> None:
         if before.id not in CACHED_MESSAGES:
             return
@@ -29,7 +29,7 @@ def load_fix(bot: SongbirdBot) -> None:
         with contextlib.suppress(HTTPException):
             await after.edit(suppress=True)
 
-    @bot.event
+    @bot.listen()
     async def on_message(message: Message) -> None:
         if message.author.bot or not message.content:
             return

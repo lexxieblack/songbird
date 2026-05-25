@@ -1,3 +1,4 @@
+import asyncio
 from typing import TYPE_CHECKING
 
 from google.genai import Client
@@ -37,17 +38,20 @@ class LLMService:
             message_count=len(messages or []),
         )
 
-        response = self._client.models.generate_content(
+        config = GenerateContentConfig(
+            system_instruction=system_prompt,
+            # thinking_config=ThinkingConfig(thinking_level=ThinkingLevel.LOW),
+            tools=[
+                Tool(google_search=GoogleSearch()),
+                # Tool(url_context=UrlContext()),
+            ],
+        )
+
+        response = await asyncio.to_thread(
+            self._client.models.generate_content,
             model=self._model,
             contents=messages,
-            config=GenerateContentConfig(
-                system_instruction=system_prompt,
-                # thinking_config=ThinkingConfig(thinking_level=ThinkingLevel.LOW),
-                tools=[
-                    Tool(google_search=GoogleSearch()),
-                    # Tool(url_context=UrlContext()),
-                ],
-            ),
+            config=config,
         )
 
         content = response.text or ""

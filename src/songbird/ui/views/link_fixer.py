@@ -8,7 +8,7 @@ from songbird.utils.permissions import can_interact
 
 class RestoreLinkView(View):
     def __init__(self, original_message: Message, cached_messages: set[int]):
-        super().__init__(timeout=10)
+        super().__init__(timeout=60)
         self.original_message = original_message
         self.cached_messages = cached_messages
 

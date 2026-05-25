@@ -11,6 +11,7 @@ from songbird.services.container import (
     get_session,
 )
 from songbird.ui.modals.info import UserInfoModal
+from songbird.ui.views.manage import ManageView
 from songbird.utils.text import truncate_text
 
 if TYPE_CHECKING:
@@ -126,17 +127,12 @@ class LLMCog(BaseCog):
             await self.send_error(ctx, "Chat failed.")
 
     @discord.slash_command(
-        name="info",
-        description="Set your user information for Songbird",
+        name="manage",
+        description="Manage your conversation settings",
     )
-    async def info(self, ctx: discord.ApplicationContext):
-        try:
-            modal = await UserInfoModal.create(ctx.author.id, self.services)
-            await ctx.interaction.response.send_modal(modal)
-
-        except Exception as e:
-            self.logger.error("Info failed", user_id=ctx.author.id, error=str(e), exc_info=True)
-            await self.send_error(ctx, "Info failed.")
+    async def manage(self, ctx: discord.ApplicationContext) -> None:
+        main_view = ManageView(self.services)
+        await ctx.respond(view=main_view, allowed_mentions=discord.AllowedMentions.none())
 
 
 def setup(bot: "SongbirdBot") -> None:
