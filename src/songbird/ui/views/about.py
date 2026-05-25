@@ -27,7 +27,7 @@ class AboutView(DesignerView):
         if not bot.user:
             return
 
-        love_message = f"-# *Made with :hearts: by <@{owner.id}>*" if (owner := bot.app_info.owner) else "-# *Made with :hearts:*"
+        love_message = f"-# *Made with :hearts: by <@{owner}>*" if (owner := bot.settings.bot.owner_id) else "-# *Made with :hearts:*"
 
         self.add_item(
             generate_container(

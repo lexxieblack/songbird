@@ -8,12 +8,16 @@ from songbird.utils.permissions import can_interact
 
 class RestoreLinkView(View):
     def __init__(self, original_message: Message, cached_messages: set[int]):
-        super().__init__(timeout=120)
+        super().__init__(timeout=10)
         self.original_message = original_message
         self.cached_messages = cached_messages
 
-    @button(label="Restore", style=ButtonStyle.secondary, emoji="⬅️")
-    async def retore(self, _: Button, interaction: Interaction) -> None:
+    async def on_timeout(self) -> None:
+        self.clear_items()
+        await self.message.edit(view=self)  # type: ignore
+
+    @button(label="Restore", style=ButtonStyle.secondary, emoji="⬅️", id=127)
+    async def restore(self, _: Button, interaction: Interaction) -> None:
         if not can_interact(interaction):
             return
 
