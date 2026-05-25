@@ -10,6 +10,7 @@ uv.lock
 __pycache__
 scripts
 prompts/system.xml
+docs
 
 .claude
 .codex
