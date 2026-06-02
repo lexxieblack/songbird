@@ -5,13 +5,13 @@ description = "A Discord bot that embodies the persona of Song So Mi (Songbird) 
 requires-python = ">=3.13"
 dependencies = [
     "py-cord>=2.8.0",
-    "sqlalchemy[asyncio]>=2.0.49",
+    "sqlalchemy[asyncio]>=2.0.50",
     "pycountry>=26.2.16",
     "pydantic-settings[toml]>=2.13.1",
     "structlog>=25.5.0",
     "httpx>=0.28.1",
     "uuid7>=0.1.0",
-    "google-genai>=2.5.0",
+    "google-genai>=2.7.0",
     "tldextract>=5.3.1",
     "psycopg>=3.3.4",
     "psycopg-binary>=3.3.4",
@@ -21,9 +21,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
-    "pytest-asyncio>=1.3.0",
+    "pytest-asyncio>=1.4.0",
     "mypy>=2.1.0",
-    "ruff>=0.15.13",
+    "ruff>=0.15.15",
 ]
 
 [build-system]
