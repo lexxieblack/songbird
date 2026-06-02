@@ -45,6 +45,16 @@ class MessageRepository:
         rows = result.fetchall()
         return [Message.model_validate(row) for row in rows]
 
+    async def get_all_messages(self, user_id: int, limit: int | None = None) -> list[Message]:
+        stmt = select(message_table).where(message_table.c.user_id == user_id).order_by(message_table.c.created_at.asc())
+
+        if limit is not None:
+            stmt = stmt.limit(limit)
+
+        result = await self.session.execute(stmt)
+        rows = result.fetchall()
+        return [Message.model_validate(row) for row in rows]
+
     async def get_user_stats(self, user_id: int) -> UserStats:
         stmt = select(
             func.count(message_table.c.id).label("message_count"),
