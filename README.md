@@ -147,5 +147,3 @@ uv run mypy src/                # Type check (strict)
 - [Source Code](https://github.com/lexxieblack/songbird)
 - Privacy Policy (WIP)
 - Terms of Service (WIP)
-
----
