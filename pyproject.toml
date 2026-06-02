@@ -2,7 +2,7 @@
 name = "songbird"
 version = "3.0.0"
 description = "A Discord bot that embodies the persona of Song So Mi (Songbird) from Cyberpunk 2077, featuring AI-powered conversations, translation services, and computational knowledge queries."
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "py-cord>=2.8.0",
     "sqlalchemy[asyncio]>=2.0.49",
@@ -59,7 +59,7 @@ ignore = [
 known-first-party = ["songbird"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 explicit_package_bases = true
 strict = true
 warn_return_any = true
