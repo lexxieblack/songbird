@@ -20,6 +20,18 @@ class BotSettings(BaseModel):
     source_code_url: str | None = None
     debug_guild_id: int | None = Field(default=None, validation_alias="DEBUG_GUILD_ID")
 
+    @property
+    def privacy_policy_url(self) -> str | None:
+        if self.source_code_url:
+            return f"{self.source_code_url}/blob/main/PRIVACY.md"
+        return None
+
+    @property
+    def terms_of_service_url(self) -> str | None:
+        if self.source_code_url:
+            return f"{self.source_code_url}/blob/main/TERMS.md"
+        return None
+
 
 class DatabaseSettings(BaseModel):
     url: str

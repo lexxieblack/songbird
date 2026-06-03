@@ -143,7 +143,7 @@ uv run mypy src/                # Type check (strict)
 
 ## Links
 
-- [Invite Songbird](https://discord.com/oauth2/authorize?client_id=PLACEHOLDER)
+- [Invite Songbird](https://discord.com/oauth2/authorize?client_id=1407440417758122165)
 - [Source Code](https://github.com/lexxieblack/songbird)
-- Privacy Policy (WIP)
-- Terms of Service (WIP)
+- [Privacy Policy](./PRIVACY.md)
+- [Terms of Service](./TERMS.md)

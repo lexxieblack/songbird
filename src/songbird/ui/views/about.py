@@ -20,6 +20,14 @@ class _ButtonRow(ActionRow):
         source_link = bot.settings.bot.source_code_url
         self.add_item(Button(label="Source", url=source_link, disabled=not source_link))
 
+        # Privacy Policy Button
+        privacy_link = bot.settings.bot.privacy_policy_url
+        self.add_item(Button(label="Privacy", url=privacy_link, disabled=not privacy_link))
+
+        # Terms of Service Button
+        terms_link = bot.settings.bot.terms_of_service_url
+        self.add_item(Button(label="Terms", url=terms_link, disabled=not terms_link))
+
 
 class AboutView(DesignerView):
     def __init__(self, bot: SongbirdBot):
