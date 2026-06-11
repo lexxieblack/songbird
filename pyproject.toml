@@ -8,14 +8,15 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.50",
     "pycountry>=26.2.16",
     "pydantic-settings[toml]>=2.13.1",
-    "structlog>=25.5.0",
+    "structlog>=26.1.0",
     "httpx>=0.28.1",
     "uuid7>=0.1.0",
-    "google-genai>=2.7.0",
+    "google-genai>=2.8.0",
     "tldextract>=5.3.1",
     "psycopg>=3.3.4",
     "psycopg-binary>=3.3.4",
     "googletrans>=4.0.2",
+    "cachetools>=5.5.0",
 ]
 
 [dependency-groups]
@@ -23,7 +24,7 @@ dev = [
     "pytest>=9.0.3",
     "pytest-asyncio>=1.4.0",
     "mypy>=2.1.0",
-    "ruff>=0.15.15",
+    "ruff>=0.15.16",
 ]
 
 [build-system]

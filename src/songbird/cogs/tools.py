@@ -47,6 +47,9 @@ class ToolsCog(BaseCog):
             default=None,
         ),  # type: ignore
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         if not text:
             modal = TranslateModal(self.translate_handler.translate_to_message)
             await ctx.interaction.response.send_modal(modal)
@@ -90,6 +93,9 @@ class ToolsCog(BaseCog):
         ctx: discord.ApplicationContext,
         message: discord.Message,
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         modal = TranslateMessageModal(message, self.translate_handler.translate)
         await ctx.send_modal(modal)
 
@@ -98,6 +104,9 @@ class ToolsCog(BaseCog):
         description="Sends a text file with the given content",
     )
     async def file(self, ctx: discord.ApplicationContext) -> None:
+        if await self._check_banned(ctx):
+            return
+
         modal = FileModal()
         await ctx.send_modal(modal)
 
@@ -114,6 +123,9 @@ class ToolsCog(BaseCog):
             required=True,
         ),  # type: ignore
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         if not query:
             await self.send_error(ctx, "Please provide link to fix.")
             return
@@ -147,6 +159,9 @@ class ToolsCog(BaseCog):
             required=True,
         ),  # type: ignore
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         if not link:
             await self.send_error(ctx, "Please provide a link to fix.")
             return

@@ -15,6 +15,8 @@ from songbird.repositories.chat.guild_message import GuildMessageRepository
 from songbird.repositories.chat.message import MessageRepository
 from songbird.repositories.chat.user_info import UserInfoRepository
 from songbird.repositories.feedback.thread import ThreadRepository
+from songbird.repositories.management.guild_ban import GuildBanRepository
+from songbird.repositories.management.user_ban import UserBanRepository
 from songbird.services.feedback import FeedbackService
 from songbird.services.guild_conversation import GuildConversationService
 from songbird.services.link_fixer import LinkFixerService
@@ -25,6 +27,7 @@ from songbird.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from songbird.config import Settings
+    from songbird.services.management import BanEnforcementService
     from songbird.services.private_conversation import PrivateConversationService
 
 
@@ -40,6 +43,7 @@ class ServiceContainer:
     link_fixer: LinkFixerService
     wolfram: WolframService
     settings: "Settings"
+    management: "BanEnforcementService | None" = None
 
 
 async def create_container(settings: "Settings") -> ServiceContainer:
@@ -96,6 +100,12 @@ async def create_container(settings: "Settings") -> ServiceContainer:
         wolfram=wolfram_service,
         settings=settings,
     )
+
+    # BanEnforcementService needs a fully constructed container,
+    # so we set it post-construction.
+    from songbird.services.management import BanEnforcementService
+
+    container.management = BanEnforcementService(container)
 
     log.info("Service container ready")
 
@@ -173,6 +183,14 @@ def get_user_info_repo(session: AsyncSession) -> UserInfoRepository:
 
 def get_feedback_repo(session: AsyncSession) -> ThreadRepository:
     return ThreadRepository(session)
+
+
+def get_user_ban_repo(session: AsyncSession) -> UserBanRepository:
+    return UserBanRepository(session)
+
+
+def get_guild_ban_repo(session: AsyncSession) -> GuildBanRepository:
+    return GuildBanRepository(session)
 
 
 def create_private_conversation_service(session: AsyncSession, container: ServiceContainer) -> "PrivateConversationService":

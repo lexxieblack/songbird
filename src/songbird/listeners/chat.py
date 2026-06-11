@@ -19,8 +19,17 @@ def load_chat(bot: SongbirdBot) -> None:
         if message.author.bot or not message.content:
             return
 
+        if await bot.services.management.check_user_banned(message.author.id):
+            logger.info("Ignored message from banned user", user_id=message.author.id)
+            return
+
         is_dm = isinstance(message.channel, discord.DMChannel)
         is_guild = isinstance(message.channel, (discord.TextChannel, discord.Thread))
+        guild = message.guild
+        if is_guild and guild is not None and await bot.services.management.check_guild_banned(guild.id):
+            logger.info("Ignored message from banned guild", guild_id=guild.id)
+            return
+
         is_mentioned = bot.user in message.mentions if bot.user else False
 
         if not is_dm and not is_mentioned:

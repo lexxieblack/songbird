@@ -52,6 +52,16 @@ class SongbirdBot(discord.Bot):
         await self.change_presence(status=discord.Status[self.settings.bot.status], activity=activity)
         self.logger.debug("Bot presence set", activity=activity)
 
+        # Startup guild ban sweep
+        banned_ids = await self.services.management.get_banned_guild_ids()  # type: ignore
+        for guild in self.guilds:
+            if guild.id in banned_ids:
+                self.logger.info("Leaving banned guild on startup", guild_id=guild.id, guild_name=guild.name)
+                try:
+                    await guild.leave()
+                except discord.HTTPException:
+                    self.logger.warning("Failed to leave guild on startup", guild_id=guild.id)
+
         self.logger.info("Bot ready", bot_name=bot_name, guild_count=guild_count)
 
     async def on_application_command_error(
