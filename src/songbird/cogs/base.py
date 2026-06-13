@@ -79,8 +79,8 @@ class BaseCog(commands.Cog):
                     success_message=message,
                 )
 
-    def is_owner(self, ctx: discord.ApplicationContext) -> bool:
-        return self.bot.is_owner(ctx.author.id)
+    async def is_owner(self, ctx: discord.ApplicationContext) -> bool:
+        return await self.bot.is_owner(ctx.author)
 
     async def _check_banned(self, ctx: discord.ApplicationContext) -> bool:
         """Check if the invoking user is banned.
