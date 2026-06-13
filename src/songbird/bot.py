@@ -146,8 +146,8 @@ class SongbirdBot(discord.Bot):
 
         self.logger.info("Cogs loading complete")
 
-    def is_owner(self, user_id: int) -> bool:  # type: ignore
-        return self.owner_id is not None and user_id == self.owner_id
+    async def is_owner(self, user: discord.User | discord.Member) -> bool:
+        return self.owner_id is not None and user.id == self.owner_id
 
     async def message_owner(self, message: str) -> bool:
         if self.owner_id is None:
