@@ -255,7 +255,7 @@ class CategoryView(DesignerView):
             sections.append(Section(TextDisplay("No commands available in this category")))
 
         container = generate_back_container(
-            title=title,
+            title=f"## {title}",
             view=main_view,
             components=sections,
         )
@@ -278,5 +278,5 @@ class HelpView(DesignerView):
                 )
             )
 
-        container = generate_container(title="Help", components=sections)
+        container = generate_container(title="## Help", components=sections)
         self.add_item(container)
