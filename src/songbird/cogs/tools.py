@@ -165,6 +165,9 @@ class ToolsCog(BaseCog):
         description="Ping the bot",
     )
     async def ping(self, ctx: discord.ApplicationContext) -> None:
+        if await self._check_banned(ctx):
+            return
+
         latency = round(self.bot.latency * 1000)
         await ctx.respond(f":satellite: `{latency}`ms")
 
