@@ -19,14 +19,14 @@ def load_chat(bot: SongbirdBot) -> None:
         if message.author.bot or not message.content:
             return
 
-        if await bot.services.management.check_user_banned(message.author.id):
+        if await bot.services.management.check_user_banned(message.author.id):  # type: ignore[union-attr]
             logger.info("Ignored message from banned user", user_id=message.author.id)
             return
 
         is_dm = isinstance(message.channel, discord.DMChannel)
         is_guild = isinstance(message.channel, (discord.TextChannel, discord.Thread))
         guild = message.guild
-        if is_guild and guild is not None and await bot.services.management.check_guild_banned(guild.id):
+        if is_guild and guild is not None and await bot.services.management.check_guild_banned(guild.id):  # type: ignore[union-attr]
             logger.info("Ignored message from banned guild", guild_id=guild.id)
             return
 
@@ -64,7 +64,7 @@ def load_chat(bot: SongbirdBot) -> None:
                 conversation_service = create_private_conversation_service(session, services)
                 chat_handler = PrivateChatHandler(settings, conversation_service)
 
-                channel_name = f"DM with {message.author.name}" if is_dm else message.channel.name  # type: ignore
+                channel_name = f"DM with {message.author.name}"
 
                 logger.info("Calling chat handler", user_id=message.author.id, channel_name=channel_name)
 
@@ -85,20 +85,20 @@ def load_chat(bot: SongbirdBot) -> None:
             )
             async with get_session(services) as session:
                 await message.channel.trigger_typing()
-                conversation_service = create_guild_conversation_service(session, services)
-                chat_handler = GuildChatHandler(settings, conversation_service)
+                guild_conversation_service = create_guild_conversation_service(session, services)
+                guild_chat_handler = GuildChatHandler(settings, guild_conversation_service)
 
-                channel_name = f"DM with {message.author.name}" if is_dm else message.channel.name  # type: ignore
+                guild_channel_name = message.channel.name  # type: ignore[union-attr]
 
-                logger.info("Calling chat handler", user_id=message.author.id, channel_name=channel_name)
+                logger.info("Calling chat handler", user_id=message.author.id, channel_name=guild_channel_name)
 
-                response = await chat_handler.chat(
-                    guild_id=message.guild.id,  # type: ignore
+                response = await guild_chat_handler.chat(
+                    guild_id=message.guild.id,  # type: ignore[union-attr]
                     message=content,
                     username=message.author.name,
                     display_name=message.author.display_name,
                     guild_name=message.guild.name if message.guild else None,
-                    channel_name=channel_name,
+                    channel_name=guild_channel_name,
                 )
 
         if not response:

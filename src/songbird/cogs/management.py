@@ -29,8 +29,8 @@ class ManagementCog(BaseCog):
     async def ban_user(
         self,
         ctx: discord.ApplicationContext,
-        user_id: discord.Option(str, description="User ID to ban"),  # type: ignore
-        reason: discord.Option(str, description="Reason for ban", required=False),  # type: ignore
+        user_id: str = discord.Option(str, description="User ID to ban"),  # type: ignore[assignment]
+        reason: str | None = discord.Option(str, description="Reason for ban", required=False, default=None),  # type: ignore[assignment]
     ) -> None:
         try:
             uid = int(user_id)
@@ -39,7 +39,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.ban_user(uid, reason)  # type: ignore
+            await self.services.management.ban_user(uid, reason)  # type: ignore[union-attr]
         except UserBanAlreadyExistsError:
             await self.send_error(ctx, "User already banned.")
             return
@@ -54,7 +54,7 @@ class ManagementCog(BaseCog):
     async def unban_user(
         self,
         ctx: discord.ApplicationContext,
-        user_id: discord.Option(str, description="User ID to unban"),  # type: ignore
+        user_id: str = discord.Option(str, description="User ID to unban"),  # type: ignore[assignment]
     ) -> None:
         try:
             uid = int(user_id)
@@ -63,7 +63,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.unban_user(uid)  # type: ignore
+            await self.services.management.unban_user(uid)  # type: ignore[union-attr]
         except UserBanNotFoundError:
             await self.send_error(ctx, "User not found in ban list.")
             return
@@ -76,7 +76,7 @@ class ManagementCog(BaseCog):
         self,
         ctx: discord.ApplicationContext,
     ) -> None:
-        bans = await self.services.management.list_user_bans()  # type: ignore
+        bans = await self.services.management.list_user_bans()  # type: ignore[union-attr]
 
         if not bans:
             await self.send_success(ctx, "No users are currently banned.")
@@ -100,8 +100,8 @@ class ManagementCog(BaseCog):
     async def ban_guild(
         self,
         ctx: discord.ApplicationContext,
-        guild_id: discord.Option(str, description="Guild ID to ban"),  # type: ignore
-        reason: discord.Option(str, description="Reason for ban", required=False),  # type: ignore
+        guild_id: str = discord.Option(str, description="Guild ID to ban"),  # type: ignore[assignment]
+        reason: str | None = discord.Option(str, description="Reason for ban", required=False, default=None),  # type: ignore[assignment]
     ) -> None:
         try:
             gid = int(guild_id)
@@ -110,7 +110,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.ban_guild(gid, reason)  # type: ignore
+            await self.services.management.ban_guild(gid, reason)  # type: ignore[union-attr]
         except GuildBanAlreadyExistsError:
             await self.send_error(ctx, "Guild already banned.")
             return
@@ -125,7 +125,7 @@ class ManagementCog(BaseCog):
     async def unban_guild(
         self,
         ctx: discord.ApplicationContext,
-        guild_id: discord.Option(str, description="Guild ID to unban"),  # type: ignore
+        guild_id: str = discord.Option(str, description="Guild ID to unban"),  # type: ignore[assignment]
     ) -> None:
         try:
             gid = int(guild_id)
@@ -134,7 +134,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.unban_guild(gid)  # type: ignore
+            await self.services.management.unban_guild(gid)  # type: ignore[union-attr]
         except GuildBanNotFoundError:
             await self.send_error(ctx, "Guild not found in ban list.")
             return
@@ -147,7 +147,7 @@ class ManagementCog(BaseCog):
         self,
         ctx: discord.ApplicationContext,
     ) -> None:
-        bans = await self.services.management.list_guild_bans()  # type: ignore
+        bans = await self.services.management.list_guild_bans()  # type: ignore[union-attr]
 
         if not bans:
             await self.send_success(ctx, "No guilds are currently banned.")

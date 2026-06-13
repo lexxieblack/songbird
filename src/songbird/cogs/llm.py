@@ -37,12 +37,7 @@ class LLMCog(BaseCog):
     async def summary(
         self,
         ctx: discord.ApplicationContext,
-        text: discord.Option(
-            str,
-            description="The text to summarise",
-            required=False,
-            default=None,
-        ),  # type: ignore
+        text: str | None = discord.Option(str, description="The text to summarise", required=False, default=None),  # type: ignore[assignment]
     ) -> None:
         await ctx.defer()
 
@@ -52,7 +47,7 @@ class LLMCog(BaseCog):
         self.logger.info("Summary command", user_id=ctx.author.id, text=text)
 
         try:
-            summary_result = await self.summary_handler.summarize(text)
+            summary_result = await self.summary_handler.summarize(text or "")
             if not summary_result:
                 await ctx.followup.delete(reason="Nothing to summarize.")
                 return
@@ -71,10 +66,7 @@ class LLMCog(BaseCog):
     async def quickchat(
         self,
         ctx: discord.ApplicationContext,
-        question: discord.Option(
-            str,
-            description="The question to ask",
-        ),  # type: ignore
+        question: str = discord.Option(str, description="The question to ask"),  # type: ignore[assignment]
     ) -> None:
         await ctx.defer()
 
@@ -99,10 +91,7 @@ class LLMCog(BaseCog):
     async def chat(
         self,
         ctx: discord.ApplicationContext,
-        message: discord.Option(
-            str,
-            description="The message to send to Songbird",
-        ),  # type: ignore
+        message: str = discord.Option(str, description="The message to send to Songbird"),  # type: ignore[assignment]
     ) -> None:
         await ctx.defer()
 
@@ -128,7 +117,6 @@ class LLMCog(BaseCog):
                 )
 
                 if answer:
-                    await self._send_messages(ctx.followup, answer)
                     await ctx.followup.send(answer, allowed_mentions=discord.AllowedMentions.none())
                     self.logger.info("Chat success", user_id=ctx.author.id)
                 else:

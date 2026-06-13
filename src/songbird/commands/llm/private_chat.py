@@ -20,7 +20,7 @@ class PrivateChatHandler:
         channel_name: str | None = None,
     ) -> str | None:
         if not message or not message.strip():
-            return
+            return None
 
         context = ConversationContext(
             username=username,

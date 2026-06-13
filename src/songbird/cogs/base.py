@@ -87,7 +87,7 @@ class BaseCog(commands.Cog):
 
         Returns True if banned (and silently acks the interaction), False otherwise.
         """
-        banned = await self.services.management.check_user_banned(ctx.author.id)  # type: ignore
+        banned = await self.services.management.check_user_banned(ctx.author.id)  # type: ignore[union-attr]
         if banned:
             self.logger.info("Blocked banned user", user_id=ctx.author.id)
             with suppress(discord.HTTPException):
@@ -99,6 +99,6 @@ class BaseCog(commands.Cog):
         """Called when the cog is loaded."""
         self.logger.info("Cog loaded", cog_name=self.__class__.__name__)
 
-    async def cog_unload(self) -> None:
+    def cog_unload(self) -> None:
         """Called when the cog is unloaded."""
         self.logger.info("Cog unloading", cog_name=self.__class__.__name__)

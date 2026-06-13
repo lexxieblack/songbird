@@ -5,7 +5,7 @@ from google.genai import Client
 from google.genai.types import Content, GenerateContentConfig, GoogleSearch, Part, Tool
 from structlog import BoundLogger
 
-from songbird.models.chat.message import MessageRole
+from songbird.models.chat.base import MessageRole
 from songbird.models.llm import LLMRequest
 from songbird.utils.logging import get_logger
 

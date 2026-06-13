@@ -17,10 +17,10 @@ Guidelines:
 """
 
 
-class SafeDict(dict):
+class SafeDict(dict[str, str]):
     """A way to safely add formatting if the key exists in the string."""
 
-    def __missing__(self, key):
+    def __missing__(self, key: str) -> str:
         return "{" + key + "}"
 
 

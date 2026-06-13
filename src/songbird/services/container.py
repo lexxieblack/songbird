@@ -91,6 +91,8 @@ async def create_container(settings: "Settings") -> ServiceContainer:
 
     log.info("services_created")
 
+    log.info("services_created")
+
     container = ServiceContainer(
         engine=engine,
         session_factory=session_factory,

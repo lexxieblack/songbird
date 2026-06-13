@@ -34,7 +34,7 @@ class BanEnforcementService:
             banned = await repo.is_banned(user_id)
 
         self._user_cache[user_id] = banned
-        return banned  # type: ignore[no-any-return]
+        return banned
 
     async def check_guild_banned(self, guild_id: int) -> bool:
         """Check whether a guild is banned, using the TTL cache."""
@@ -49,7 +49,7 @@ class BanEnforcementService:
             banned = await repo.is_banned(guild_id)
 
         self._guild_cache[guild_id] = banned
-        return banned  # type: ignore[no-any-return]
+        return banned
 
     async def ban_user(self, user_id: int, reason: str | None = None) -> UserBan:
         """Ban a user, delete their conversation history, and invalidate the cache."""
@@ -105,7 +105,7 @@ class BanEnforcementService:
 
         async with get_session(self._container) as session:
             repo = get_user_ban_repo(session)
-            return await repo.list_bans()  # type: ignore[no-any-return]
+            return await repo.list_bans()
 
     async def list_guild_bans(self) -> list[GuildBan]:
         """Return all guild bans."""
@@ -113,7 +113,7 @@ class BanEnforcementService:
 
         async with get_session(self._container) as session:
             repo = get_guild_ban_repo(session)
-            return await repo.list_bans()  # type: ignore[no-any-return]
+            return await repo.list_bans()
 
     async def get_banned_guild_ids(self) -> set[int]:
         """Return a set of all banned guild IDs (for startup sweep)."""

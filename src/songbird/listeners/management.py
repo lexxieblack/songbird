@@ -11,7 +11,7 @@ logger = structlog.get_logger(__name__)
 def load_guild_ban_listener(bot: SongbirdBot) -> None:
     @bot.listen()
     async def on_guild_join(guild: discord.Guild) -> None:
-        if not await bot.services.management.check_guild_banned(guild.id):
+        if not await bot.services.management.check_guild_banned(guild.id):  # type: ignore[union-attr]
             return
 
         bot.logger.info("Leaving banned guild", guild_id=guild.id, guild_name=guild.name)
