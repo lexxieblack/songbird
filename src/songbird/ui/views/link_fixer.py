@@ -1,4 +1,5 @@
 import contextlib
+from typing import Any
 
 from discord import ButtonStyle, HTTPException, Interaction, Message
 from discord.ui import Button, View, button
@@ -14,10 +15,10 @@ class RestoreLinkView(View):
 
     async def on_timeout(self) -> None:
         self.clear_items()
-        await self.message.edit(view=self)  # type: ignore
+        await self.message.edit(view=self)
 
     @button(label="Restore", style=ButtonStyle.secondary, emoji="⬅️", id=127)
-    async def restore(self, _: Button, interaction: Interaction) -> None:
+    async def restore(self, _: Button[Any], interaction: Interaction) -> None:
         if not can_interact(interaction):
             return
 

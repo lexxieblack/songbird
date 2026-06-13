@@ -2,7 +2,6 @@ import httpx
 from structlog import BoundLogger
 
 from songbird.config import Settings
-from songbird.utils.env import load_from_env
 from songbird.utils.logging import get_logger
 
 

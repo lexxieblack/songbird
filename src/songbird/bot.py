@@ -30,7 +30,7 @@ class SongbirdBot(discord.Bot):
             owner_id=settings.bot.owner_id,
             debug_guilds=debug_guilds,
             default_command_integration_types=[discord.IntegrationType.user_install],
-        )
+        )  # type: ignore[no-untyped-call]
 
         # Store settings and services
         self.settings = settings
@@ -47,10 +47,19 @@ class SongbirdBot(discord.Bot):
 
         self.app_info = await self.application_info()
 
-        activity = self.settings.bot.activity
-        activity = discord.CustomActivity(name=activity)
-        await self.change_presence(status=discord.Status[self.settings.bot.status], activity=activity)
-        self.logger.debug("Bot presence set", activity=activity)
+        custom_activity = discord.CustomActivity(name=self.settings.bot.activity)
+        await self.change_presence(status=discord.Status[self.settings.bot.status], activity=custom_activity)
+        self.logger.debug("Bot presence set", activity=custom_activity)
+
+        # Startup guild ban sweep
+        banned_ids = await self.services.management.get_banned_guild_ids()  # type: ignore[union-attr]
+        for guild in self.guilds:
+            if guild.id in banned_ids:
+                self.logger.info("Leaving banned guild on startup", guild_id=guild.id, guild_name=guild.name)
+                try:
+                    await guild.leave()
+                except discord.HTTPException:
+                    self.logger.warning("Failed to leave guild on startup", guild_id=guild.id)
 
         self.logger.info("Bot ready", bot_name=bot_name, guild_count=guild_count)
 

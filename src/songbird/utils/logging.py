@@ -54,7 +54,7 @@ def setup_logging(log_level: str = "INFO") -> structlog.BoundLogger:
         cache_logger_on_first_use=True,
     )
 
-    return structlog.get_logger("songbird")
+    return structlog.get_logger("songbird")  # type: ignore[no-any-return]
 
 
 def get_logger(name: str) -> structlog.BoundLogger:
@@ -70,7 +70,7 @@ def get_logger(name: str) -> structlog.BoundLogger:
         >>> logger = get_logger("songbird.commands")
         >>> logger.info("command_executed", command="ping", user_id=12345)
     """
-    return structlog.get_logger(name)
+    return structlog.get_logger(name)  # type: ignore[no-any-return]
 
 
 # Convenience logger for general application use

@@ -26,7 +26,7 @@ def load_from_env(
     allow_none: bool = False,
     return_type: Callable[[str], Any] = str,
     default: Any = None,
-) -> object | str | None:
+) -> Any:
     val = os.getenv(env_var, default)
 
     if val is None:

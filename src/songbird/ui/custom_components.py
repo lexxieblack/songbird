@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable, Sequence
+from typing import Any
 
 from discord import AppEmoji, ButtonStyle, Color, GuildEmoji, Interaction, PartialEmoji, SeparatorSpacingSize
 from discord.ui import ActionRow, BaseView, Button, Container, DesignerView, Section, TextDisplay, ViewItem
@@ -8,22 +9,22 @@ from songbird.utils.constants import Text
 from songbird.utils.permissions import can_interact
 
 
-class DeleteButton(Button):
-    def __init__(self):
+class DeleteButton(Button[Any]):
+    def __init__(self) -> None:
         super().__init__(label=Text.EMOJI_X)
 
-    async def callback(self, interaction: Interaction):
+    async def callback(self, interaction: Interaction) -> None:
         if await can_interact(interaction):
             await interaction.response.defer()
             await interaction.delete_original_response()
 
 
-class _DirectionalButton(Button):
-    def __init__(self, emoji: str | GuildEmoji | AppEmoji | PartialEmoji, view: BaseView):
+class _DirectionalButton(Button[Any]):
+    def __init__(self, emoji: str | GuildEmoji | AppEmoji | PartialEmoji, view: BaseView) -> None:
         super().__init__(emoji=emoji)
         self.view = view
 
-    async def callback(self, interaction: Interaction):
+    async def callback(self, interaction: Interaction) -> None:
         if await can_interact(interaction):
             await interaction.response.edit_message(view=self.view)
 
@@ -40,13 +41,13 @@ class ForwardButton(_DirectionalButton):
 
 def generate_container(
     title: str,
-    components: Sequence[ViewItem],
+    components: Sequence[ViewItem[Any]],
     subtitle: str | None = None,
     color: Color | None = None,
-) -> Container:
-    container = Container(color=color)
+) -> Container[Any]:
+    container: Container[Any] = Container(color=color)
 
-    header = Section(TextDisplay(title), accessory=DeleteButton())
+    header: Section[Any] = Section(TextDisplay(title), accessory=DeleteButton())
     if subtitle:
         header.add_text(subtitle)
 
@@ -61,10 +62,10 @@ def generate_container(
     return container
 
 
-def generate_back_container(title: str, view: BaseView, components: Sequence[ViewItem], subtitle: str | None = None) -> Container:
-    container = Container(color=Color.red())
+def generate_back_container(title: str, view: BaseView, components: Sequence[ViewItem[Any]], subtitle: str | None = None) -> Container[Any]:
+    container: Container[Any] = Container(color=Color.red())
 
-    header = Section(TextDisplay(title), accessory=BackButton(view))
+    header: Section[Any] = Section(TextDisplay(title), accessory=BackButton(view))
     if subtitle:
         header.add_text(subtitle)
 
@@ -79,7 +80,7 @@ def generate_back_container(title: str, view: BaseView, components: Sequence[Vie
     return container
 
 
-class _ConfirmActionButton(Button):
+class _ConfirmActionButton(Button[Any]):
     def __init__(self, label: str, style: ButtonStyle, callback_fn: Callable[[Interaction], Awaitable[None]]) -> None:
         super().__init__(label=label, style=style)
         self._callback_fn = callback_fn
@@ -102,8 +103,8 @@ class ConfirmView(DesignerView):
     ) -> None:
         super().__init__(timeout=timeout)
 
-        container = Container(color=Color.red())
-        header = Section(TextDisplay(prompt), accessory=DeleteButton())
+        container: Container[Any] = Container(color=Color.red())
+        header: Section[Any] = Section(TextDisplay(prompt), accessory=DeleteButton())
         if subtitle:
             header.add_text(subtitle)
         container.add_item(header)

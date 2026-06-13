@@ -1,5 +1,7 @@
+from typing import Any
+
 from discord import Color, Interaction
-from discord.ui import Button, DesignerView, Section, TextDisplay
+from discord.ui import Button, Container, DesignerView, Section, TextDisplay, ViewItem
 
 from songbird.services.container import (
     ServiceContainer,
@@ -12,12 +14,12 @@ from songbird.utils import emojis
 from songbird.utils.permissions import can_interact
 
 
-class EditUserInfoButton(Button):
-    def __init__(self, services: ServiceContainer):
+class EditUserInfoButton(Button[Any]):
+    def __init__(self, services: ServiceContainer) -> None:
         super().__init__(emoji=emojis.ARROW_RIGHT)
         self.services = services
 
-    async def callback(self, interaction: Interaction):
+    async def callback(self, interaction: Interaction) -> None:
         if await can_interact(interaction):
             modal = await UserInfoModal.create(interaction.user.id, self.services)  # type: ignore
             await interaction.response.send_modal(modal)
@@ -28,7 +30,7 @@ class ManageView(DesignerView):
         super().__init__(timeout=180)
         self.services = services
 
-        self.components = [
+        self.components: list[Section[Any]] = [
             Section(
                 TextDisplay("### Reset Conversation"),
                 TextDisplay("-# Clear all conversation history"),

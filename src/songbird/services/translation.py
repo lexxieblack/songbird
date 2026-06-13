@@ -21,7 +21,7 @@ class TranslationService:
     def get_language_code(self, language: str) -> str | None:
         try:
             lang_code = languages.lookup(language)
-            return lang_code.alpha_2
+            return lang_code.alpha_2  # type: ignore[no-any-return]
         except LookupError:
             return None
 
@@ -30,7 +30,7 @@ class TranslationService:
             if len(language) == 2:
                 lang = languages.get(alpha_2=language)
                 return lang.name if lang else language
-            return languages.lookup(language).name
+            return languages.lookup(language).name  # type: ignore[no-any-return]
         except LookupError:
             return language
 
@@ -39,7 +39,7 @@ class TranslationService:
 
     async def detect_language(self, text: str) -> str:
         result = await self.translator.detect(text)
-        return result.lang
+        return result.lang  # type: ignore[no-any-return]
 
     async def translate(
         self,
@@ -54,14 +54,14 @@ class TranslationService:
             return "Error: target language not supported"
 
         try:
-            translated_text = await self.translator.translate(text, src=sl, dest=tl)  # type: ignore
+            translated_text = await self.translator.translate(text, src=sl, dest=tl)
             self.logger.info(
                 "Translation successful",
                 source_lang=source_lang,
                 target_lang=target_lang,
                 text_length=len(text),
             )
-            return translated_text.text
+            return translated_text.text  # type: ignore[no-any-return]
         except Exception as e:
             self.logger.error("Failed to translate text", error=str(e))
             return "Error: failed to translate text"
@@ -101,7 +101,7 @@ class TranslationService:
                     target_lang=target_lang,
                     text_length=len(text),
                 )
-                return result[0]
+                return result[0]  # type: ignore[no-any-return]
             else:
                 self.logger.info(
                     "Translation failed",

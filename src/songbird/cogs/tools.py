@@ -30,23 +30,13 @@ class ToolsCog(BaseCog):
     async def translate(
         self,
         ctx: discord.ApplicationContext,
-        text: discord.Option(
-            str,
-            description="The text to translate",
-            required=False,
-        ),  # type: ignore
-        to_lang: discord.Option(
-            str,
-            description="Target language to translate to",
-            required=False,
-        ),  # type: ignore
-        from_lang: discord.Option(
-            str,
-            description="Source language (auto-detect if not specified)",
-            required=False,
-            default=None,
-        ),  # type: ignore
+        text: str | None = discord.Option(str, description="The text to translate", required=False, default=None),  # type: ignore[assignment]
+        to_lang: str = discord.Option(str, description="Target language to translate to", required=False, default="en"),  # type: ignore[assignment]
+        from_lang: str | None = discord.Option(str, description="Source language (auto-detect if not specified)", required=False, default=None),  # type: ignore[assignment]
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         if not text:
             modal = TranslateModal(self.translate_handler.translate_to_message)
             await ctx.interaction.response.send_modal(modal)
@@ -90,6 +80,9 @@ class ToolsCog(BaseCog):
         ctx: discord.ApplicationContext,
         message: discord.Message,
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         modal = TranslateMessageModal(message, self.translate_handler.translate)
         await ctx.send_modal(modal)
 
@@ -98,6 +91,9 @@ class ToolsCog(BaseCog):
         description="Sends a text file with the given content",
     )
     async def file(self, ctx: discord.ApplicationContext) -> None:
+        if await self._check_banned(ctx):
+            return
+
         modal = FileModal()
         await ctx.send_modal(modal)
 
@@ -108,12 +104,11 @@ class ToolsCog(BaseCog):
     async def wolfram(
         self,
         ctx: discord.ApplicationContext,
-        query: discord.Option(
-            str,
-            description="The query to send to Wolfram Alpha",
-            required=True,
-        ),  # type: ignore
+        query: str = discord.Option(str, description="The query to send to Wolfram Alpha"),  # type: ignore[assignment]
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         if not query:
             await self.send_error(ctx, "Please provide link to fix.")
             return
@@ -141,12 +136,11 @@ class ToolsCog(BaseCog):
     async def fix(
         self,
         ctx: discord.ApplicationContext,
-        link: discord.Option(
-            str,
-            description="The link to fix and sanitize",
-            required=True,
-        ),  # type: ignore
+        link: str = discord.Option(str, description="The link to fix and sanitize"),  # type: ignore[assignment]
     ) -> None:
+        if await self._check_banned(ctx):
+            return
+
         if not link:
             await self.send_error(ctx, "Please provide a link to fix.")
             return

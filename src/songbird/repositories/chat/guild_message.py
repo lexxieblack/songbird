@@ -4,8 +4,9 @@ from sqlalchemy import delete, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from songbird.models.chat.base import MessageRole
 from songbird.models.chat.exceptions import MessageAlreadyExistsError
-from songbird.models.chat.guild_message import GuildMessage, MessageRole, guild_message_table
+from songbird.models.chat.guild_message import GuildMessage, guild_message_table
 from songbird.utils.id_factory import make_id
 
 
