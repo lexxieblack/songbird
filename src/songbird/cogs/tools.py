@@ -8,6 +8,7 @@ from songbird.commands.tools.translate import TranslateHandler
 from songbird.commands.tools.wolfram import WolframHandler
 from songbird.ui.modals.file import FileModal
 from songbird.ui.modals.translate import TranslateMessageModal, TranslateModal
+from songbird.ui.views.translate import TranslateView
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
@@ -38,7 +39,7 @@ class ToolsCog(BaseCog):
             return
 
         if not text:
-            modal = TranslateModal(self.translate_handler.translate_to_message)
+            modal = TranslateModal(self.translate_handler.translate_with_meta)
             await ctx.interaction.response.send_modal(modal)
             return
 
@@ -53,13 +54,14 @@ class ToolsCog(BaseCog):
         )
 
         try:
-            translated_message = await self.translate_handler.translate(
+            source_name, target_name, translated_text = await self.translate_handler.translate_with_meta(
                 text=text,
                 target_lang=to_lang,
                 source_lang=from_lang,
             )
 
-            await ctx.followup.send(translated_message, allowed_mentions=discord.AllowedMentions.none())
+            view = TranslateView(source_name, target_name, translated_text)
+            await ctx.followup.send(view=view, allowed_mentions=discord.AllowedMentions.none())
 
             self.logger.info(
                 "Translate success",
@@ -83,7 +85,7 @@ class ToolsCog(BaseCog):
         if await self._check_banned(ctx):
             return
 
-        modal = TranslateMessageModal(message, self.translate_handler.translate)
+        modal = TranslateMessageModal(message, self.translate_handler.translate_with_meta)
         await ctx.send_modal(modal)
 
     @discord.slash_command(
