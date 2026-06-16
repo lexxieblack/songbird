@@ -1,6 +1,5 @@
 from songbird.services.translation import TranslationService
 from songbird.utils.logging import get_logger
-from songbird.utils.text import truncate_text
 
 
 class TranslateHandler:
@@ -8,12 +7,12 @@ class TranslateHandler:
         self.translation_service = translation_service
         self.logger = get_logger(__name__)
 
-    async def translate_to_message(
+    async def translate_with_meta(
         self,
         text: str,
         target_lang: str,
         source_lang: str | None = None,
-    ) -> str:
+    ) -> tuple[str, str, str]:
         source_lang = source_lang or "auto"
         translated_text = await self.translate(text, target_lang, source_lang)
 
@@ -23,8 +22,7 @@ class TranslateHandler:
         source_name = self.get_language_name(source_lang)
         target_name = self.get_language_name(target_lang)
 
-        message_text = f"## {source_name} > {target_name}\n{translated_text}"
-        return truncate_text(message_text, 2000)
+        return source_name, target_name, translated_text
 
     async def translate(
         self,
