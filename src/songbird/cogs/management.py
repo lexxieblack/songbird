@@ -22,6 +22,11 @@ class ManagementCog(BaseCog):
     def __init__(self, bot: "SongbirdBot") -> None:
         super().__init__(bot)
 
+        guild_id = bot.settings.bot.management_guild_id
+        if guild_id:
+            for cmd in self.get_commands():
+                cmd.guild_ids = [guild_id]  # type: ignore
+
         self.logger.debug("Management commands initialized")
 
     @discord.slash_command(name="ban-user", description="Ban a user from using the bot")
