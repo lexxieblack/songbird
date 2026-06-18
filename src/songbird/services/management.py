@@ -52,8 +52,13 @@ class BanEnforcementService:
         return banned
 
     async def ban_user(self, user_id: int, reason: str | None = None) -> UserBan:
-        """Ban a user, delete their conversation history, and invalidate the cache."""
-        from songbird.services.container import get_message_repo, get_session, get_user_ban_repo
+        """Ban a user, delete all their stored data, and invalidate the cache."""
+        from songbird.services.container import (
+            get_message_repo,
+            get_session,
+            get_user_ban_repo,
+            get_user_info_repo,
+        )
 
         async with get_session(self._container) as session:
             ban_repo = get_user_ban_repo(session)
@@ -62,7 +67,10 @@ class BanEnforcementService:
             message_repo = get_message_repo(session)
             await message_repo.delete_messages(user_id)
 
-        self._user_cache.pop(user_id, None)
+            user_info_repo = get_user_info_repo(session)
+            await user_info_repo.delete_user_info(user_id)
+
+        self._user_cache[user_id] = True
         return user_ban
 
     async def ban_guild(self, guild_id: int, reason: str | None = None) -> GuildBan:
@@ -76,7 +84,7 @@ class BanEnforcementService:
             message_repo = get_guild_message_repo(session)
             await message_repo.delete_messages(guild_id)
 
-        self._guild_cache.pop(guild_id, None)
+        self._guild_cache[guild_id] = True
         return guild_ban
 
     async def unban_user(self, user_id: int) -> None:

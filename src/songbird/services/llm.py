@@ -2,7 +2,15 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from google.genai import Client
-from google.genai.types import Content, GenerateContentConfig, GoogleSearch, Part, Tool
+from google.genai.types import (
+    Content,
+    GenerateContentConfig,
+    GoogleSearch,
+    HttpOptions,
+    HttpRetryOptions,
+    Part,
+    Tool,
+)
 from structlog import BoundLogger
 
 from songbird.models.chat.base import MessageRole
@@ -20,7 +28,18 @@ class LLMService:
         logger: BoundLogger | None = None,
     ) -> None:
         self._model = settings.llm.model
-        self._client = Client(api_key=settings.llm.api_key)
+        retry = settings.llm.retry
+        self._client = Client(
+            api_key=settings.llm.api_key,
+            http_options=HttpOptions(
+                retry_options=HttpRetryOptions(
+                    attempts=retry.max_attempts,
+                    initial_delay=retry.initial_delay,
+                    max_delay=retry.max_delay,
+                ),
+                timeout=120000,  # 2 minutes in milliseconds
+            ),
+        )
         self.logger = logger or get_logger(__name__)
 
     async def call(self, request: LLMRequest) -> str:

@@ -98,16 +98,20 @@ Songbird loads settings from `config.toml`, environment variables, and `.env` (i
 | `WOLFRAM__API_KEY` | Wolfram Alpha API key |
 | `BOT__OWNER_ID` | Your Discord user ID |
 | `BOT__FEEDBACK_CHANNEL_ID` | Forum channel ID for feedback |
+| `BOT__MANAGEMENT_GUILD_ID` | Optional server ID where owner-only management commands are visible |
 | `BOT__DEBUG_GUILD_ID` | Optional server ID for development |
 
 ### Database Migrations
 
-Migrations live in `database/chat/` and `database/feedback/`. Apply them manually in numeric order:
+Migrations live in `database/chat/`, `database/feedback/`, and `database/management/`. Apply them manually in numeric order across all directories:
 
 ```bash
 psql -U your_user -d your_db -f database/chat/01.schema.sql
 psql -U your_user -d your_db -f database/chat/02.types.sql
 psql -U your_user -d your_db -f database/chat/03.message.sql
+psql -U your_user -d your_db -f database/management/01.schema.sql
+psql -U your_user -d your_db -f database/management/02.user_ban.sql
+psql -U your_user -d your_db -f database/management/03.guild_ban.sql
 # ... etc
 ```
 

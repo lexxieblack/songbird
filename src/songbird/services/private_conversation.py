@@ -1,8 +1,8 @@
 from structlog import BoundLogger
 
 from songbird.config import Settings
-from songbird.models.chat.exceptions import MessageAlreadyExistsError, UserInfoNotFoundError
 from songbird.models.chat.base import MessageRole
+from songbird.models.chat.exceptions import MessageAlreadyExistsError, UserInfoNotFoundError
 from songbird.models.chat.message import Message
 from songbird.models.conversation import ConversationContext
 from songbird.models.llm import LLMRequest

@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 2026-06-02
+**Last updated:** 2026-06-18
 **Bot:** Songbird
 **Contact:** Join the [support server](https://discord.gg/your-invite-here) or message the bot owner on Discord.
 
@@ -21,8 +21,9 @@
 
 | Data | Where it's stored | Purpose |
 |---|---|---|
-| Discord User ID | PostgreSQL (all chat/user_info tables) | To associate conversations with your account |
-| Discord Guild ID | PostgreSQL (`chat.guild_message` table) | To associate server conversations with that guild |
+| Discord User ID | PostgreSQL (all chat/user_info/management tables) | To associate conversations with your account; to enforce user bans |
+| Discord Guild ID | PostgreSQL (`chat.guild_message`, `management.guild_ban` tables) | To associate server conversations with that guild; to enforce guild bans |
+| Ban reason text (if provided by bot owner) | PostgreSQL (`management.user_ban`, `management.guild_ban` tables) | To document why a user or guild was banned |
 | Discord username and display name | Sent to the LLM provider as context; not stored separately | To give the AI awareness of who it's talking to |
 | Message timestamps | PostgreSQL (all chat tables) | To maintain conversation ordering |
 
@@ -75,7 +76,7 @@ When you use `/fix` or the auto link-fixer processes a message, HEAD requests ma
 
 ## 4. Data storage and security
 
-- **Database:** PostgreSQL, hosted on the bot operator's infrastructure
+- **Database:** PostgreSQL, hosted on the bot operator's infrastructure (chat, feedback, and management schemas)
 - **Encryption:** Standard database-level security practices are followed
 - **Logs:** Message content may appear in application logs (stdout) for debugging. Logs are not publicly accessible.
 - **In-memory caches:** Suppressed message IDs are cached ephemerally (cleared on restart)
@@ -93,6 +94,7 @@ When you use `/fix` or the auto link-fixer processes a message, HEAD requests ma
 
 - **Conversation messages:** Stored indefinitely until you delete them
 - **User info:** Stored indefinitely until overwritten
+- **Ban records (user/guild):** Stored indefinitely until the bot owner removes them (see section 6.5)
 - **Feedback threads:** Retained in Discord indefinitely
 - **Logs:** Retained according to the hosting environment's log rotation
 
@@ -124,6 +126,12 @@ If you need data deleted that isn't covered by the commands above, contact us vi
 ### 6.4 Object to processing
 
 If you do not want your data processed by the LLM, do not use the chat features.
+
+### 6.5 Ban records
+
+Ban records (user ID or guild ID plus optional reason) are stored for moderation enforcement. These records are **not user-deletable** — they are managed exclusively by the bot owner. If you believe you have been incorrectly banned, contact the bot owner via the support server.
+
+When a ban is issued, **all conversation history and biographical info** associated with that user or guild is permanently deleted from the database. Only the ban record itself (ID, reason, timestamp) is retained. If the ban is later lifted, no prior data is restored.
 
 ---
 
