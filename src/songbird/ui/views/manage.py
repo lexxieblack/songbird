@@ -1,7 +1,7 @@
 from typing import Any
 
 from discord import Color, Interaction
-from discord.ui import Button, Container, DesignerView, Section, TextDisplay, ViewItem
+from discord.ui import Button, DesignerView, Section, TextDisplay
 
 from songbird.services.container import (
     ServiceContainer,

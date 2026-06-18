@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 import discord
 
 from songbird.bot import SongbirdBot
@@ -68,14 +70,18 @@ def load_chat(bot: SongbirdBot) -> None:
 
                 logger.info("Calling chat handler", user_id=message.author.id, channel_name=channel_name)
 
-                response = await chat_handler.chat(
-                    user_id=message.author.id,
-                    message=content,
-                    username=message.author.name,
-                    display_name=message.author.display_name,
-                    guild_name=message.guild.name if message.guild else None,
-                    channel_name=channel_name,
-                )
+                try:
+                    response = await chat_handler.chat(
+                        user_id=message.author.id,
+                        message=content,
+                        username=message.author.name,
+                        display_name=message.author.display_name,
+                        guild_name=message.guild.name if message.guild else None,
+                        channel_name=channel_name,
+                    )
+                except Exception:
+                    logger.exception("DM chat handler failed", user_id=message.author.id)
+                    response = None
 
         else:
             logger.info(
@@ -92,20 +98,29 @@ def load_chat(bot: SongbirdBot) -> None:
 
                 logger.info("Calling chat handler", user_id=message.author.id, channel_name=guild_channel_name)
 
-                response = await guild_chat_handler.chat(
-                    guild_id=message.guild.id,  # type: ignore[union-attr]
-                    message=content,
-                    username=message.author.name,
-                    display_name=message.author.display_name,
-                    guild_name=message.guild.name if message.guild else None,
-                    channel_name=guild_channel_name,
-                )
+                try:
+                    response = await guild_chat_handler.chat(
+                        guild_id=message.guild.id,  # type: ignore[union-attr]
+                        message=content,
+                        username=message.author.name,
+                        display_name=message.author.display_name,
+                        guild_name=message.guild.name if message.guild else None,
+                        channel_name=guild_channel_name,
+                    )
+                except Exception:
+                    logger.exception("Guild chat handler failed", user_id=message.author.id)
+                    response = None
 
         if not response:
             logger.info("No response generated", user_id=message.author.id)
+            await message.channel.send(
+                "My neural pathways got a bit scrambled. Try again?",
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
             return
 
         logger.info("Response received", user_id=message.author.id, response_length=len(response))
 
-        await send_messages(message.channel, response)
+        with suppress(Exception):
+            await send_messages(message.channel, response)
         logger.info("Response sent successfully", user_id=message.author.id)
