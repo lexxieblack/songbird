@@ -63,7 +63,7 @@ class TranslationService:
             )
             return translated_text.text  # type: ignore[no-any-return]
         except Exception as e:
-            self.logger.error("Failed to translate text", error=str(e))
+            self.logger.error("Failed to translate text", error=e)
             return "Error: failed to translate text"
 
     async def translate_old(
@@ -129,7 +129,7 @@ class TranslationService:
         except Exception as e:
             self.logger.error(
                 "Translation failed with error",
-                error=str(e),
+                error=e,
                 error_type=type(e).__name__,
                 target_lang=target_lang,
                 source_lang=source_lang,

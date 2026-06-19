@@ -71,7 +71,7 @@ class PrivateConversationService:
 
             return reply
         except Exception as e:
-            self.logger.error("Chat failed", error=str(e))
+            self.logger.error("Chat failed", error=e)
             return "*static crackles* Something's... not right in my neural pathways.\nGive me a moment to recalibrate, choom."
 
     async def _save_message(self, user_id: int, message: str, role: MessageRole) -> bool:
@@ -97,7 +97,7 @@ class PrivateConversationService:
                 user_id=user_id,
                 role=role.value,
                 message=message,
-                error=str(e),
+                error=e,
             )
 
         return False
@@ -116,7 +116,7 @@ class PrivateConversationService:
             self.logger.error(
                 "Error getting user info",
                 user_id=user_id,
-                error=str(e),
+                error=e,
             )
         return None
 
@@ -128,7 +128,7 @@ class PrivateConversationService:
             return messages
 
         except Exception as e:
-            self.logger.error("Error getting previous messages", user_id=user_id, error=str(e))
+            self.logger.error("Error getting previous messages", user_id=user_id, error=e)
 
         return []
 

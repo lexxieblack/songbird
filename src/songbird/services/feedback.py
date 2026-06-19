@@ -50,7 +50,7 @@ class FeedbackService:
                 "Error creating thread",
                 user_id=user_id,
                 channel_id=self.thread_channel_id,
-                error=str(e),
+                error=e,
             )
 
         return 0

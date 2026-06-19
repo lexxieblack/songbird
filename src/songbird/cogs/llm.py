@@ -15,7 +15,7 @@ from songbird.services.container import (
 )
 from songbird.ui.views.manage import ManageView
 from songbird.utils.discord import create_file_text
-from songbird.utils.text import truncate_text
+from songbird.utils.text import split_message, truncate_text
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
@@ -56,7 +56,7 @@ class LLMCog(BaseCog):
             self.logger.info("Summary success", user_id=ctx.author.id)
 
         except Exception as e:
-            self.logger.error("Summarization failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Summarization failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Summarization failed.")
 
     @discord.slash_command(
@@ -77,11 +77,15 @@ class LLMCog(BaseCog):
 
         try:
             answer = await self.quickchat_handler.quickchat(question)
-            await ctx.followup.send(answer, allowed_mentions=discord.AllowedMentions.none())
+            for chunk in split_message(answer):
+                if isinstance(chunk, str):
+                    await ctx.followup.send(chunk, allowed_mentions=discord.AllowedMentions.none())
+                else:
+                    await ctx.followup.send(file=chunk, allowed_mentions=discord.AllowedMentions.none())
             self.logger.info("Quickchat success", user_id=ctx.author.id)
 
         except Exception as e:
-            self.logger.error("Quickchat failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Quickchat failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Quickchat failed.")
 
     @discord.slash_command(
@@ -117,13 +121,17 @@ class LLMCog(BaseCog):
                 )
 
                 if answer:
-                    await ctx.followup.send(answer, allowed_mentions=discord.AllowedMentions.none())
+                    for chunk in split_message(answer):
+                        if isinstance(chunk, str):
+                            await ctx.followup.send(chunk, allowed_mentions=discord.AllowedMentions.none())
+                        else:
+                            await ctx.followup.send(file=chunk, allowed_mentions=discord.AllowedMentions.none())
                     self.logger.info("Chat success", user_id=ctx.author.id)
                 else:
                     await ctx.followup.delete(reason="No response generated.")
 
         except Exception as e:
-            self.logger.error("Chat failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Chat failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Chat failed.")
 
     @discord.slash_command(
@@ -171,7 +179,7 @@ class LLMCog(BaseCog):
                 self.logger.info("Export command success", user_id=ctx.author.id, message_count=len(messages))
 
         except Exception as e:
-            self.logger.error("Export failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Export failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Export failed.")
 
 

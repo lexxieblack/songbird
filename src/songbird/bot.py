@@ -168,7 +168,7 @@ class SongbirdBot(discord.Bot):
             await close_container(self.services)
             self.logger.debug("Services closed")
         except Exception as e:
-            self.logger.warning("Services close error", error=str(e))
+            self.logger.warning("Services close error", error=e)
 
         # Clean up listeners
         from songbird.listeners import unload_listeners

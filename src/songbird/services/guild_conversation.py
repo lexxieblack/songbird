@@ -62,7 +62,7 @@ class GuildConversationService:
 
             return reply
         except Exception as e:
-            self.logger.error("Chat failed", error=str(e))
+            self.logger.error("Chat failed", error=e)
             return "*static crackles* Something's... not right in my neural pathways.\nGive me a moment to recalibrate, choom."
 
     async def _save_message(self, guild_id: int, message: str, role: MessageRole) -> bool:
@@ -88,7 +88,7 @@ class GuildConversationService:
                 guild_id=guild_id,
                 role=role.value,
                 message=message,
-                error=str(e),
+                error=e,
             )
 
         return False
@@ -101,7 +101,7 @@ class GuildConversationService:
             return messages
 
         except Exception as e:
-            self.logger.error("Error getting previous messages", guild_id=guild_id, error=str(e))
+            self.logger.error("Error getting previous messages", guild_id=guild_id, error=e)
 
         return []
 

@@ -146,7 +146,7 @@ def split_message(
         if is_codeblock(raw_chunk):
             codeblock_lines = raw_chunk.count("\n")
             if codeblock_lines > max_codeblock_lines or len(raw_chunk) > max_codeblock_length:
-                lang = get_codeblock_language(raw_chunk)
+                lang = get_codeblock_language(raw_chunk) or "md"
                 final_chunks.append(create_file_text(raw_chunk, f"codeblock.{lang}"))
             else:
                 final_chunks.append(raw_chunk)

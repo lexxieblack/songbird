@@ -17,7 +17,7 @@ class WolframHandler:
         try:
             reply_gif = await self.service.query(question)
         except Exception as e:
-            self.logger.error("Wolfram query failed", query=question, error=str(e))
+            self.logger.error("Wolfram query failed", query=question, error=e)
             return None
 
         self.logger.info("Wolfram query completed", query=question)
