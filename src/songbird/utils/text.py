@@ -115,13 +115,26 @@ def split_paragraph_to_sentences(text: str, max_length: int = 2000) -> list[str]
 def split_text_to_paragraphs(text: str, max_length: int = 2000) -> list[str]:
     paragraphs = text.split("\n\n")
     chunks: list[str] = []
+    current_chunk = ""
 
     for paragraph in paragraphs:
-        if len(paragraph) < max_length:
-            chunks.append(paragraph)
+        if len(paragraph) >= max_length:
+            if current_chunk:
+                chunks.append(current_chunk)
+                current_chunk = ""
+            sentence_chunks = split_paragraph_to_sentences(paragraph, max_length)
+            chunks.extend(sentence_chunks)
+        elif current_chunk and len(current_chunk) + 2 + len(paragraph) > max_length:
+            chunks.append(current_chunk)
+            current_chunk = paragraph
         else:
-            paragraphs = split_paragraph_to_sentences(paragraph, max_length)
-            chunks.extend(paragraphs)
+            if current_chunk:
+                current_chunk += "\n\n" + paragraph
+            else:
+                current_chunk = paragraph
+
+    if current_chunk:
+        chunks.append(current_chunk)
 
     return chunks
 

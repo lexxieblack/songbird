@@ -23,6 +23,7 @@ class PrivateChatHandler:
             return None
 
         context = ConversationContext(
+            user_id=user_id,
             username=username,
             display_name=display_name,
             guild_name=guild_name,

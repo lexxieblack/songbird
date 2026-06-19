@@ -14,6 +14,7 @@ class GuildChatHandler:
         self,
         guild_id: int,
         message: str,
+        user_id: int,
         username: str,
         display_name: str,
         guild_name: str | None = None,
@@ -23,6 +24,7 @@ class GuildChatHandler:
             return None
 
         context = ConversationContext(
+            user_id=user_id,
             username=username,
             display_name=display_name,
             guild_name=guild_name,
