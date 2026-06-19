@@ -46,7 +46,7 @@ class GuildConversationService:
         system_prompt = self._build_system_prompt(context)
 
         try:
-            user_message = f"{context.display_name} (ID: {context.username}) in channel {context.channel_name} said:\n" + message
+            user_message = f"{context.display_name} (ID: {context.user_id}, username: {context.username}) in channel {context.channel_name} said:\n" + message
             save = await self._save_message(guild_id=guild_id, message=user_message, role=MessageRole.USER)
             if not save:
                 return "Error: failed to save message"

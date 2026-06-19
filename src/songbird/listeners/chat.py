@@ -102,6 +102,7 @@ def load_chat(bot: SongbirdBot) -> None:
                     response = await guild_chat_handler.chat(
                         guild_id=message.guild.id,  # type: ignore[union-attr]
                         message=content,
+                        user_id=message.author.id,
                         username=message.author.name,
                         display_name=message.author.display_name,
                         guild_name=message.guild.name if message.guild else None,
