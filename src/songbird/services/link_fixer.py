@@ -55,7 +55,7 @@ class LinkFixerService:
             async with session.head(url, allow_redirects=False) as response:
                 return response.headers.get("Location", url)
         except (TimeoutError, ClientError) as e:
-            self.logger.error("Failed to follow link", url=url, error=str(e))
+            self.logger.error("Failed to follow link", url=url, error=e)
             return url
         finally:
             await session.close()

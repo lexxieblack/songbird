@@ -35,7 +35,7 @@ def main() -> None:
     except KeyboardInterrupt:
         logger.info("Shutdown requested by user")
     except Exception as e:
-        logger.exception("Fatal error", error=str(e))
+        logger.exception("Fatal error", error=e)
         sys.exit(1)
 
 

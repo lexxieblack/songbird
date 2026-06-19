@@ -6,8 +6,27 @@ Supports both development (console) and production (JSON) output formats.
 
 import logging
 import sys
+from collections.abc import MutableMapping
 
 import structlog
+
+
+def _enrich_error(
+    logger: object,  # noqa: ARG001
+    method_name: str,  # noqa: ARG001
+    event_dict: MutableMapping[str, object],
+) -> MutableMapping[str, object]:
+    error = event_dict.get("error")
+    if isinstance(error, BaseException):
+        event_dict["error"] = str(error)
+        event_dict["error_type"] = type(error).__name__
+        if hasattr(error, "status"):
+            event_dict["error_status"] = error.status  # type: ignore
+        if hasattr(error, "code"):
+            event_dict["error_code"] = error.code  # type: ignore
+        if hasattr(error, "text"):
+            event_dict["error_text"] = error.text  # type: ignore
+    return event_dict
 
 
 def setup_logging(log_level: str = "INFO") -> structlog.BoundLogger:
@@ -46,6 +65,7 @@ def setup_logging(log_level: str = "INFO") -> structlog.BoundLogger:
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
+            _enrich_error,
             structlog.dev.ConsoleRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(numeric_level),

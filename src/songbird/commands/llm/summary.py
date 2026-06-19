@@ -27,5 +27,5 @@ class SummaryHandler:
             self.logger.info("Generating summary", text_length=len(text))
             return await self.llm.call(llm_request)
         except Exception as e:
-            self.logger.error("Failed to generate summary", error=str(e))
+            self.logger.error("Failed to generate summary", error=e)
             return "Error: failed to generate summary"

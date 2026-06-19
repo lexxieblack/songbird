@@ -56,7 +56,7 @@ class LLMCog(BaseCog):
             self.logger.info("Summary success", user_id=ctx.author.id)
 
         except Exception as e:
-            self.logger.error("Summarization failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Summarization failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Summarization failed.")
 
     @discord.slash_command(
@@ -85,7 +85,7 @@ class LLMCog(BaseCog):
             self.logger.info("Quickchat success", user_id=ctx.author.id)
 
         except Exception as e:
-            self.logger.error("Quickchat failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Quickchat failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Quickchat failed.")
 
     @discord.slash_command(
@@ -131,7 +131,7 @@ class LLMCog(BaseCog):
                     await ctx.followup.delete(reason="No response generated.")
 
         except Exception as e:
-            self.logger.error("Chat failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Chat failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Chat failed.")
 
     @discord.slash_command(
@@ -179,7 +179,7 @@ class LLMCog(BaseCog):
                 self.logger.info("Export command success", user_id=ctx.author.id, message_count=len(messages))
 
         except Exception as e:
-            self.logger.error("Export failed", user_id=ctx.author.id, error=str(e))
+            self.logger.error("Export failed", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Export failed.")
 
 

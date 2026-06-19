@@ -57,7 +57,7 @@ class WolframService:
             self._logger.error(
                 "Wolfram query timed out",
                 query=question,
-                error=str(e),
+                error=e,
             )
             raise Exception("Request to Wolfram Alpha timed out") from e
 
@@ -65,7 +65,7 @@ class WolframService:
             self._logger.error(
                 "Wolfram query failed",
                 query=question,
-                error=str(e),
+                error=e,
             )
             raise Exception("Network error while querying Wolfram Alpha") from e
 
@@ -73,6 +73,6 @@ class WolframService:
             self._logger.error(
                 "Wolfram query failed",
                 query=question,
-                error=str(e),
+                error=e,
             )
             raise

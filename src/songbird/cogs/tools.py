@@ -71,7 +71,7 @@ class ToolsCog(BaseCog):
             )
 
         except Exception as e:
-            self.logger.error("translate_error", user_id=ctx.author.id, error=str(e))
+            self.logger.error("translate_error", user_id=ctx.author.id, error=e)
             await self.send_error(ctx, "Translation failed.")
 
     @discord.message_command(
@@ -128,7 +128,7 @@ class ToolsCog(BaseCog):
                 await self.send_error(ctx, "Wolfram query failed.")
 
         except Exception as e:
-            self.logger.error("Wolfram query failed", user_id=ctx.author.id, query=query, error=str(e))
+            self.logger.error("Wolfram query failed", user_id=ctx.author.id, query=query, error=e)
             await self.send_error(ctx, "Wolfram query failed.")
 
     @discord.slash_command(
@@ -159,7 +159,7 @@ class ToolsCog(BaseCog):
             self.logger.info("Fix success", user_id=ctx.author.id)
 
         except Exception as e:
-            self.logger.error("Fix error", user_id=ctx.author.id, error=str(e), exc_info=True)
+            self.logger.error("Fix error", user_id=ctx.author.id, error=e, exc_info=True)
             await self.send_error(ctx, "Link fixing failed.")
 
     @discord.slash_command(

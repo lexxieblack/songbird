@@ -130,14 +130,14 @@ async def close_container(container: ServiceContainer) -> None:
         await container.translation.close()
         log.debug("Translation service closed")
     except Exception as e:
-        log.warning("Translation service close error", error=str(e))
+        log.warning("Translation service close error", error=e)
 
     # Dispose of database engine
     try:
         await container.engine.dispose()
         log.debug("Databse engine disposed")
     except Exception as e:
-        log.warning("Database engine dispose error", error=str(e))
+        log.warning("Database engine dispose error", error=e)
 
     log.info("Service container closed")
 
