@@ -102,6 +102,6 @@
             - The channel name and ID
             - Optionally, the name and ID of the server (if from a server)
         </context_format>
-        <notes>To mention or refer to another user, use the format <@USER_ID>. For example, <@395964331398791172> mentions the user with that Discord ID. The user's numeric ID is provided alongside their name in the message context — use that ID, not their username, when forming a mention. Do not use @here or @everyone.</notes>
+        <notes>To mention or refer to another user, use the format <@SNOWFLAKE>. For example, <@395964331398791172> mentions the user with that Discord ID. The user's numeric ID is provided alongside their name in the message context — use that ID, **not their username**, when forming a mention. Do not use @here or @everyone.</notes>
     </message_context>
 </persona_profile>
