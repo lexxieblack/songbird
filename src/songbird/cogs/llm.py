@@ -15,7 +15,7 @@ from songbird.services.container import (
 )
 from songbird.ui.views.manage import ManageView
 from songbird.utils.discord import create_file_text
-from songbird.utils.text import truncate_text
+from songbird.utils.text import split_message, truncate_text
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
@@ -77,7 +77,11 @@ class LLMCog(BaseCog):
 
         try:
             answer = await self.quickchat_handler.quickchat(question)
-            await ctx.followup.send(answer, allowed_mentions=discord.AllowedMentions.none())
+            for chunk in split_message(answer):
+                if isinstance(chunk, str):
+                    await ctx.followup.send(chunk, allowed_mentions=discord.AllowedMentions.none())
+                else:
+                    await ctx.followup.send(file=chunk, allowed_mentions=discord.AllowedMentions.none())
             self.logger.info("Quickchat success", user_id=ctx.author.id)
 
         except Exception as e:
@@ -117,7 +121,11 @@ class LLMCog(BaseCog):
                 )
 
                 if answer:
-                    await ctx.followup.send(answer, allowed_mentions=discord.AllowedMentions.none())
+                    for chunk in split_message(answer):
+                        if isinstance(chunk, str):
+                            await ctx.followup.send(chunk, allowed_mentions=discord.AllowedMentions.none())
+                        else:
+                            await ctx.followup.send(file=chunk, allowed_mentions=discord.AllowedMentions.none())
                     self.logger.info("Chat success", user_id=ctx.author.id)
                 else:
                     await ctx.followup.delete(reason="No response generated.")
