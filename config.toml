@@ -11,7 +11,7 @@ source_code_url = "https://github.com/lexxieblack/songbird"
 "twitter.com" = { swap = "fxtwitter.com", clean = true, chat = true }
 "x.com" = { swap = "fxtwitter.com", clean = true, chat = true }
 "instagram.com" = { swap = "kkinstagram.com", clean = true, chat = true }
-"reddit.com" = { swap = "rxddit.com", clean = true, chat = true }
+"reddit.com" = { swap = "vxreddit.com", clean = true, chat = true }
 "tiktok.com" = { swap = "d.tiktokez.com", follow = true, clean = true, chat = true }
 "youtube.com" = { clean = true, clean_exceptions = ["t", "v", "list"] }
 "youtu.be" = { clean = true, clean_exceptions = ["t", "v", "list"] }
