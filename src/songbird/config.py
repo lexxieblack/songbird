@@ -46,6 +46,7 @@ class LLMRetrySettings(BaseModel):
 
 class LLMSettings(BaseModel):
     model: str = "gemini-2.5-flash"
+    fallback_model: str = "gemma-4-31b-it"
     message_count: int = 30
     system_prompt_path: str = "prompts/default.xml"
     summary_system_prompt: str = "Briefly summarize the given text concisely, capturing the main points and key details. Do not add any personal opinions or additional information. Keep the summary clear and to the point."

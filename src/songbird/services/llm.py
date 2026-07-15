@@ -1,4 +1,5 @@
 import asyncio
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from google.genai import Client
@@ -28,6 +29,9 @@ class LLMService:
         logger: BoundLogger | None = None,
     ) -> None:
         self._model = settings.llm.model
+        self._fallback_model = settings.llm.fallback_model
+        self._primary_exhausted = False
+        self._exhausted_date = datetime.now(UTC).date()
         retry = settings.llm.retry
         self._client = Client(
             api_key=settings.llm.api_key,
@@ -43,21 +47,26 @@ class LLMService:
         self.logger = logger or get_logger(__name__)
 
     async def call(self, request: LLMRequest) -> str:
+        self._check_reset()
         messages = self._build_messages(request)
         return await self._call_llm(request.system_prompt, messages)
 
-    async def _call_llm(
-        self,
-        system_prompt: str | None = None,
-        messages: list[Content] | None = None,
-    ) -> str:
-        self.logger.info(
-            "LLM call",
-            model=self._model,
-            message_count=len(messages or []),
-        )
+    def _check_reset(self) -> None:
+        today = datetime.now(UTC).date()
+        if self._exhausted_date != today:
+            self._primary_exhausted = False
+            self._exhausted_date = today
 
-        config = GenerateContentConfig(
+    @staticmethod
+    def _is_quota_error(e: Exception) -> bool:
+        code = getattr(e, "code", None)
+        if code == 429:
+            return True
+        msg = str(e).lower()
+        return "quota" in msg or "exhausted" in msg or "rate" in msg
+
+    def _build_config(self, system_prompt: str | None = None) -> GenerateContentConfig:
+        return GenerateContentConfig(
             system_instruction=system_prompt,
             # thinking_config=ThinkingConfig(thinking_level=ThinkingLevel.LOW),
             tools=[
@@ -66,22 +75,34 @@ class LLMService:
             ],
         )
 
-        response = await asyncio.to_thread(
-            self._client.models.generate_content,
-            model=self._model,
-            contents=messages,
-            config=config,
-        )
-
-        content = response.text or ""
+    async def _call_llm(
+        self,
+        system_prompt: str | None = None,
+        messages: list[Content] | None = None,
+    ) -> str:
+        model = self._fallback_model if self._primary_exhausted else self._model
 
         self.logger.info(
-            "LLM response",
-            model=self._model,
-            response_length=len(content),
+            "LLM call",
+            model=model,
+            message_count=len(messages or []),
+            primary_exhausted=self._primary_exhausted,
         )
 
-        return content
+        try:
+            response = await asyncio.to_thread(
+                self._client.models.generate_content,
+                model=model,
+                contents=messages,
+                config=self._build_config(system_prompt),
+            )
+            return response.text or ""
+        except Exception as e:
+            if model == self._model and self._is_quota_error(e):
+                self._primary_exhausted = True
+                self.logger.info("Primary model exhausted, falling back", error=str(e), fallback=self._fallback_model)
+                return await self._call_llm(system_prompt, messages)
+            raise
 
     def _build_messages(self, request: LLMRequest) -> list[Content]:
         messages: list[Content] = []
