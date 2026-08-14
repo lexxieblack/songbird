@@ -98,7 +98,7 @@ class GuildConversationService:
         try:
             messages = await self.guild_message_repo.get_newest_messages(guild_id=guild_id, limit=self.settings.llm.message_count)
             self.logger.debug("Got previous message", guild_id=guild_id, message_count=len(messages))
-            return messages
+            return messages[::-1]
 
         except Exception as e:
             self.logger.error("Error getting previous messages", guild_id=guild_id, error=e)
