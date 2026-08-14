@@ -56,16 +56,20 @@ class PrivateConversationService:
         )
 
         try:
-            save = await self._save_message(user_id=user_id, message=message, role=MessageRole.USER)
-            if not save:
-                return "Error: failed to save message"
-
             llm_request = LLMRequest(
                 system_prompt=system_prompt,
                 user_prompt=message,
                 context_messages=messages,
             )
             reply = await self.llm.call(llm_request)
+
+            if not reply or not reply.strip():
+                self.logger.warning("Empty LLM response, skipping save", user_id=user_id)
+                return ""
+
+            save = await self._save_message(user_id=user_id, message=message, role=MessageRole.USER)
+            if not save:
+                return "Error: failed to save message"
 
             await self._save_message(user_id=user_id, message=reply, role=MessageRole.MODEL)
 

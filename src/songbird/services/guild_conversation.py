@@ -46,17 +46,24 @@ class GuildConversationService:
         system_prompt = self._build_system_prompt(context)
 
         try:
-            user_message = f"{context.display_name} (ID: {context.user_id}, username: {context.username}) in channel {context.channel_name} said:\n" + message
-            save = await self._save_message(guild_id=guild_id, message=user_message, role=MessageRole.USER)
-            if not save:
-                return "Error: failed to save message"
-
+            user_message = (
+                f"{context.display_name} (ID: {context.user_id}, username: {context.username}) in channel {context.channel_name} said:\n"
+                + message
+            )
             llm_request = LLMRequest(
                 system_prompt=system_prompt,
                 user_prompt=user_message,
                 context_messages=messages,
             )
             reply = await self.llm.call(llm_request)
+
+            if not reply or not reply.strip():
+                self.logger.warning("Empty LLM response, skipping save", guild_id=guild_id)
+                return ""
+
+            save = await self._save_message(guild_id=guild_id, message=user_message, role=MessageRole.USER)
+            if not save:
+                return "Error: failed to save message"
 
             await self._save_message(guild_id=guild_id, message=reply, role=MessageRole.MODEL)
 
