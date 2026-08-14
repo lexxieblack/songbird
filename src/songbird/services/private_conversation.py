@@ -125,7 +125,7 @@ class PrivateConversationService:
         try:
             messages = await self.message_repo.get_newest_messages(user_id=user_id, limit=self.settings.llm.message_count)
             self.logger.debug("Got previous message", user_id=user_id, message_count=len(messages))
-            return messages
+            return messages[::-1]
 
         except Exception as e:
             self.logger.error("Error getting previous messages", user_id=user_id, error=e)

@@ -1,7 +1,5 @@
-import re
-
 from googletrans import Translator
-from httpx import AsyncClient, HTTPStatusError, TimeoutException
+from httpx import AsyncClient
 from pycountry import languages
 from structlog import BoundLogger
 
