@@ -1,8 +1,8 @@
 from collections.abc import Callable
 from typing import Any
 
-from discord import ButtonStyle, Color, Interaction
-from discord.ui import Button, DesignerView, Section, TextDisplay, ViewItem, RoleSelect
+from discord import ButtonStyle, Color, Interaction, SelectDefaultValue, SelectDefaultValueType
+from discord.ui import ActionRow, Button, DesignerView, RoleSelect, Section, TextDisplay, ViewItem
 
 from songbird.ui.custom_components import generate_container
 from songbird.utils.constants import SColor
@@ -57,6 +57,43 @@ class BlackwallView(DesignerView):
                 color=Color(SColor.SONGBIRD),
             )
         )
+
+
+class BlackwallEditRolesView(DesignerView):
+    def __init__(
+        self,
+        current_roles: list[int],
+        on_save: Callable[[Interaction], Any],
+        on_cancel: Callable[[Interaction], Any],
+    ) -> None:
+        super().__init__(timeout=300)
+
+        self.role_select = RoleSelect(  # type: ignore[type-var]
+            placeholder="Select whitelisted roles",
+            min_values=0,
+            max_values=25,
+            default_values=[SelectDefaultValue(id=r, type=SelectDefaultValueType.role) for r in current_roles],
+        )
+        self.role_select.callback = self._on_role_select  # type: ignore[method-assign]
+
+        container = generate_container(
+            title="## Edit Whitelisted Roles",
+            components=[
+                TextDisplay("Select the roles that should bypass the blackwall:"),
+                ActionRow(self.role_select),
+                ActionRow(
+                    _ActionButton("Save", ButtonStyle.success, on_save),
+                    _ActionButton("Cancel", ButtonStyle.secondary, on_cancel),
+                ),
+            ],
+            color=Color(SColor.SONGBIRD),
+        )
+        self.add_item(container)
+
+    @staticmethod
+    async def _on_role_select(interaction: Interaction) -> None:
+        if await can_interact(interaction):
+            await interaction.response.defer()
 
 
 class _ActionButton(Button):

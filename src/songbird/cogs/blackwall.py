@@ -6,7 +6,7 @@ import discord
 from songbird.bot import SongbirdBot
 from songbird.cogs.base import BaseCog
 from songbird.models.management.exceptions import BlackwallNotFoundError
-from songbird.ui.views.blackwall import BlackwallView
+from songbird.ui.views.blackwall import BlackwallEditRolesView, BlackwallView
 from songbird.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -97,7 +97,51 @@ class BlackwallCog(BaseCog):
             await interaction.edit_original_response(view=new_view)
 
         async def on_edit_roles(interaction: discord.Interaction) -> None:
-            pass
+            try:
+                current = await self.services.blackwall.get_blackwall(guild_id)  # pyright: ignore[reportOptionalMemberAccess]
+                current_roles = current.whitelisted_roles
+            except Exception:
+                current_roles = p_roles
+
+            async def on_save_roles(interaction: discord.Interaction) -> None:
+                await interaction.response.defer()
+                selected = edit_view.role_select.values
+                new_roles = [r.id for r in selected] if selected is not None else current_roles
+
+                try:
+                    updated = await self.services.blackwall.update_roles(guild_id, new_roles)  # pyright: ignore[reportOptionalMemberAccess]
+                except Exception as e:
+                    self.logger.exception("Failed to update blackwall roles", guild_id=guild_id, error=e)
+                    await interaction.followup.send("Failed to update roles.", ephemeral=True)
+                    return
+
+                new_view = _make_view(
+                    updated.channel_id,
+                    updated.whitelisted_roles,
+                    updated.banned_count,
+                    on_set_channel,
+                    on_remove_channel,
+                    on_edit_roles,
+                )
+                await interaction.edit_original_response(view=new_view)
+
+            async def on_cancel_edit(interaction: discord.Interaction) -> None:
+                current_view = _make_view(
+                    p_channel_id,
+                    current_roles,
+                    p_banned_count,
+                    on_set_channel,
+                    on_remove_channel,
+                    on_edit_roles,
+                )
+                await interaction.response.edit_message(view=current_view)
+
+            edit_view = BlackwallEditRolesView(
+                current_roles=current_roles,
+                on_save=on_save_roles,
+                on_cancel=on_cancel_edit,
+            )
+            await interaction.response.edit_message(view=edit_view)
 
         p_channel_id = blackwall.channel_id if blackwall else None
         p_roles = blackwall.whitelisted_roles if blackwall else []
