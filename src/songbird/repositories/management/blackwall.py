@@ -13,9 +13,9 @@ logger = get_logger(__name__)
 STMT_CREATE_BLACKWALL = (
     insert(blackwall_table)
     .values(
-        b_guild_id=bindparam("b_guild_id"),
-        b_channel_id=bindparam("b_channel_id"),
-        b_whitelisted_roles=bindparam("b_whitelisted_roles"),
+        guild_id=bindparam("b_guild_id"),
+        channel_id=bindparam("b_channel_id"),
+        whitelisted_roles=bindparam("b_whitelisted_roles"),
     )
     .returning(blackwall_table)
 )
@@ -30,14 +30,14 @@ STMT_INCREMENT_BANNED = (
 STMT_UPDATE_CHANNEL = (
     update(blackwall_table)
     .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
-    .values(b_channel_id=bindparam("b_channel_id"))
+    .values(channel_id=bindparam("b_channel_id"))
     .returning(blackwall_table)
 )
 
 STMT_UPDATE_ROLES = (
     update(blackwall_table)
     .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
-    .values(b_whitelisted_roles=bindparam("b_whitelisted_roles"))
+    .values(whitelisted_roles=bindparam("b_whitelisted_roles"))
     .returning(blackwall_table)
 )
 
