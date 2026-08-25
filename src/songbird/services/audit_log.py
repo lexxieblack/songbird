@@ -34,6 +34,6 @@ class AuditLogService:
             metadata=metadata or {},
         )
         try:
-            await self.repository.create_entry(create_audit_log)
+            await self.repository.create(create_audit_log)
         except Exception:
             raise

@@ -32,7 +32,7 @@ STMT_CREATE_AUDIT_LOG = (
 class AuditLogRepository:
     session: AsyncSession
 
-    async def create_entry(self, log: CreateAuditLog) -> AuditLog:
+    async def create(self, log: CreateAuditLog) -> AuditLog:
         params = {
             "b_id": make_id(),
             "b_action": log.action.value,
