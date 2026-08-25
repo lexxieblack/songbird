@@ -16,7 +16,7 @@ class BlackwallService:
         self._cache: TTLCache[int, Blackwall] = TTLCache[int, Blackwall](maxsize=1024, ttl=30)
         self.logger = logger or get_logger(__name__)
 
-    async def create_blackwall(self, guild_id: int, channel_id: int, whitelisted_roles: list[int] | None) -> Blackwall:
+    async def create_blackwall(self, guild_id: int, channel_id: int, whitelisted_roles: list[int] | None = None) -> Blackwall:
         input = CreateBlackwall(
             guild_id=guild_id,
             channel_id=channel_id,
