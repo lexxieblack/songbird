@@ -40,7 +40,7 @@ class BlackwallService:
 
         return blackwall
 
-    async def update_channel(self, guild_id: int, channel_id: int) -> Blackwall:
+    async def update_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
         async with get_session(self._container) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.update_channel(guild_id, channel_id)

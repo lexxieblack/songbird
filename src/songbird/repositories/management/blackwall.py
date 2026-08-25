@@ -88,7 +88,7 @@ class BlackwallRepository:
 
         return Blackwall.model_validate(row)
 
-    async def update_channel(self, guild_id: int, channel_id: int) -> Blackwall:
+    async def update_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
         params = {
             "b_guild_id": guild_id,
             "b_channel_id": channel_id,
