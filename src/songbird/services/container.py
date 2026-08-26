@@ -29,6 +29,7 @@ from songbird.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from songbird.config import Settings
+    from songbird.services.audit_log import AuditLogService
     from songbird.services.blackwall import BlackwallService
     from songbird.services.management import BanEnforcementService
     from songbird.services.private_conversation import PrivateConversationService
@@ -239,3 +240,11 @@ def create_feedback_service(session: AsyncSession, container: ServiceContainer, 
     thread_repo = get_feedback_repo(session)
 
     return FeedbackService(bot=bot, thread_repo=thread_repo, settings=container.settings)
+
+
+def create_audit_log_service(session: AsyncSession) -> "AuditLogService":
+    from songbird.services.audit_log import AuditLogService
+
+    audit_log_repo = get_audit_log_repo(session)
+
+    return AuditLogService(audit_log_repository=audit_log_repo)

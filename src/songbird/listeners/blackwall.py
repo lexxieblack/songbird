@@ -4,6 +4,8 @@ import discord
 import structlog
 
 from songbird.bot import SongbirdBot
+from songbird.models.management.audit_log import AuditLogAction
+from songbird.services.container import create_audit_log_service, get_session
 
 logger = structlog.get_logger(__name__)
 
@@ -50,6 +52,15 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
             logger.error("Blackwall: failed to ban user", guild_id=guild_id, user_id=author.id, error=str(e))
         else:
             await bot.services.blackwall.increment_blackwall(guild_id)
+
+            async with get_session(bot.services) as session:
+                audit_log = create_audit_log_service(session)
+                await audit_log.log(
+                    action=AuditLogAction.BLACKWALL_BAN,
+                    target_id=author.id,
+                    guild_id=guild_id,
+                    channel_id=channel_id,
+                )
 
         with contextlib.suppress(discord.HTTPException):
             await message.delete()
