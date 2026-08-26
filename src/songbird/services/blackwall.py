@@ -56,7 +56,7 @@ class BlackwallService:
         self._cache[guild_id] = blackwall
         return blackwall
 
-    async def get_blackwall(self, guild_id: int) -> Blackwall:
+    async def get_blackwall(self, guild_id: int) -> Blackwall | None:
         cached = self._cache.get(guild_id)
         if cached is not None:
             return cached
@@ -64,6 +64,9 @@ class BlackwallService:
         async with get_session(self._container) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.get(guild_id)
+
+        if blackwall is None:
+            return None
 
         self._cache[guild_id] = blackwall
         return blackwall

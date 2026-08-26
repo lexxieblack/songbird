@@ -126,14 +126,11 @@ class BlackwallRepository:
 
         return Blackwall.model_validate(row)
 
-    async def get(self, guild_id: int) -> Blackwall:
+    async def get(self, guild_id: int) -> Blackwall | None:
         params = {
             "b_guild_id": guild_id,
         }
         result = await self.session.execute(STMT_GET_BLACKWALL, params)
         row = result.mappings().first()
 
-        if row is None:
-            raise BlackwallNotFoundError(data={"guild_id": guild_id})
-
-        return Blackwall.model_validate(row)
+        return Blackwall.model_validate(row) if row is not None else None

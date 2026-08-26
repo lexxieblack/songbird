@@ -25,7 +25,7 @@ class BlackwallCog(BaseCog):
             await self.send_error(ctx, "The blackwall service is not available.")
             return
 
-        if not ctx.guild or type(ctx.author) is not discord.Member:
+        if not ctx.guild or not isinstance(ctx.author, discord.Member):
             await self.send_error(ctx, "This command can only be used in a server.", ephemeral=True)
             return
 
@@ -99,7 +99,7 @@ class BlackwallCog(BaseCog):
         async def on_edit_roles(interaction: discord.Interaction) -> None:
             try:
                 current = await self.services.blackwall.get_blackwall(guild_id)  # pyright: ignore[reportOptionalMemberAccess]
-                current_roles = current.whitelisted_roles
+                current_roles = current.whitelisted_roles  # pyright: ignore[reportOptionalMemberAccess]
             except Exception:
                 current_roles = p_roles
 
