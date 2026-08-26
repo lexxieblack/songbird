@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 
 from discord import File
 
@@ -168,3 +169,32 @@ def split_message(
             final_chunks.extend(paragraphs)
 
     return final_chunks
+
+
+def humanize_timedelta(td: timedelta) -> str:
+    """Convert a timedelta into a short human-readable string like '5 years, 3 days'."""
+    total_seconds = int(td.total_seconds())
+    sign = "-" if total_seconds < 0 else ""
+    total_seconds = abs(total_seconds)
+
+    days, seconds = divmod(total_seconds, 86400)
+    years, days = divmod(days, 365)
+    months, days = divmod(days, 30)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+
+    parts: list[str] = []
+    if years:
+        parts.append(f"{years} year{'s' if years != 1 else ''}")
+    if months:
+        parts.append(f"{months} month{'s' if months != 1 else ''}")
+    if days:
+        parts.append(f"{days} day{'s' if days != 1 else ''}")
+    if hours:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes:
+        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+    if seconds and not parts:
+        parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+
+    return sign + ", ".join(parts) if parts else "just now"

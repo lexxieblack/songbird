@@ -11,6 +11,7 @@ blackwall_table = Table(
     metadata,
     Column("guild_id", BigInteger, primary_key=True),
     Column("channel_id", BigInteger, nullable=True),
+    Column("log_channel_id", BigInteger, nullable=True),
     Column("whitelisted_roles", ARRAY(BigInteger), nullable=False, default=[]),
     Column("banned_count", Integer, nullable=False, default=0),
     Column("created_at", DateTime(timezone=True), nullable=False, default=func.now()),
@@ -22,6 +23,7 @@ blackwall_table = Table(
 class _BlackwallBase(BaseDBModel):
     guild_id: int
     channel_id: int | None
+    log_channel_id: int | None = None
     whitelisted_roles: list[int] = Field(default_factory=list)
 
 class Blackwall(_BlackwallBase):

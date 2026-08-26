@@ -47,8 +47,8 @@ class BlackwallCog(BaseCog):
 
         try:
             blackwall = await self.services.blackwall.get_blackwall(guild_id)
-        except BlackwallNotFoundError:
-            blackwall = None
+            if not blackwall:
+                blackwall = await self.services.blackwall.create_blackwall(guild_id, channel_id)
         except Exception as e:
             self.logger.exception("Failed to get blackwall config", guild_id=guild_id, error=e)
             await self.send_error(ctx, "Failed to check blackwall status.")
@@ -58,10 +58,7 @@ class BlackwallCog(BaseCog):
             await interaction.response.defer()
 
             try:
-                if blackwall:
-                    new_config = await self.services.blackwall.update_channel(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
-                else:
-                    new_config = await self.services.blackwall.create_blackwall(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
+                new_config = await self.services.blackwall.update_channel(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
             except Exception as e:
                 self.logger.exception("Failed to set blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
@@ -69,10 +66,13 @@ class BlackwallCog(BaseCog):
 
             new_view = _make_view(
                 new_config.channel_id,
+                new_config.log_channel_id,
                 new_config.whitelisted_roles,
                 new_config.banned_count,
                 on_set_channel,
                 on_remove_channel,
+                on_set_log_channel,
+                on_remove_log_channel,
                 on_edit_roles,
                 self.settings,
             )
@@ -90,10 +90,61 @@ class BlackwallCog(BaseCog):
 
             new_view = _make_view(
                 None,
+                updated.log_channel_id,
                 updated.whitelisted_roles,
                 updated.banned_count,
                 on_set_channel,
                 on_remove_channel,
+                on_set_log_channel,
+                on_remove_log_channel,
+                on_edit_roles,
+                self.settings,
+            )
+            await interaction.edit_original_response(view=new_view)
+
+        async def on_set_log_channel(interaction: discord.Interaction) -> None:
+            await interaction.response.defer()
+
+            try:
+                new_config = await self.services.blackwall.update_log_channel(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
+            except Exception as e:
+                self.logger.exception("Failed to set blackwall channel", guild_id=guild_id, error=e)
+                await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
+                return
+
+            new_view = _make_view(
+                new_config.channel_id,
+                new_config.log_channel_id,
+                new_config.whitelisted_roles,
+                new_config.banned_count,
+                on_set_channel,
+                on_remove_channel,
+                on_set_log_channel,
+                on_remove_log_channel,
+                on_edit_roles,
+                self.settings,
+            )
+            await interaction.edit_original_response(view=new_view)
+
+        async def on_remove_log_channel(interaction: discord.Interaction) -> None:
+            await interaction.response.defer()
+
+            try:
+                updated = await self.services.blackwall.update_channel(guild_id, None)  # pyright: ignore[reportOptionalMemberAccess]
+            except Exception as e:
+                self.logger.exception("Failed to remove blackwall channel", guild_id=guild_id, error=e)
+                await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
+                return
+
+            new_view = _make_view(
+                updated.channel_id,
+                None,
+                updated.whitelisted_roles,
+                updated.banned_count,
+                on_set_channel,
+                on_remove_channel,
+                on_set_log_channel,
+                on_remove_log_channel,
                 on_edit_roles,
                 self.settings,
             )
@@ -104,7 +155,7 @@ class BlackwallCog(BaseCog):
                 current = await self.services.blackwall.get_blackwall(guild_id)  # pyright: ignore[reportOptionalMemberAccess]
                 current_roles = current.whitelisted_roles  # pyright: ignore[reportOptionalMemberAccess]
             except Exception:
-                current_roles = p_roles
+                current_roles = blackwall.whitelisted_roles
 
             async def on_save_roles(interaction: discord.Interaction) -> None:
                 await interaction.response.defer()
@@ -120,10 +171,13 @@ class BlackwallCog(BaseCog):
 
                 new_view = _make_view(
                     updated.channel_id,
+                    updated.log_channel_id,
                     updated.whitelisted_roles,
                     updated.banned_count,
                     on_set_channel,
                     on_remove_channel,
+                    on_set_log_channel,
+                    on_remove_log_channel,
                     on_edit_roles,
                     self.settings,
                 )
@@ -131,11 +185,14 @@ class BlackwallCog(BaseCog):
 
             async def on_cancel_edit(interaction: discord.Interaction) -> None:
                 current_view = _make_view(
-                    p_channel_id,
+                    blackwall.channel_id,
+                    blackwall.log_channel_id,
                     current_roles,
-                    p_banned_count,
+                    blackwall.banned_count,
                     on_set_channel,
                     on_remove_channel,
+                    on_set_log_channel,
+                    on_remove_log_channel,
                     on_edit_roles,
                     self.settings,
                 )
@@ -149,16 +206,15 @@ class BlackwallCog(BaseCog):
             )
             await interaction.response.edit_message(view=edit_view)
 
-        p_channel_id = blackwall.channel_id if blackwall else None
-        p_roles = blackwall.whitelisted_roles if blackwall else []
-        p_banned_count = blackwall.banned_count if blackwall else 0
-
         new_view = _make_view(
-            p_channel_id,
-            p_roles,
-            p_banned_count,
+            blackwall.channel_id,
+            blackwall.log_channel_id,
+            blackwall.whitelisted_roles,
+            blackwall.banned_count,
             on_set_channel,
             on_remove_channel,
+            on_set_log_channel,
+            on_remove_log_channel,
             on_edit_roles,
             self.settings,
         )
@@ -167,19 +223,25 @@ class BlackwallCog(BaseCog):
 
 def _make_view(
     channel_id: int | None,
+    log_channel_id: int | None,
     whitelisted_roles: list[int],
     banned_count: int,
     on_set_channel: Callable[[discord.Interaction], Any],
     on_remove_channel: Callable[[discord.Interaction], Any],
+    on_set_log_channel: Callable[[discord.Interaction], Any],
+    on_remove_log_channel: Callable[[discord.Interaction], Any],
     on_edit_roles: Callable[[discord.Interaction], Any],
     settings: Settings,
 ) -> BlackwallView:
     return BlackwallView(
         channel_id=channel_id,
+        log_channel_id=log_channel_id,
         roles=whitelisted_roles,
         banned_count=banned_count,
         on_set_channel=on_set_channel,
         on_remove_channel=on_remove_channel,
+        on_set_log_channel=on_set_log_channel,
+        on_remove_log_channel=on_remove_log_channel,
         on_edit_roles=on_edit_roles,
         settings=settings,
     )

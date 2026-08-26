@@ -15,6 +15,7 @@ STMT_CREATE_BLACKWALL = (
     .values(
         guild_id=bindparam("b_guild_id"),
         channel_id=bindparam("b_channel_id"),
+        log_channel_id=bindparam("b_log_channel_id"),
         whitelisted_roles=bindparam("b_whitelisted_roles"),
     )
     .returning(blackwall_table)
@@ -31,6 +32,13 @@ STMT_UPDATE_CHANNEL = (
     update(blackwall_table)
     .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
     .values(channel_id=bindparam("b_channel_id"))
+    .returning(blackwall_table)
+)
+
+STMT_UPDATE_LOG_CHANNEL = (
+    update(blackwall_table)
+    .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
+    .values(log_channel_id=bindparam("b_log_channel_id"))
     .returning(blackwall_table)
 )
 
@@ -52,6 +60,7 @@ class BlackwallRepository:
         params = {
             "b_guild_id": input.guild_id,
             "b_channel_id": input.channel_id,
+            "b_log_channel_id": input.log_channel_id,
             "b_whitelisted_roles": input.whitelisted_roles,
         }
 
@@ -96,6 +105,25 @@ class BlackwallRepository:
 
         try:
             result = await self.session.execute(STMT_UPDATE_CHANNEL, params)
+        except Exception as e:
+            logger.exception("Failed to update blackwall config", error=e)
+            raise
+
+        row = result.mappings().first()
+
+        if row is None:
+            raise BlackwallNotFoundError(data={"guild_id": guild_id})
+
+        return Blackwall.model_validate(row)
+
+    async def update_log_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
+        params = {
+            "b_guild_id": guild_id,
+            "b_log_channel_id": channel_id,
+        }
+
+        try:
+            result = await self.session.execute(STMT_UPDATE_LOG_CHANNEL, params)
         except Exception as e:
             logger.exception("Failed to update blackwall config", error=e)
             raise

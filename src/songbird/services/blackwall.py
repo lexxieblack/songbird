@@ -16,10 +16,17 @@ class BlackwallService:
         self._cache: TTLCache[int, Blackwall] = TTLCache[int, Blackwall](maxsize=1024, ttl=30)
         self.logger = logger or get_logger(__name__)
 
-    async def create_blackwall(self, guild_id: int, channel_id: int, whitelisted_roles: list[int] | None = None) -> Blackwall:
+    async def create_blackwall(
+        self,
+        guild_id: int,
+        channel_id: int | None = None,
+        log_channel_id: int | None = None,
+        whitelisted_roles: list[int] | None = None,
+    ) -> Blackwall:
         input = CreateBlackwall(
             guild_id=guild_id,
             channel_id=channel_id,
+            log_channel_id=log_channel_id,
             whitelisted_roles=whitelisted_roles or [],
         )
 
@@ -44,6 +51,14 @@ class BlackwallService:
         async with get_session(self._container) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.update_channel(guild_id, channel_id)
+
+        self._cache[guild_id] = blackwall
+        return blackwall
+
+    async def update_log_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
+        async with get_session(self._container) as session:
+            repo = get_blackwall_repo(session)
+            blackwall = await repo.update_log_channel(guild_id, channel_id)
 
         self._cache[guild_id] = blackwall
         return blackwall

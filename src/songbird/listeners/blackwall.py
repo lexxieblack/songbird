@@ -1,13 +1,14 @@
 import contextlib
 
 import discord
-import structlog
 
 from songbird.bot import SongbirdBot
 from songbird.models.management.audit_log import AuditLogAction
 from songbird.services.container import create_audit_log_service, get_session
+from songbird.ui.views.blackwall import BlackwallLogView
+from songbird.utils.logging import get_logger
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 def load_blackwall_listener(bot: SongbirdBot) -> None:
@@ -26,14 +27,14 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
         guild_id = message.guild.id
         channel_id = message.channel.id
 
-        config = await bot.services.blackwall.get_blackwall(guild_id)
-        if config is None or config.channel_id != channel_id:
+        blackwall = await bot.services.blackwall.get_blackwall(guild_id)
+        if blackwall is None or blackwall.channel_id != channel_id:
             return
 
         if author.guild_permissions.administrator:
             return
 
-        whitelisted = set(config.whitelisted_roles)
+        whitelisted = set(blackwall.whitelisted_roles)
         if whitelisted and any(role.id in whitelisted for role in author.roles):
             return
 
@@ -44,8 +45,13 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
             user_id=author.id,
         )
 
+        if blackwall.log_channel_id and isinstance(channel := bot.get_channel(blackwall.log_channel_id), discord.TextChannel):
+            view = BlackwallLogView(member=author, message=message)
+            await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
+
         try:
-            await author.ban(reason="Blackwall honeypot — unauthorised bot detection", delete_message_seconds=86400)
+            # pass
+            await author.ban(reason="Blackwall honeypot - unauthorised bot detection", delete_message_seconds=86400)
         except discord.Forbidden:
             logger.warning("Blackwall: missing ban permission", guild_id=guild_id, user_id=author.id)
         except discord.HTTPException as e:
