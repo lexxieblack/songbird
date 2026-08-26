@@ -6,7 +6,6 @@ from discord.ui import ActionRow, Button, DesignerView, MediaGallery, RoleSelect
 
 from songbird.config import Settings
 from songbird.ui.custom_components import generate_container
-from songbird.utils.constants import SColor
 from songbird.utils.permissions import can_interact
 
 
