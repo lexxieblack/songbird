@@ -5,6 +5,7 @@ import discord
 
 from songbird.bot import SongbirdBot
 from songbird.cogs.base import BaseCog
+from songbird.config import Settings
 from songbird.models.management.exceptions import BlackwallNotFoundError
 from songbird.ui.views.blackwall import BlackwallEditRolesView, BlackwallView
 from songbird.utils.logging import get_logger
@@ -73,6 +74,7 @@ class BlackwallCog(BaseCog):
                 on_set_channel,
                 on_remove_channel,
                 on_edit_roles,
+                self.settings,
             )
             await interaction.edit_original_response(view=new_view)
 
@@ -93,6 +95,7 @@ class BlackwallCog(BaseCog):
                 on_set_channel,
                 on_remove_channel,
                 on_edit_roles,
+                self.settings,
             )
             await interaction.edit_original_response(view=new_view)
 
@@ -122,6 +125,7 @@ class BlackwallCog(BaseCog):
                     on_set_channel,
                     on_remove_channel,
                     on_edit_roles,
+                    self.settings,
                 )
                 await interaction.edit_original_response(view=new_view)
 
@@ -133,6 +137,7 @@ class BlackwallCog(BaseCog):
                     on_set_channel,
                     on_remove_channel,
                     on_edit_roles,
+                    self.settings,
                 )
                 await interaction.response.edit_message(view=current_view)
 
@@ -140,6 +145,7 @@ class BlackwallCog(BaseCog):
                 current_roles=current_roles,
                 on_save=on_save_roles,
                 on_cancel=on_cancel_edit,
+                settings=self.settings,
             )
             await interaction.response.edit_message(view=edit_view)
 
@@ -154,6 +160,7 @@ class BlackwallCog(BaseCog):
             on_set_channel,
             on_remove_channel,
             on_edit_roles,
+            self.settings,
         )
         await ctx.respond(view=new_view)
 
@@ -165,6 +172,7 @@ def _make_view(
     on_set_channel: Callable[[discord.Interaction], Any],
     on_remove_channel: Callable[[discord.Interaction], Any],
     on_edit_roles: Callable[[discord.Interaction], Any],
+    settings: Settings,
 ) -> BlackwallView:
     return BlackwallView(
         channel_id=channel_id,
@@ -173,6 +181,7 @@ def _make_view(
         on_set_channel=on_set_channel,
         on_remove_channel=on_remove_channel,
         on_edit_roles=on_edit_roles,
+        settings=settings,
     )
 
 

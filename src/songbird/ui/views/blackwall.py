@@ -1,9 +1,10 @@
 from collections.abc import Callable
 from typing import Any
 
-from discord import ButtonStyle, Color, Interaction, SelectDefaultValue, SelectDefaultValueType
-from discord.ui import ActionRow, Button, DesignerView, RoleSelect, Section, TextDisplay, ViewItem
+from discord import ButtonStyle, Color, Interaction, MediaGalleryItem, SelectDefaultValue, SelectDefaultValueType
+from discord.ui import ActionRow, Button, DesignerView, MediaGallery, RoleSelect, Section, Separator, TextDisplay, ViewItem
 
+from songbird.config import Settings
 from songbird.ui.custom_components import generate_container
 from songbird.utils.constants import SColor
 from songbird.utils.permissions import can_interact
@@ -43,20 +44,25 @@ class BlackwallView(DesignerView):
         on_set_channel: Callable[[Interaction], Any],
         on_remove_channel: Callable[[Interaction], Any],
         on_edit_roles: Callable[[Interaction], Any],
+        settings: Settings,
     ):
         super().__init__(timeout=300)
 
-        self.add_item(
-            generate_container(
-                title="## Blackwall",
-                components=[
-                    _make_channel_section(channel_id, on_set_channel, on_remove_channel),
-                    _make_roles_section(roles, on_edit_roles),
-                    _make_banned_count_section(banned_count or 0),
-                ],
-                color=Color(SColor.SONGBIRD),
-            )
+        components = []
+
+        if settings.blackwall.image_url:
+            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))
+            components.append(Separator(divider=False))
+
+        components.extend(
+            [
+                _make_channel_section(channel_id, on_set_channel, on_remove_channel),
+                _make_roles_section(roles, on_edit_roles),
+                _make_banned_count_section(banned_count or 0),
+            ]
         )
+
+        self.add_item(generate_container(title="## Blackwall", components=components, color=Color.red()))
 
 
 class BlackwallEditRolesView(DesignerView):
@@ -65,6 +71,7 @@ class BlackwallEditRolesView(DesignerView):
         current_roles: list[int],
         on_save: Callable[[Interaction], Any],
         on_cancel: Callable[[Interaction], Any],
+        settings: Settings,
     ) -> None:
         super().__init__(timeout=300)
 
@@ -76,19 +83,24 @@ class BlackwallEditRolesView(DesignerView):
         )
         self.role_select.callback = self._on_role_select  # type: ignore[method-assign]
 
-        container = generate_container(
-            title="## Edit Whitelisted Roles",
-            components=[
+        components = []
+
+        if settings.blackwall.image_url:
+            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))
+            components.append(Separator(divider=False))
+
+        components.extend(
+            [
                 TextDisplay("Select the roles that should bypass the blackwall:"),
                 ActionRow(self.role_select),
                 ActionRow(
                     _ActionButton("Save", ButtonStyle.success, on_save),
                     _ActionButton("Cancel", ButtonStyle.secondary, on_cancel),
                 ),
-            ],
-            color=Color(SColor.SONGBIRD),
+            ]
         )
-        self.add_item(container)
+
+        self.add_item(generate_container(title="## Edit Whitelisted Roles", components=components, color=Color.red()))
 
     @staticmethod
     async def _on_role_select(interaction: Interaction) -> None:
