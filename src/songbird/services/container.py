@@ -15,6 +15,8 @@ from songbird.repositories.chat.guild_message import GuildMessageRepository
 from songbird.repositories.chat.message import MessageRepository
 from songbird.repositories.chat.user_info import UserInfoRepository
 from songbird.repositories.feedback.thread import ThreadRepository
+from songbird.repositories.management.audit_log import AuditLogRepository
+from songbird.repositories.management.blackwall import BlackwallRepository
 from songbird.repositories.management.guild_ban import GuildBanRepository
 from songbird.repositories.management.user_ban import UserBanRepository
 from songbird.services.feedback import FeedbackService
@@ -27,6 +29,8 @@ from songbird.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from songbird.config import Settings
+    from songbird.services.audit_log import AuditLogService
+    from songbird.services.blackwall import BlackwallService
     from songbird.services.management import BanEnforcementService
     from songbird.services.private_conversation import PrivateConversationService
 
@@ -43,6 +47,7 @@ class ServiceContainer:
     link_fixer: LinkFixerService
     wolfram: WolframService
     settings: "Settings"
+    blackwall: "BlackwallService | None" = None
     management: "BanEnforcementService | None" = None
 
 
@@ -91,8 +96,6 @@ async def create_container(settings: "Settings") -> ServiceContainer:
 
     log.info("services_created")
 
-    log.info("services_created")
-
     container = ServiceContainer(
         engine=engine,
         session_factory=session_factory,
@@ -101,12 +104,14 @@ async def create_container(settings: "Settings") -> ServiceContainer:
         link_fixer=link_fixer_service,
         wolfram=wolfram_service,
         settings=settings,
+        blackwall=None,  # set below
     )
 
-    # BanEnforcementService needs a fully constructed container,
-    # so we set it post-construction.
+    # Services that need a fully constructed container set post-construction.
+    from songbird.services.blackwall import BlackwallService
     from songbird.services.management import BanEnforcementService
 
+    container.blackwall = BlackwallService(container)
     container.management = BanEnforcementService(container)
 
     log.info("Service container ready")
@@ -195,6 +200,14 @@ def get_guild_ban_repo(session: AsyncSession) -> GuildBanRepository:
     return GuildBanRepository(session)
 
 
+def get_blackwall_repo(session: AsyncSession) -> BlackwallRepository:
+    return BlackwallRepository(session)
+
+
+def get_audit_log_repo(session: AsyncSession) -> AuditLogRepository:
+    return AuditLogRepository(session)
+
+
 def create_private_conversation_service(session: AsyncSession, container: ServiceContainer) -> "PrivateConversationService":
     from songbird.services.private_conversation import PrivateConversationService
 
@@ -227,3 +240,11 @@ def create_feedback_service(session: AsyncSession, container: ServiceContainer, 
     thread_repo = get_feedback_repo(session)
 
     return FeedbackService(bot=bot, thread_repo=thread_repo, settings=container.settings)
+
+
+def create_audit_log_service(session: AsyncSession) -> "AuditLogService":
+    from songbird.services.audit_log import AuditLogService
+
+    audit_log_repo = get_audit_log_repo(session)
+
+    return AuditLogService(audit_log_repository=audit_log_repo)

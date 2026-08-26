@@ -3,4 +3,5 @@ EXTENSIONS = [
     "songbird.cogs.llm",
     "songbird.cogs.bot",
     "songbird.cogs.management",
+    "songbird.cogs.blackwall",
 ]

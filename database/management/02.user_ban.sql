@@ -1,3 +1,4 @@
+-- Table for users banned from using the bot
 CREATE TABLE management.user_ban (
     user_id         BIGINT NOT NULL,
     reason          TEXT,

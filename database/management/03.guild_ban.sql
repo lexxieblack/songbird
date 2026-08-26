@@ -1,3 +1,4 @@
+-- Table for guilds banned from using the bot
 CREATE TABLE management.guild_ban (
     guild_id         BIGINT NOT NULL,
     reason          TEXT,

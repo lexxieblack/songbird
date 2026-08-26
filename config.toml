@@ -1,5 +1,8 @@
 log_level = "INFO"
 
+[blackwall]
+image_url = "https://cdn.discordapp.com/attachments/1541956516834451549/1541989074468864051/b3.png?ex=6a8f98bc&is=6a8e473c&hm=032126db76dfd442521140fcc013e9b56fa4b92e3d081d113442eea56abd2eed&"
+
 [llm]
 model = "gemini-2.5-flash"
 fallback_model = "gemma-4-31b-it"      # Model used when primary hits daily quota limit

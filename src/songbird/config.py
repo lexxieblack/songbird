@@ -34,6 +34,10 @@ class BotSettings(BaseModel):
         return None
 
 
+class BlackwallSettings(BaseModel):
+    image_url: str | None = None
+
+
 class DatabaseSettings(BaseModel):
     url: str
 
@@ -71,6 +75,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     bot: BotSettings
+    blackwall: BlackwallSettings
     db: DatabaseSettings
     llm: LLMSettings
     wolfram: WolframSettings
