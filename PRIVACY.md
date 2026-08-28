@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 2026-06-18
+**Last updated:** 2026-08-28
 **Bot:** Songbird
 **Contact:** Join the [support server](https://discord.gg/your-invite-here) or message the bot owner on Discord.
 
@@ -24,8 +24,12 @@
 | Discord User ID | PostgreSQL (all chat/user_info/management tables) | To associate conversations with your account; to enforce user bans |
 | Discord Guild ID | PostgreSQL (`chat.guild_message`, `management.guild_ban` tables) | To associate server conversations with that guild; to enforce guild bans |
 | Ban reason text (if provided by bot owner) | PostgreSQL (`management.user_ban`, `management.guild_ban` tables) | To document why a user or guild was banned |
+| Blackwall config (server ID, configured channel IDs, whitelisted role IDs, ban counter) | PostgreSQL (`management.blackwall` table) | To enforce the server-admin-configured blackwall channel |
+| Blackwall ban audit events (action, target user ID, server ID, channel ID, timestamp) | PostgreSQL (`management.audit_log` table) | To record blackwall ban events for moderation auditing |
 | Discord username and display name | Sent to the LLM provider as context; not stored separately | To give the AI awareness of who it's talking to |
 | Message timestamps | PostgreSQL (all chat tables) | To maintain conversation ordering |
+
+> **Note on the blackwall:** When a server moderator configures the blackwall channel and a non-whitelisted, non-admin member posts there, Songbird bans that member (Discord also removes their recent messages) and may post identifying details to the server's configured log channel — including the user's username, avatar, account age, join date, server roles, and the triggering message content. This information is surfaced within that server's own log channel for moderation purposes; it is not sent to any third party, nor is it saved by Songbird.
 
 ### 1.3 Data we do NOT collect
 
@@ -45,6 +49,7 @@
 - To improve the bot's responses by providing the LLM with relevant context
 - To respond to feedback and support requests
 - To debug and fix issues (via structured logs)
+- To enforce server-admin-configured moderation (the blackwall), including banning unauthorized members and logging the event
 
 ---
 
@@ -95,6 +100,7 @@ When you use `/fix` or the auto link-fixer processes a message, HEAD requests ma
 - **Conversation messages:** Stored indefinitely until you delete them
 - **User info:** Stored indefinitely until overwritten
 - **Ban records (user/guild):** Stored indefinitely until the bot owner removes them (see section 6.5)
+- **Blackwall config and ban audit events:** Stored indefinitely until the server admin removes the blackwall channel or the bot owner cleans up the records
 - **Feedback threads:** Retained in Discord indefinitely
 - **Logs:** Retained according to the hosting environment's log rotation
 
@@ -132,6 +138,8 @@ If you do not want your data processed by the LLM, do not use the chat features.
 Ban records (user ID or guild ID plus optional reason) are stored for moderation enforcement. These records are **not user-deletable** — they are managed exclusively by the bot owner. If you believe you have been incorrectly banned, contact the bot owner via the support server.
 
 When a ban is issued, **all conversation history and biographical info** associated with that user or guild is permanently deleted from the database. Only the ban record itself (ID, reason, timestamp) is retained. If the ban is later lifted, no prior data is restored.
+
+Blackwall bans are issued automatically when a member posts in a server-configured blackwall channel and are recorded in the bot's audit log. These log entries (target user ID, server ID, channel ID, timestamp) are **not user-deletable** and are managed by the bot owner (the server admin controls the blackwall channel itself via `/blackwall`).
 
 ---
 

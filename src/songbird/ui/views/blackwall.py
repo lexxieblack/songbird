@@ -2,7 +2,18 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from discord import ButtonStyle, Color, Interaction, MediaGalleryItem, Member, Message, SelectDefaultValue, SelectDefaultValueType
+from discord import (
+    AllowedMentions,
+    ButtonStyle,
+    Color,
+    Interaction,
+    MediaGalleryItem,
+    Member,
+    Message,
+    SelectDefaultValue,
+    SelectDefaultValueType,
+    TextChannel,
+)
 from discord.ui import (
     ActionRow,
     Button,
@@ -19,6 +30,7 @@ from discord.ui import (
 
 from songbird.config import Settings
 from songbird.ui.custom_components import generate_container
+from songbird.utils.constants import SColor
 from songbird.utils.permissions import can_interact
 from songbird.utils.text import format_code_block, humanize_timedelta
 
@@ -91,6 +103,8 @@ class BlackwallView(DesignerView):
                 _make_log_channel_section(log_channel_id, on_set_log_channel, on_remove_log_channel),
                 _make_roles_section(roles, on_edit_roles),
                 _make_banned_count_section(banned_count or 0),
+                Separator(),
+                _ButtonRow(settings.blackwall.warning_url, channel_id),
             ]
         )
 
@@ -170,11 +184,60 @@ class BlackwallLogView(DesignerView):
         self.add_item(container)
 
 
+class BlackwallDefaultWarningView(DesignerView):
+    def __init__(self, warning_url: str | None) -> None:
+        super().__init__()
+        container = Container()
+        container.color = SColor.BLACKWALL
+
+        if warning_url:
+            container.add_item(MediaGallery(MediaGalleryItem(url=warning_url)))
+            container.add_separator()
+        container.add_text("### [WARNING] UNAUTHORIZED DATA STREAM DETECTED.")
+        container.add_text("*This channel is actively monitored by automated NetWatch protocols.*")
+        container.add_text("⛔ Do not post messages in this channel ⛔")
+        container.add_text("*Any messages in this node will trigger immediate automated containment actions against your account.*")
+        container.add_separator()
+        container.add_text("-# Songbird Defence Systems // Node ID: `#BLACKWALL`")
+
+        self.add_item(container)
+
+
 class _ActionButton(Button):
-    def __init__(self, label: str, style: ButtonStyle, action: Callable[[Interaction], Any]) -> None:
-        super().__init__(label=label, style=style)
+    def __init__(self, label: str, style: ButtonStyle, action: Callable[[Interaction], Any], disabled: bool = False) -> None:
+        super().__init__(label=label, style=style, disabled=disabled)
         self._action = action
 
     async def callback(self, interaction: Interaction) -> None:
         if await can_interact(interaction):
             await self._action(interaction)
+
+
+class _ButtonRow(ActionRow):
+    def __init__(self, warning_url: str | None, channel_id: int | None) -> None:
+        super().__init__()
+
+        self.add_item(
+            _ActionButton(
+                "Default Message",
+                ButtonStyle.primary,
+                self._make_send_warning(warning_url, channel_id),
+                disabled=channel_id is None,
+            )
+        )
+
+    @staticmethod
+    def _make_send_warning(warning_url: str | None, channel_id: int | None) -> Callable[[Interaction], Any]:
+        async def _send_warning(interaction: Interaction) -> None:
+            await interaction.response.defer()
+            if channel_id is None:
+                await interaction.followup.send("No blackwall channel is set.", ephemeral=True)
+                return
+            channel = interaction.client.get_channel(channel_id)
+            if not isinstance(channel, TextChannel):
+                await interaction.followup.send("The configured blackwall channel is unavailable.", ephemeral=True)
+                return
+            await channel.send(view=BlackwallDefaultWarningView(warning_url), allowed_mentions=AllowedMentions.none())
+            await interaction.followup.send(f"Warning posted to <#{channel_id}>.", ephemeral=True)
+
+        return _send_warning

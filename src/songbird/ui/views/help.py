@@ -9,6 +9,7 @@ CATEGORIES: dict[str, CategoryDef] = {
     "tools": CategoryDef(label="Tools", emoji="🛠️", description="Utility and tool commands"),
     "llm": CategoryDef(label="LLM", emoji="🤖", description="AI-powered language model commands"),
     "bot": CategoryDef(label="Bot", emoji="ℹ️", description="General bot information and feedback"),
+    "moderation": CategoryDef(label="Moderation", emoji="🛡️", description="Server configuration and moderation commands"),
 }
 
 _COMMAND_ENTRIES: list[HelpCommandEntry] = [
@@ -63,6 +64,29 @@ _COMMAND_ENTRIES: list[HelpCommandEntry] = [
             "**Example:** `/fix link:http//example.com`"
         ),
         short_description="Fix links",
+    ),
+    HelpCommandEntry(
+        key="blackwall",
+        label="Blackwall",
+        emoji="🛡️",
+        category="moderation",
+        description=(
+            "**Manage the Blackwall channel**\n\n"
+            "Configure the Blackwall: a honeypot channel that detects and bans bots.\n\n"
+            "**Usage:** `/blackwall` (server administrators only)\n\n"
+            "**What it does:**\n"
+            "- Sets the Blackwall channel where posting triggers a ban.\n"
+            "- Optionally sets a log channel to record trigger events.\n"
+            "- Lets you whitelist roles that may post without being banned.\n\n"
+            "**How it works:**\n"
+            "- Anyone who is not a server admin or whitelisted who posts in the Blackwall channel is automatically banned.\n"
+            "- The event is logged if a log channel is set, and the ban counter is updated.\n\n"
+            "**Tips:**\n"
+            "- Make the channel as accessible as possible, requiring no roles or permission to write messages in.\n"
+            "- Whitelist roles (e.g. staff) that need legitimate access.\n"
+            "- Toggle the functionality by removing the channel in the Blackwall settings."
+        ),
+        short_description="Manage the Blackwall channel",
     ),
     HelpCommandEntry(
         key="manage",
@@ -205,10 +229,11 @@ _COMMAND_ENTRIES: list[HelpCommandEntry] = [
             "Browse all available commands organized by category.\n\n"
             "**Usage:** `/help`\n\n"
             "**What it does:**\n"
-            "- Opens an interactive help menu with three categories:\n"
+            "- Opens an interactive help menu with four categories:\n"
             "  - **Tools**: Utility commands like Translate, Fix, and Ping.\n"
             "  - **LLM**: AI-powered chat and summary commands.\n"
             "  - **Bot**: General bot information and feedback.\n"
+            "  - **Moderation**: Server configuration and moderation commands.\n"
             "- Navigate through categories to see commands and their details."
         ),
         short_description="Browse available commands",
