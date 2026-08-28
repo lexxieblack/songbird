@@ -36,6 +36,7 @@ class BotSettings(BaseModel):
 
 class BlackwallSettings(BaseModel):
     image_url: str | None = None
+    warning_url: str | None = None
 
 
 class DatabaseSettings(BaseModel):

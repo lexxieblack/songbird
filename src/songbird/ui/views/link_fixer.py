@@ -15,7 +15,7 @@ class RestoreLinkView(View):
 
     async def on_timeout(self) -> None:
         self.clear_items()
-        await self.message.edit(view=self)
+        await self.message.edit(view=self)  # type: ignore
 
     @button(label="Restore", style=ButtonStyle.secondary, emoji="⬅️", id=127)
     async def restore(self, _: Button[Any], interaction: Interaction) -> None:

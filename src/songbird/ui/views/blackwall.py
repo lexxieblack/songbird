@@ -17,8 +17,10 @@ from discord.ui import (
     ViewItem,
 )
 
+import songbird.utils.emojis as emoji
 from songbird.config import Settings
 from songbird.ui.custom_components import generate_container
+from songbird.utils.constants import SColor
 from songbird.utils.permissions import can_interact
 from songbird.utils.text import format_code_block, humanize_timedelta
 
@@ -91,6 +93,8 @@ class BlackwallView(DesignerView):
                 _make_log_channel_section(log_channel_id, on_set_log_channel, on_remove_log_channel),
                 _make_roles_section(roles, on_edit_roles),
                 _make_banned_count_section(banned_count or 0),
+                Separator(),
+                _ButtonRow(settings.blackwall.warning_url, channel_id),
             ]
         )
 
@@ -170,11 +174,44 @@ class BlackwallLogView(DesignerView):
         self.add_item(container)
 
 
+class BlackwallDefaultWarningView(DesignerView):
+    def __init__(self, warning_url: str | None) -> None:
+        super().__init__()
+        container = Container()
+        container.color = SColor.BLACKWALL
+
+        if warning_url:
+            container.add_item(MediaGallery(MediaGalleryItem(url=warning_url)))
+            container.add_separator()
+        container.add_text("### [WARNING] UNAUTHORIZED DATA STREAM DETECTED.")
+        container.add_text("*This channel is actively monitored by automated NetWatch protocols.*")
+        container.add_text("⛔ Do not post messages in this channel ⛔")
+        container.add_text("*Any messages in this node will trigger immediate automated containment actions against your account.*")
+        container.add_separator()
+        container.add_text("-# Songbird Defence Systems // Node ID: #BLACKWALL")
+
+        self.add_item(container)
+
+
 class _ActionButton(Button):
-    def __init__(self, label: str, style: ButtonStyle, action: Callable[[Interaction], Any]) -> None:
-        super().__init__(label=label, style=style)
+    def __init__(self, label: str, style: ButtonStyle, action: Callable[[Interaction], Any], disabled: bool = False) -> None:
+        super().__init__(label=label, style=style, disabled=disabled)
         self._action = action
 
     async def callback(self, interaction: Interaction) -> None:
         if await can_interact(interaction):
             await self._action(interaction)
+
+
+class _ButtonRow(ActionRow):
+    def __init__(self, warning_url: str | None, channel_id: int | None) -> None:
+        super().__init__()
+
+        self.add_item(
+            _ActionButton(
+                "Default Message",
+                ButtonStyle.primary,
+                lambda interaction: interaction.response.send_message(view=BlackwallDefaultWarningView(warning_url)),
+                disabled=channel_id is None,
+            )
+        )

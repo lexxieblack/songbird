@@ -1,10 +1,11 @@
 from typing import Any
 
-from discord import ButtonStyle, Color
+from discord import ButtonStyle
 from discord.ui import ActionRow, Button, DesignerView, Section, Separator, TextDisplay, Thumbnail
 
 from songbird.bot import SongbirdBot
 from songbird.ui.custom_components import generate_container
+from songbird.utils.constants import SColor
 
 INVITE_LINK = "https://discord.com/oauth2/authorize?client_id="
 
@@ -37,7 +38,9 @@ class AboutView(DesignerView):
         if not bot.user:
             return
 
-        love_message = f"-# *Made with :hearts: by <@{owner}>*" if (owner := bot.settings.bot.owner_id) else "-# *Made with :hearts:*"
+        love_message = (
+            f"-# *Made with :hearts: by <@{owner}>*" if (owner := bot.settings.bot.owner_id) else "-# *Made with :hearts:*"
+        )
 
         self.add_item(
             generate_container(
@@ -51,6 +54,6 @@ class AboutView(DesignerView):
                     Separator(),
                     _ButtonRow(bot),
                 ],
-                color=Color.fuchsia(),
+                color=SColor.SONGBIRD,
             )
         )

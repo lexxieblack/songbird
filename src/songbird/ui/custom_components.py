@@ -5,7 +5,7 @@ from discord import AppEmoji, ButtonStyle, Color, GuildEmoji, Interaction, Parti
 from discord.ui import ActionRow, BaseView, Button, Container, DesignerView, Section, TextDisplay, ViewItem
 
 from songbird.utils import emojis
-from songbird.utils.constants import Text
+from songbird.utils.constants import SColor, Text
 from songbird.utils.permissions import can_interact
 
 
@@ -43,7 +43,7 @@ def generate_container(
     title: str,
     components: Sequence[ViewItem[Any]],
     subtitle: str | None = None,
-    color: Color | None = None,
+    color: Color = SColor.SONGBIRD,
 ) -> Container[Any]:
     container: Container[Any] = Container(color=color)
 
@@ -62,8 +62,14 @@ def generate_container(
     return container
 
 
-def generate_back_container(title: str, view: BaseView, components: Sequence[ViewItem[Any]], subtitle: str | None = None) -> Container[Any]:
-    container: Container[Any] = Container(color=Color.red())
+def generate_back_container(
+    title: str,
+    view: BaseView,
+    components: Sequence[ViewItem[Any]],
+    subtitle: str | None = None,
+    color: Color = SColor.SONGBIRD,
+) -> Container[Any]:
+    container: Container[Any] = Container(color=color)
 
     header: Section[Any] = Section(TextDisplay(title), accessory=BackButton(view))
     if subtitle:
@@ -100,10 +106,11 @@ class ConfirmView(DesignerView):
         confirm_label: str = "Confirm",
         cancel_label: str = "Cancel",
         timeout: int = 180,
+        color: Color = SColor.SONGBIRD,
     ) -> None:
         super().__init__(timeout=timeout)
 
-        container: Container[Any] = Container(color=Color.red())
+        container: Container[Any] = Container(color=color)
         header: Section[Any] = Section(TextDisplay(prompt), accessory=DeleteButton())
         if subtitle:
             header.add_text(subtitle)

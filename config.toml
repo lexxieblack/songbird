@@ -1,11 +1,12 @@
 log_level = "INFO"
 
 [blackwall]
-image_url = "https://cdn.discordapp.com/attachments/1541956516834451549/1541989074468864051/b3.png?ex=6a8f98bc&is=6a8e473c&hm=032126db76dfd442521140fcc013e9b56fa4b92e3d081d113442eea56abd2eed&"
+image_url = "https://cdn.discordapp.com/attachments/1542994101941698702/1542994447162286120/b3.png?ex=6a93410f&is=6a91ef8f&hm=4a06eec5ba44c618586a3466fe0b5e438ab11ca08fb95708aed23ae72fc9585e&"
+warning_url = "https://cdn.discordapp.com/attachments/1542994101941698702/1542994198590922772/image.png?ex=6a9340d4&is=6a91ef54&hm=4e07367b812b02bea9ec2c96d6e40049fd8948da2d46ff7288b2853a21a42fd1&"
 
 [llm]
 model = "gemini-2.5-flash"
-fallback_model = "gemma-4-31b-it"      # Model used when primary hits daily quota limit
+fallback_model = "gemma-4-31b-it" # Model used when primary hits daily quota limit
 system_prompt_path = "prompts/system.xml"
 
 [bot]
