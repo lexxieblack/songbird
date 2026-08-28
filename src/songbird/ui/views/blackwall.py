@@ -2,7 +2,18 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from discord import ButtonStyle, Color, Interaction, MediaGalleryItem, Member, Message, SelectDefaultValue, SelectDefaultValueType
+from discord import (
+    AllowedMentions,
+    ButtonStyle,
+    Color,
+    Interaction,
+    MediaGalleryItem,
+    Member,
+    Message,
+    SelectDefaultValue,
+    SelectDefaultValueType,
+    TextChannel,
+)
 from discord.ui import (
     ActionRow,
     Button,
@@ -17,7 +28,6 @@ from discord.ui import (
     ViewItem,
 )
 
-import songbird.utils.emojis as emoji
 from songbird.config import Settings
 from songbird.ui.custom_components import generate_container
 from songbird.utils.constants import SColor
@@ -211,7 +221,23 @@ class _ButtonRow(ActionRow):
             _ActionButton(
                 "Default Message",
                 ButtonStyle.primary,
-                lambda interaction: interaction.response.send_message(view=BlackwallDefaultWarningView(warning_url)),
+                self._make_send_warning(warning_url, channel_id),
                 disabled=channel_id is None,
             )
         )
+
+    @staticmethod
+    def _make_send_warning(warning_url: str | None, channel_id: int | None) -> Callable[[Interaction], Any]:
+        async def _send_warning(interaction: Interaction) -> None:
+            await interaction.response.defer()
+            if channel_id is None:
+                await interaction.followup.send("No blackwall channel is set.", ephemeral=True)
+                return
+            channel = interaction.client.get_channel(channel_id)
+            if not isinstance(channel, TextChannel):
+                await interaction.followup.send("The configured blackwall channel is unavailable.", ephemeral=True)
+                return
+            await channel.send(view=BlackwallDefaultWarningView(warning_url), allowed_mentions=AllowedMentions.none())
+            await interaction.followup.send(f"Warning posted to <#{channel_id}>.", ephemeral=True)
+
+        return _send_warning
