@@ -6,7 +6,6 @@ import discord
 from songbird.bot import SongbirdBot
 from songbird.cogs.base import BaseCog
 from songbird.config import Settings
-from songbird.models.management.exceptions import BlackwallNotFoundError
 from songbird.ui.views.blackwall import BlackwallEditRolesView, BlackwallView
 from songbird.utils.logging import get_logger
 
@@ -16,6 +15,21 @@ logger = get_logger(__name__)
 class BlackwallCog(BaseCog):
     def __init__(self, bot: "SongbirdBot") -> None:
         super().__init__(bot)
+
+    def _missing_channel_permissions(self, guild: discord.Guild, channel_id: int, required: list[str]) -> str | None:
+        channel = guild.get_channel(channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            return f"The configured channel <#{channel_id}> is not a text channel."
+
+        if guild.me is None:
+            return "Could not determine the bot's permissions in the selected channel."
+
+        perms = channel.permissions_for(guild.me)
+        missing = [p for p in required if not getattr(perms, p)]
+        if missing:
+            names = ", ".join(p.replace("_", " ").title() for p in missing)
+            return f"The bot is missing required permissions in <#{channel_id}>: {names}. Grant them and try again."
+        return None
 
     @discord.slash_command(
         name="blackwall",
@@ -56,6 +70,15 @@ class BlackwallCog(BaseCog):
 
         async def on_set_channel(interaction: discord.Interaction) -> None:
             await interaction.response.defer()
+
+            if interaction.guild is None:
+                await interaction.followup.send("Could not determine the guild.", ephemeral=True)
+                return
+            if error := self._missing_channel_permissions(
+                interaction.guild, channel_id, ["view_channel", "send_messages", "ban_members"]
+            ):
+                await interaction.followup.send(error, ephemeral=True)
+                return
 
             try:
                 new_config = await self.services.blackwall.update_channel(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
@@ -104,6 +127,13 @@ class BlackwallCog(BaseCog):
 
         async def on_set_log_channel(interaction: discord.Interaction) -> None:
             await interaction.response.defer()
+
+            if interaction.guild is None:
+                await interaction.followup.send("Could not determine the guild.", ephemeral=True)
+                return
+            if error := self._missing_channel_permissions(interaction.guild, channel_id, ["view_channel", "send_messages"]):
+                await interaction.followup.send(error, ephemeral=True)
+                return
 
             try:
                 new_config = await self.services.blackwall.update_log_channel(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
