@@ -45,9 +45,10 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
             user_id=author.id,
         )
 
-        if blackwall.log_channel_id and isinstance(channel := bot.get_channel(blackwall.log_channel_id), discord.TextChannel):
-            view = BlackwallLogView(member=author, message=message)
-            await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
+        with contextlib.suppress(discord.Forbidden, discord.HTTPException):
+            if blackwall.log_channel_id and isinstance(channel := bot.get_channel(blackwall.log_channel_id), discord.TextChannel):
+                view = BlackwallLogView(member=author, message=message)
+                await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
 
         try:
             # pass
