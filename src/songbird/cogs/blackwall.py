@@ -7,7 +7,9 @@ from songbird.bot import SongbirdBot
 from songbird.cogs.base import BaseCog
 from songbird.config import Settings
 from songbird.models.management.blackwall import BlackwallPunishment
-from songbird.ui.views.blackwall import BlackwallEditPunishmentView, BlackwallEditRolesView, BlackwallView
+from songbird.ui.views.blackwall.__main__ import BlackwallView
+from songbird.ui.views.blackwall.edit_punishment import BlackwallEditPunishmentView
+from songbird.ui.views.blackwall.edit_roles import BlackwallEditRolesView
 from songbird.utils.logging import get_logger
 
 logger = get_logger(__name__)

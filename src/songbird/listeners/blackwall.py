@@ -7,7 +7,7 @@ from songbird.bot import SongbirdBot
 from songbird.models.management.audit_log import AuditLogAction
 from songbird.models.management.blackwall import BlackwallPunishment
 from songbird.services.container import create_audit_log_service, get_session
-from songbird.ui.views.blackwall import BlackwallLogView
+from songbird.ui.views.blackwall.log import BlackwallLogView
 from songbird.utils.logging import get_logger
 
 logger = get_logger(__name__)
