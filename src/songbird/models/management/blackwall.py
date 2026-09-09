@@ -11,6 +11,7 @@ from songbird.models.management.base import metadata
 
 class BlackwallPunishment(Enum):
     LOG = "log"
+    WARN = "warn"
     KICK = "kick"
     BAN = "ban"
 

@@ -1,7 +1,8 @@
 CREATE TYPE management.blackwall_punishment AS ENUM (
     'log',
-    'kick'
-    'ban',
+    'warn',
+    'kick',
+    'ban'
 );
 
 ALTER TABLE management.blackwall
