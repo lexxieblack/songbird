@@ -12,6 +12,7 @@ from discord import (
     Message,
     SelectDefaultValue,
     SelectDefaultValueType,
+    SelectOption,
     TextChannel,
 )
 from discord.ui import (
@@ -22,6 +23,7 @@ from discord.ui import (
     MediaGallery,
     RoleSelect,
     Section,
+    Select,
     Separator,
     TextDisplay,
     Thumbnail,
@@ -29,6 +31,7 @@ from discord.ui import (
 )
 
 from songbird.config import Settings
+from songbird.models.management.blackwall import BlackwallPunishment
 from songbird.ui.custom_components import generate_container
 from songbird.utils.constants import SColor
 from songbird.utils.permissions import can_interact
@@ -71,8 +74,13 @@ def _make_roles_section(roles: list[int] | None, on_edit: Callable[[Interaction]
     return Section(TextDisplay(f"**Allowed Roles:** {roles_text}"), accessory=button)
 
 
+def _make_punishment_section(punishment: BlackwallPunishment, on_edit: Callable[[Interaction], Any]) -> ViewItem:
+    button = _ActionButton("Change", ButtonStyle.primary, on_edit)
+    return Section(TextDisplay(f"**Punishment:** {punishment.value.title()}"), accessory=button)
+
+
 def _make_banned_count_section(banned_count: int | None) -> ViewItem:
-    return TextDisplay(f"**Users Banned:** {banned_count}")
+    return TextDisplay(f"**Trigger Count:** {banned_count}")
 
 
 class BlackwallView(DesignerView):
@@ -82,11 +90,13 @@ class BlackwallView(DesignerView):
         log_channel_id: int | None,
         roles: list[int],
         banned_count: int | None,
+        punishment: BlackwallPunishment,
         on_set_channel: Callable[[Interaction], Any],
         on_remove_channel: Callable[[Interaction], Any],
         on_set_log_channel: Callable[[Interaction], Any],
         on_remove_log_channel: Callable[[Interaction], Any],
         on_edit_roles: Callable[[Interaction], Any],
+        on_edit_punishment: Callable[[Interaction], Any],
         settings: Settings,
     ):
         super().__init__(timeout=300)
@@ -102,6 +112,7 @@ class BlackwallView(DesignerView):
                 _make_channel_section(channel_id, on_set_channel, on_remove_channel),
                 _make_log_channel_section(log_channel_id, on_set_log_channel, on_remove_log_channel),
                 _make_roles_section(roles, on_edit_roles),
+                _make_punishment_section(punishment, on_edit_punishment),
                 _make_banned_count_section(banned_count or 0),
                 Separator(),
                 _ButtonRow(settings.blackwall.warning_url, channel_id),
@@ -154,6 +165,51 @@ class BlackwallEditRolesView(DesignerView):
             await interaction.response.defer()
 
 
+class BlackwallEditPunishmentView(DesignerView):
+    def __init__(
+        self,
+        current_punishment: BlackwallPunishment,
+        on_save: Callable[[Interaction], Any],
+        on_cancel: Callable[[Interaction], Any],
+        settings: Settings,
+    ) -> None:
+        super().__init__(timeout=300)
+
+        self.punishment_select = Select(
+            placeholder="Select punishment",
+            min_values=1,
+            max_values=1,
+            options=[SelectOption(label=punishment.value.title(), value=punishment.value) for punishment in BlackwallPunishment],
+        )
+        self.punishment_select.callback = self._on_punishment_select  # type: ignore[method-assign]
+
+        components = []
+
+        if settings.blackwall.image_url:
+            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))
+            components.append(Separator(divider=False))
+
+        components.extend(
+            [
+                TextDisplay(
+                    f"What should happen when an unauthorised user posts in the blackwall channel? (Current: **{current_punishment.value}**)"
+                ),
+                ActionRow(self.punishment_select),
+                ActionRow(
+                    _ActionButton("Save", ButtonStyle.success, on_save),
+                    _ActionButton("Cancel", ButtonStyle.secondary, on_cancel),
+                ),
+            ]
+        )
+
+        self.add_item(generate_container(title="## Edit Punishment", components=components, color=Color.red()))
+
+    @staticmethod
+    async def _on_punishment_select(interaction: Interaction) -> None:
+        if await can_interact(interaction):
+            await interaction.response.defer()
+
+
 class BlackwallLogView(DesignerView):
     def __init__(self, member: Member, message: Message) -> None:
         super().__init__()
@@ -162,7 +218,7 @@ class BlackwallLogView(DesignerView):
 
         container.add_item(
             Section(
-                TextDisplay("## Blackwall Ban"),
+                TextDisplay("## Blackwall Trigger"),
                 TextDisplay(f"**User:** {member.mention}"),
                 TextDisplay(f"**Username:** {member.name}"),
                 accessory=Thumbnail(url=member.display_avatar.url),
