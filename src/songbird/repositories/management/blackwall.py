@@ -4,7 +4,7 @@ from sqlalchemy import bindparam, insert, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from songbird.models.management.blackwall import Blackwall, CreateBlackwall, blackwall_table
+from songbird.models.management.blackwall import Blackwall, BlackwallPunishment, CreateBlackwall, blackwall_table
 from songbird.models.management.exceptions import BlackwallAlreadyExistsError, BlackwallNotFoundError
 from songbird.utils.logging import get_logger
 
@@ -46,6 +46,13 @@ STMT_UPDATE_ROLES = (
     update(blackwall_table)
     .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
     .values(whitelisted_roles=bindparam("b_whitelisted_roles"))
+    .returning(blackwall_table)
+)
+
+STMT_UPDATE_PUNISHMENT = (
+    update(blackwall_table)
+    .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
+    .values(punishment=bindparam("b_punishment"))
     .returning(blackwall_table)
 )
 
@@ -143,6 +150,25 @@ class BlackwallRepository:
 
         try:
             result = await self.session.execute(STMT_UPDATE_ROLES, params)
+        except Exception as e:
+            logger.exception("Failed to update blackwall config", error=e)
+            raise
+
+        row = result.mappings().first()
+
+        if row is None:
+            raise BlackwallNotFoundError(data={"guild_id": guild_id})
+
+        return Blackwall.model_validate(row)
+
+    async def update_punishment(self, guild_id: int, punishment: BlackwallPunishment) -> Blackwall:
+        params = {
+            "b_guild_id": guild_id,
+            "b_punishment": punishment.value,
+        }
+
+        try:
+            result = await self.session.execute(STMT_UPDATE_PUNISHMENT, params)
         except Exception as e:
             logger.exception("Failed to update blackwall config", error=e)
             raise

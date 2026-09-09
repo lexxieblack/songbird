@@ -1,7 +1,7 @@
 from cachetools import TTLCache
 from structlog import BoundLogger
 
-from songbird.models.management.blackwall import Blackwall, CreateBlackwall
+from songbird.models.management.blackwall import Blackwall, BlackwallPunishment, CreateBlackwall
 from songbird.services.container import ServiceContainer, get_blackwall_repo, get_session
 from songbird.utils.logging import get_logger
 
@@ -67,6 +67,14 @@ class BlackwallService:
         async with get_session(self._container) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.update_roles(guild_id, roles)
+
+        self._cache[guild_id] = blackwall
+        return blackwall
+
+    async def update_punishment(self, guild_id: int, punishment: BlackwallPunishment) -> Blackwall:
+        async with get_session(self._container) as session:
+            repo = get_blackwall_repo(session)
+            blackwall = await repo.update_punishment(guild_id, punishment)
 
         self._cache[guild_id] = blackwall
         return blackwall
