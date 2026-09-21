@@ -19,6 +19,7 @@ from songbird.repositories.management.audit_log import AuditLogRepository
 from songbird.repositories.management.blackwall import BlackwallRepository
 from songbird.repositories.management.guild_ban import GuildBanRepository
 from songbird.repositories.management.user_ban import UserBanRepository
+from songbird.services.currency import CurrencyService
 from songbird.services.feedback import FeedbackService
 from songbird.services.guild_conversation import GuildConversationService
 from songbird.services.link_fixer import LinkFixerService
@@ -46,6 +47,7 @@ class ServiceContainer:
     translation: TranslationService
     link_fixer: LinkFixerService
     wolfram: WolframService
+    currency: CurrencyService
     settings: "Settings"
     blackwall: "BlackwallService | None" = None
     management: "BanEnforcementService | None" = None
@@ -93,6 +95,7 @@ async def create_container(settings: "Settings") -> ServiceContainer:
     translation_service = TranslationService(logger=log.bind(service="translation"))
     link_fixer_service = LinkFixerService(settings, logger=log.bind(service="link_fixer"))
     wolfram_service = WolframService(settings, logger=log.bind(service="wolfram"))
+    currency_service = CurrencyService(logger=log.bind(service="currency"))
 
     log.info("services_created")
 
@@ -103,6 +106,7 @@ async def create_container(settings: "Settings") -> ServiceContainer:
         translation=translation_service,
         link_fixer=link_fixer_service,
         wolfram=wolfram_service,
+        currency=currency_service,
         settings=settings,
         blackwall=None,  # set below
     )
