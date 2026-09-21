@@ -1,11 +1,14 @@
 from typing import TYPE_CHECKING
 
 import discord
+from discord.commands import AutocompleteContext
 
 from songbird.cogs.base import BaseCog
+from songbird.commands.tools.currency import CurrencyHandler
 from songbird.commands.tools.fix import FixHandler
 from songbird.commands.tools.translate import TranslateHandler
 from songbird.commands.tools.wolfram import WolframHandler
+from songbird.services.currency import CurrencyError
 from songbird.ui.modals.file import FileModal
 from songbird.ui.modals.translate import TranslateMessageModal, TranslateModal
 from songbird.ui.views.translate import TranslateView
@@ -21,6 +24,7 @@ class ToolsCog(BaseCog):
         self.translate_handler = TranslateHandler(self.services.translation)
         self.wolfram_handler = WolframHandler(self.services.wolfram)
         self.fix_handler = FixHandler(self.services.link_fixer)
+        self.currency_handler = CurrencyHandler(self.services.currency)
 
         self.logger.debug("Tool handlers initialized")
 
@@ -33,7 +37,9 @@ class ToolsCog(BaseCog):
         ctx: discord.ApplicationContext,
         text: str | None = discord.Option(str, description="The text to translate", required=False, default=None),  # type: ignore[assignment]
         to_lang: str = discord.Option(str, description="Target language to translate to", required=False, default="en"),  # type: ignore[assignment]
-        from_lang: str | None = discord.Option(str, description="Source language (auto-detect if not specified)", required=False, default=None),  # type: ignore[assignment]
+        from_lang: str | None = discord.Option(
+            str, description="Source language (auto-detect if not specified)", required=False, default=None
+        ),  # type: ignore[assignment]
     ) -> None:
         if await self._check_banned(ctx):
             return
@@ -130,6 +136,59 @@ class ToolsCog(BaseCog):
         except Exception as e:
             self.logger.error("Wolfram query failed", user_id=ctx.author.id, query=query, error=e)
             await self.send_error(ctx, "Wolfram query failed.")
+
+    async def currency_autocomplete(self, ctx: AutocompleteContext) -> list[discord.OptionChoice]:
+        try:
+            return await self.currency_handler.autocomplete(ctx.value or "")
+        except Exception as e:
+            self.logger.debug("Currency autocomplete failed", error=e)
+            return []
+
+    @discord.slash_command(
+        name="convert",
+        description="Convert between currencies using current exchange rates",
+    )
+    async def convert(
+        self,
+        ctx: discord.ApplicationContext,
+        amount: float = discord.Option(float, description="The amount to convert", min_value=0),  # type: ignore[assignment]
+        from_: str = discord.Option(  # type: ignore[assignment]
+            str,
+            name="from",
+            description="The source currency",
+            autocomplete=currency_autocomplete,
+        ),
+        to_: str = discord.Option(  # type: ignore[assignment]
+            str,
+            name="to",
+            description="The target currency",
+            autocomplete=currency_autocomplete,
+        ),
+    ) -> None:
+        if await self._check_banned(ctx):
+            return
+
+        await ctx.defer()
+
+        self.logger.info("Convert command", user_id=ctx.author.id, amount=amount, base=from_, to=to_)
+
+        try:
+            result = await self.currency_handler.convert(amount, from_, to_)
+        except CurrencyError as e:
+            self.logger.error("Currency conversion rejected", user_id=ctx.author.id, error=e)
+            await self.send_error(ctx, str(e))
+            return
+        except Exception as e:
+            self.logger.error("Currency conversion failed", user_id=ctx.author.id, error=e, exc_info=True)
+            await self.send_error(ctx, "Currency conversion failed.")
+            return
+
+        embed = discord.Embed(
+            title="Currency Conversion",
+            description=self.currency_handler.format_result(result),
+            colour=discord.Colour.green(),
+        )
+        await ctx.followup.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     @discord.slash_command(
         name="fix",
