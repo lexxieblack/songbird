@@ -1,16 +1,17 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from discord import Member, Message
 from discord.ui import Container, DesignerView, Section, TextDisplay, Thumbnail
 
-from songbird.utils.text import format_code_block, humanize_timedelta
+from songbird.utils.text import escape_markdown, format_code_block, humanize_timedelta
 
 
 class BlackwallLogView(DesignerView):
     def __init__(self, member: Member, message: Message) -> None:
         super().__init__()
 
-        container = Container()
+        container: Container[Any] = Container()
 
         container.add_item(
             Section(
@@ -31,6 +32,11 @@ class BlackwallLogView(DesignerView):
 
         container.add_separator()
 
-        container.add_item(TextDisplay(f"**Message:**\n{format_code_block(message.content)}"))
+        if message.content.strip():
+            container.add_item(TextDisplay(f"**Message:**\n{format_code_block(message.content)}"))
+
+        if message.attachments:
+            files = "\n".join(f"- {escape_markdown(attachment.filename)}" for attachment in message.attachments)
+            container.add_item(TextDisplay(f"**Attachments:**\n{files}"))
 
         self.add_item(container)
