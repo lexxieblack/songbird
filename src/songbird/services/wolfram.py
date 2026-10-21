@@ -19,8 +19,8 @@ class WolframService:
         params = {
             "i": question,
             "appid": self._api_key,
-            "background": "181a1c",
-            "foreground": "ffffff",
+            "background": "193555",
+            "foreground": "white",
         }
 
         try:
