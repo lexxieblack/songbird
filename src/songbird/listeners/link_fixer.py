@@ -1,7 +1,7 @@
 import contextlib
 import re
 
-from discord import AllowedMentions, HTTPException, Message, TextChannel, Thread
+from discord import AllowedMentions, Forbidden, HTTPException, Message, TextChannel, Thread
 from tldextract import tldextract
 
 from songbird.bot import SongbirdBot
@@ -27,7 +27,7 @@ def load_fix(bot: SongbirdBot) -> None:
 
         CACHED_MESSAGES.discard(before.id)
         with contextlib.suppress(HTTPException):
-            await after.edit(suppress=True)
+            await after.edit(suppress_embeds=True)
 
     @bot.listen()
     async def on_message(message: Message) -> None:
@@ -44,7 +44,7 @@ def load_fix(bot: SongbirdBot) -> None:
         if not urls:
             return
 
-        fixed_urls = []
+        fixed_urls: list[str] = []
         links_settings = settings.links
         for url in urls:
             if not _check_domain_setting(url, links_settings):
@@ -57,16 +57,31 @@ def load_fix(bot: SongbirdBot) -> None:
             return
 
         CACHED_MESSAGES.add(message.id)
-        with contextlib.suppress(HTTPException):
-            await message.edit(suppress=True)
+        try:
+            await message.edit(suppress_embeds=True)
+        except Forbidden:
+            with contextlib.suppress(HTTPException):
+                await message.channel.send(
+                    ("I couldn't remove the original message's link embed due to a missing permission.\n"
+                     "Missing 'Manage Messages' permission or my role isn't above the message's author's role.\n"
+                     "-# *This message will be deleted after 10 seconds.*"),
+                    delete_after=10,
+                    reference=message,
+                    allowed_mentions=AllowedMentions.none(),
+                )
+        except HTTPException:
+            pass
 
-        links_to_send = []
+        links_to_send: list[str] = []
         for url in fixed_urls:
             domain = _get_domain_with_suffix(url)
             links_to_send.append(link(domain, url))
 
-        await message.reply(
-            "\n".join(links_to_send), view=RestoreLinkView(message, CACHED_MESSAGES), allowed_mentions=AllowedMentions.none()
+        await message.channel.send(
+            "\n".join(links_to_send),
+            reference=message,
+            view=RestoreLinkView(message, CACHED_MESSAGES),
+            allowed_mentions=AllowedMentions.none(),
         )
 
 
