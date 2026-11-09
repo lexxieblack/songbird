@@ -20,5 +20,6 @@ source_code_url = "https://github.com/lexxieblack/songbird"
 "tiktok.com" = { swap = "d.tiktokez.com", follow = true, clean = true, chat = true }
 "youtube.com" = { clean = true, clean_exceptions = ["t", "v", "list"] }
 "youtu.be" = { clean = true, clean_exceptions = ["t", "v", "list"] }
-"facebook.com" = { swap = "facebed.com", clean = true, clean_exceptions = [ "fbid" ] }
+"facebook.com" = { swap = "facebed.com", clean = true, clean_exceptions = [ "fbid" ], chat = true }
+"threads.com" = { swap = "fixthreads.seria.moe", chat = true }
 "*" = { clean = true }
