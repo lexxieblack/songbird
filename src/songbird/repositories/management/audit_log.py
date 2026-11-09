@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import bindparam, insert
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -33,7 +34,7 @@ class AuditLogRepository:
     session: AsyncSession
 
     async def create(self, log: CreateAuditLog) -> AuditLog:
-        params = {
+        params: dict[str, Any] = {
             "b_id": make_id(),
             "b_action": log.action.value,
             "b_actor_id": log.actor_id,
@@ -49,7 +50,5 @@ class AuditLogRepository:
             raise
 
         row = result.mappings().one()
-        if row is None:
-            raise ValueError("Failed to create audit log")
 
         return AuditLog.model_validate(row)

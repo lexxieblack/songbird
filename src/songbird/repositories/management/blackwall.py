@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import bindparam, insert, select, update
 from sqlalchemy.exc import IntegrityError
@@ -64,7 +65,7 @@ class BlackwallRepository:
     session: AsyncSession
 
     async def create(self, input: CreateBlackwall) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": input.guild_id,
             "b_channel_id": input.channel_id,
             "b_log_channel_id": input.log_channel_id,
@@ -87,7 +88,7 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def increment(self, guild_id: int) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
         }
 
@@ -105,7 +106,7 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_channel_id": channel_id,
         }
@@ -124,7 +125,7 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_log_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_log_channel_id": channel_id,
         }
@@ -143,7 +144,7 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_roles(self, guild_id: int, roles: list[int]) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_whitelisted_roles": roles,
         }
@@ -162,7 +163,7 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_punishment(self, guild_id: int, punishment: BlackwallPunishment) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_punishment": punishment.value,
         }
@@ -181,7 +182,7 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def get(self, guild_id: int) -> Blackwall | None:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
         }
         result = await self.session.execute(STMT_GET_BLACKWALL, params)
