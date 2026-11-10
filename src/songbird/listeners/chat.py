@@ -112,7 +112,7 @@ async def _handle_guild_message(bot: SongbirdBot, message: Message, user_message
                 username=message.author.name,
                 display_name=message.author.display_name,
                 guild_name=message.guild.name if message.guild else None,
-                channel_name=guild_channel_name,
+                channel_name=guild_channel_name,  # pyright: ignore[reportUnknownArgumentType]
             )
         except Exception:
             logger.exception("Guild chat handler failed", user_id=message.author.id)
@@ -128,8 +128,9 @@ def load_chat(bot: SongbirdBot) -> None:
         logger.info("Message received", user_id=message.author.id, content=message.content)
 
         user_message = message.content
-        user_message = user_message.replace(f"<@{bot.user.id}>", bot.user.display_name)  # pyright: ignore[reportOptionalMemberAccess]
-        user_message = user_message.replace(f"<@!{bot.user.id}>", bot.user.display_name)  # pyright: ignore[reportOptionalMemberAccess]
+        if bot.user is not None:
+            user_message = user_message.replace(f"<@{bot.user.id}>", bot.user.display_name)
+            user_message = user_message.replace(f"<@!{bot.user.id}>", bot.user.display_name)
 
         user_message = _get_reply_context(message, user_message)
 

@@ -24,8 +24,9 @@ class ManagementCog(BaseCog):
 
         guild_id = bot.settings.bot.management_guild_id
         if guild_id:
-            for cmd in self.get_commands():
-                cmd.guild_ids = [guild_id]  # type: ignore
+            for cmd in self.get_commands():  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+                if isinstance(cmd, discord.ApplicationCommand):
+                    cmd.guild_ids = [guild_id]
 
         self.logger.debug("Management commands initialized")
 

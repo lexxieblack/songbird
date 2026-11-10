@@ -9,7 +9,7 @@ from songbird.commands.tools.currency import CurrencyHandler
 from songbird.commands.tools.fix import FixHandler
 from songbird.commands.tools.translate import TranslateHandler
 from songbird.commands.tools.wolfram import WolframHandler
-from songbird.services.currency import CurrencyError
+from songbird.models.currency import CurrencyError
 from songbird.ui.modals.file import FileModal
 from songbird.ui.modals.translate import TranslateMessageModal, TranslateModal
 from songbird.ui.views.translate import TranslateView

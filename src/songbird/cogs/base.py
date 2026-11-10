@@ -17,7 +17,7 @@ logger = structlog.get_logger(__name__)
 class BaseCog(commands.Cog):
     def __init__(self, bot: "SongbirdBot") -> None:
         self.bot = bot
-        self.logger = logger.bind(cog=self.__class__.__name__) # type: ignore
+        self.logger = logger.bind(cog=self.__class__.__name__)  # pyright: ignore[reportUnknownMemberType]
 
         self.logger.debug("Cog initialized")
 
@@ -97,8 +97,8 @@ class BaseCog(commands.Cog):
 
     async def cog_load(self) -> None:
         """Called when the cog is loaded."""
-        self.logger.info("Cog loaded", cog_name=self.__class__.__name__) # type: ignore
+        self.logger.info("Cog loaded", cog_name=self.__class__.__name__)  # pyright: ignore[reportUnknownMemberType]
 
     def cog_unload(self) -> None:
         """Called when the cog is unloaded."""
-        self.logger.info("Cog unloading", cog_name=self.__class__.__name__) # type: ignore
+        self.logger.info("Cog unloading", cog_name=self.__class__.__name__)  # pyright: ignore[reportUnknownMemberType]
