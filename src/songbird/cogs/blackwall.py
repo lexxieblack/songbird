@@ -24,9 +24,6 @@ class BlackwallCog(BaseCog):
         if not isinstance(channel, discord.TextChannel):
             return f"The configured channel <#{channel_id}> is not a text channel."
 
-        if guild.me is None:
-            return "Could not determine the bot's permissions in the selected channel."
-
         perms = channel.permissions_for(guild.me)
         missing = [p for p in required if not getattr(perms, p)]
         if missing:
@@ -39,7 +36,8 @@ class BlackwallCog(BaseCog):
         description="Manage the blackwall channel for this server",
     )
     async def blackwall(self, ctx: discord.ApplicationContext) -> None:
-        if not self.services.blackwall:
+        blackwall_service = self.services.blackwall
+        if blackwall_service is None:
             await self.send_error(ctx, "The blackwall service is not available.")
             return
 
@@ -63,9 +61,9 @@ class BlackwallCog(BaseCog):
         channel_id = ctx.channel.id
 
         try:
-            blackwall = await self.services.blackwall.get_blackwall(guild_id)
+            blackwall = await blackwall_service.get_blackwall(guild_id)
             if not blackwall:
-                blackwall = await self.services.blackwall.create_blackwall(guild_id, channel_id)
+                blackwall = await blackwall_service.create_blackwall(guild_id, channel_id)
         except Exception as e:
             self.logger.exception("Failed to get blackwall config", guild_id=guild_id, error=e)
             await self.send_error(ctx, "Failed to check blackwall status.")
@@ -84,7 +82,7 @@ class BlackwallCog(BaseCog):
                 return
 
             try:
-                new_config = await self.services.blackwall.update_channel(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
+                new_config = await blackwall_service.update_channel(guild_id, channel_id)
             except Exception as e:
                 self.logger.exception("Failed to set blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
@@ -110,7 +108,7 @@ class BlackwallCog(BaseCog):
             await interaction.response.defer()
 
             try:
-                updated = await self.services.blackwall.update_channel(guild_id, None)  # pyright: ignore[reportOptionalMemberAccess]
+                updated = await blackwall_service.update_channel(guild_id, None)
             except Exception as e:
                 self.logger.exception("Failed to remove blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
@@ -143,7 +141,7 @@ class BlackwallCog(BaseCog):
                 return
 
             try:
-                new_config = await self.services.blackwall.update_log_channel(guild_id, channel_id)  # pyright: ignore[reportOptionalMemberAccess]
+                new_config = await blackwall_service.update_log_channel(guild_id, channel_id)
             except Exception as e:
                 self.logger.exception("Failed to set blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
@@ -169,7 +167,7 @@ class BlackwallCog(BaseCog):
             await interaction.response.defer()
 
             try:
-                updated = await self.services.blackwall.update_channel(guild_id, None)  # pyright: ignore[reportOptionalMemberAccess]
+                updated = await blackwall_service.update_channel(guild_id, None)
             except Exception as e:
                 self.logger.exception("Failed to remove blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
@@ -193,8 +191,8 @@ class BlackwallCog(BaseCog):
 
         async def on_edit_roles(interaction: discord.Interaction) -> None:
             try:
-                current = await self.services.blackwall.get_blackwall(guild_id)  # pyright: ignore[reportOptionalMemberAccess]
-                current_roles = current.whitelisted_roles  # pyright: ignore[reportOptionalMemberAccess]
+                current_blackwall = await blackwall_service.get_blackwall(guild_id)
+                current_roles = current_blackwall.whitelisted_roles if current_blackwall is not None else blackwall.whitelisted_roles
             except Exception:
                 current_roles = blackwall.whitelisted_roles
 
@@ -204,18 +202,18 @@ class BlackwallCog(BaseCog):
                 new_roles = [r.id for r in selected] if selected is not None else current_roles
 
                 try:
-                    updated = await self.services.blackwall.update_roles(guild_id, new_roles)  # pyright: ignore[reportOptionalMemberAccess]
+                    updated_blackwall = await blackwall_service.update_roles(guild_id, new_roles)
                 except Exception as e:
                     self.logger.exception("Failed to update blackwall roles", guild_id=guild_id, error=e)
                     await interaction.followup.send("Failed to update roles.", ephemeral=True)
                     return
 
                 new_view = _make_view(
-                    updated.channel_id,
-                    updated.log_channel_id,
-                    updated.whitelisted_roles,
-                    updated.banned_count,
-                    updated.punishment,
+                    updated_blackwall.channel_id,
+                    updated_blackwall.log_channel_id,
+                    updated_blackwall.whitelisted_roles,
+                    updated_blackwall.banned_count,
+                    updated_blackwall.punishment,
                     on_set_channel,
                     on_remove_channel,
                     on_set_log_channel,
@@ -258,7 +256,7 @@ class BlackwallCog(BaseCog):
                 new_punishment = BlackwallPunishment(selected[0]) if selected else blackwall.punishment
 
                 try:
-                    updated = await self.services.blackwall.update_punishment(  # pyright: ignore[reportOptionalMemberAccess]
+                    updated = await blackwall_service.update_punishment(
                         guild_id,
                         new_punishment,
                     )
