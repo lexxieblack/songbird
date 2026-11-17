@@ -50,8 +50,7 @@ def load_fix(bot: SongbirdBot) -> None:
             if not _check_domain_setting(url, links_settings):
                 continue
 
-            fixed_url = await services.link_fixer.fix(url)
-            fixed_urls.append(fixed_url)
+            fixed_urls.extend(await services.link_fixer.fix(url))
 
         if not fixed_urls:
             return
@@ -72,17 +71,25 @@ def load_fix(bot: SongbirdBot) -> None:
         except HTTPException:
             pass
 
-        links_to_send: list[str] = []
-        for url in fixed_urls:
-            domain = _get_domain_with_suffix(url)
-            links_to_send.append(link(domain, url))
-
-        await message.channel.send(
-            "\n".join(links_to_send),
-            reference=message,
-            view=RestoreLinkView(message, CACHED_MESSAGES),
-            allowed_mentions=AllowedMentions.none(),
+        sent_messages: list[Message] = []
+        first_url, *rest_urls = fixed_urls
+        sent_messages.append(
+            await message.channel.send(
+                link(_get_domain_with_suffix(first_url), first_url),
+                reference=message,
+                view=RestoreLinkView(message, CACHED_MESSAGES, sent_messages),
+                allowed_mentions=AllowedMentions.none(),
+            )
         )
+
+        for url in rest_urls:
+            sent_messages.append(
+                await message.channel.send(
+                    link(_get_domain_with_suffix(url), url),
+                    reference=message,
+                    allowed_mentions=AllowedMentions.none(),
+                )
+            )
 
 
 def unload_fix() -> None:

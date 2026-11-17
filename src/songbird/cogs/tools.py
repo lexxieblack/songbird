@@ -213,11 +213,12 @@ class ToolsCog(BaseCog):
         self.logger.info("Fix command", user_id=ctx.author.id, text_length=len(link))
 
         try:
-            fixed_link = await self.fix_handler.fix_link(link)
+            fixed_links = await self.fix_handler.fix_link(link)
 
-            ext = tldextract.extract(fixed_link)
-            domain = f"{ext.domain}.{ext.suffix}"
-            await ctx.followup.send(format_link(domain, fixed_link), allowed_mentions=discord.AllowedMentions.none())
+            for fixed_link in fixed_links:
+                ext = tldextract.extract(fixed_link)
+                domain = f"{ext.domain}.{ext.suffix}"
+                await ctx.followup.send(format_link(domain, fixed_link), allowed_mentions=discord.AllowedMentions.none())
 
             self.logger.info("Fix success", user_id=ctx.author.id)
 

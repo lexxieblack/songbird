@@ -2,12 +2,19 @@ from pydantic import BaseModel, Field, RootModel
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, TomlConfigSettingsSource
 
 
+class PaginationSettings(BaseModel):
+    format: str = "{url}/{page}"
+    per_page: int = 10
+    api: str | None = None
+
+
 class _DomainMapping(BaseModel):
     swap: str | None = None
     follow: bool | None = None
     clean: bool | None = None
     clean_exceptions: list[str] | None = None
     chat: bool | None = None
+    pagination: PaginationSettings | None = None
 
 
 class BotSettings(BaseModel):

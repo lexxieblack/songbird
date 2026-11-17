@@ -8,10 +8,11 @@ from songbird.utils.permissions import can_interact
 
 
 class RestoreLinkView(View):
-    def __init__(self, original_message: Message, cached_messages: set[int]):
+    def __init__(self, original_message: Message, cached_messages: set[int], fixed_messages: list[Message] | None = None):
         super().__init__(timeout=60)
         self.original_message = original_message
         self.cached_messages = cached_messages
+        self.fixed_messages = fixed_messages or []
 
     async def on_timeout(self) -> None:
         self.clear_items()
@@ -30,6 +31,6 @@ class RestoreLinkView(View):
             original = await self.original_message.channel.fetch_message(self.original_message.id)
             await original.edit(suppress_embeds=False)
 
-        if interaction.message:
+        for fixed_message in self.fixed_messages:
             with contextlib.suppress(HTTPException):
-                await interaction.message.delete()
+                await fixed_message.delete()

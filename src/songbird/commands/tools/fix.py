@@ -9,8 +9,8 @@ class FixHandler:
         self.link_fixer_service = link_fixer_service
         self.logger = get_logger(__name__)
 
-    async def fix_link(self, link: str) -> str:
-        fixed_link = await self.link_fixer_service.fix(link)
-        self.logger.debug("Fixed link", link=link, fixed_link=fixed_link)
+    async def fix_link(self, link: str) -> list[str]:
+        fixed_links = await self.link_fixer_service.fix(link)
+        self.logger.debug("Fixed link", link=link, fixed_links=fixed_links)
 
-        return fixed_link
+        return fixed_links

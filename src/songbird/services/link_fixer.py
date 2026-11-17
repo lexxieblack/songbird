@@ -5,7 +5,7 @@ import tldextract
 from aiohttp import ClientError, ClientSession, ClientTimeout
 from structlog import BoundLogger
 
-from songbird.config import Settings
+from songbird.config import PaginationSettings, Settings
 from songbird.utils.logging import get_logger
 
 
@@ -19,20 +19,20 @@ class LinkFixerService:
         self.logger = logger or get_logger(__name__)
         self.domain_mapping = self.settings.links
 
-    async def fix(self, text: str) -> str:
+    async def fix(self, text: str) -> list[str]:
         url = self._extract_url(text)
         if not url:
-            return text
+            return [text]
 
         domain = self._get_domain_suffix(url)
         rules = self.domain_mapping.root.get(domain)
         if not rules:
             if not self._wildcard_exists():
-                return url
+                return [url]
             rules = self.domain_mapping.root.get("*")
 
         if not rules:
-            return url
+            return [url]
 
         if rules.follow:
             url = await self._follow_url(url)
@@ -43,7 +43,11 @@ class LinkFixerService:
         if rules.clean:
             url = self._clean_url(url, rules.clean_exceptions)
 
-        return url
+        if rules.pagination and not self._has_page_suffix(url):
+            count = await self._media_count(url, rules.pagination)
+            return self._page_urls(url, count, rules.pagination)
+
+        return [url]
 
     def _get_domain_suffix(self, url: str) -> str:
         ext = tldextract.extract(url)
@@ -59,6 +63,34 @@ class LinkFixerService:
             return url
         finally:
             await session.close()
+
+    async def _media_count(self, url: str, pagination: PaginationSettings) -> int:
+        parsed = urlparse(url)
+        # shortcut: assumes the fixer service exposes an api.<host> media endpoint; add an explicit `api` key when a second provider needs one
+        api = pagination.api or f"https://api.{parsed.hostname}{parsed.path}"
+        session = ClientSession(timeout=ClientTimeout(total=5))
+        try:
+            async with session.get(api) as response:
+                data = await response.json(content_type=None)
+            if not isinstance(data, dict):
+                return 0
+            return len(data.get("media_extended") or data.get("mediaURLs") or [])
+        except (TimeoutError, ClientError, ValueError) as e:
+            self.logger.error("Failed to fetch media count", url=url, error=e)
+            return 0
+        finally:
+            await session.close()
+
+    def _page_urls(self, url: str, count: int, pagination: PaginationSettings) -> list[str]:
+        if count <= pagination.per_page:
+            return [url]
+        # cap keeps a huge gallery from flooding the channel with messages
+        pages = min(-(-count // pagination.per_page), 10)
+        return [url] + [pagination.format.format(url=url, page=page) for page in range(2, pages + 1)]
+
+    def _has_page_suffix(self, url: str) -> bool:
+        segments = urlparse(url).path.strip("/").split("/")
+        return "status" in segments and segments.index("status") + 2 < len(segments)
 
     def _swap_url(self, url: str, domain: str, swap: str) -> str:
         if swap.count(".") > 1:
