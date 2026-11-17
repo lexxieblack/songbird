@@ -36,6 +36,7 @@ class LLMService:
         self._client = Client(
             api_key=settings.llm.api_key,
             http_options=HttpOptions(
+                api_version="v1beta",  # system_instruction and google_search are not available on v1
                 retry_options=HttpRetryOptions(
                     attempts=retry.max_attempts,
                     initial_delay=retry.initial_delay,
