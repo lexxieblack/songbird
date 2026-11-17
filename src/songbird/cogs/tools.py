@@ -2,16 +2,18 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord.commands import AutocompleteContext
+from tldextract import tldextract
 
 from songbird.cogs.base import BaseCog
 from songbird.commands.tools.currency import CurrencyHandler
 from songbird.commands.tools.fix import FixHandler
 from songbird.commands.tools.translate import TranslateHandler
 from songbird.commands.tools.wolfram import WolframHandler
-from songbird.services.currency import CurrencyError
+from songbird.models.currency import CurrencyError
 from songbird.ui.modals.file import FileModal
 from songbird.ui.modals.translate import TranslateMessageModal, TranslateModal
 from songbird.ui.views.translate import TranslateView
+from songbird.utils.text import link as format_link
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
@@ -118,7 +120,7 @@ class ToolsCog(BaseCog):
             return
 
         if not query:
-            await self.send_error(ctx, "Please provide link to fix.")
+            await self.send_error(ctx, "Please provide a query for Wolfram Alpha.")
             return
 
         await ctx.defer()
@@ -211,9 +213,12 @@ class ToolsCog(BaseCog):
         self.logger.info("Fix command", user_id=ctx.author.id, text_length=len(link))
 
         try:
-            fixed_link = await self.fix_handler.fix_link(link)
+            fixed_links = await self.fix_handler.fix_link(link)
 
-            await ctx.followup.send(fixed_link)
+            for fixed_link in fixed_links:
+                ext = tldextract.extract(fixed_link)
+                domain = f"{ext.domain}.{ext.suffix}"
+                await ctx.followup.send(format_link(domain, fixed_link), allowed_mentions=discord.AllowedMentions.none())
 
             self.logger.info("Fix success", user_id=ctx.author.id)
 

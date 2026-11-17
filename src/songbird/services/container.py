@@ -109,6 +109,7 @@ async def create_container(settings: "Settings") -> ServiceContainer:
         currency=currency_service,
         settings=settings,
         blackwall=None,  # set below
+        management=None,  # set below
     )
 
     # Services that need a fully constructed container set post-construction.

@@ -21,7 +21,7 @@ Summarize text or URL content using AI.
 
 ### Link Fixing (`/fix`)
 Fix social media embeds automatically or on demand:
-- Twitter/X → fxtwitter
+- Twitter/X → vxtwitter
 - Instagram → kkinstagram
 - Reddit → rxddit
 - TikTok → d.tiktokez

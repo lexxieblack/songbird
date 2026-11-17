@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import bindparam, insert, select, update
 from sqlalchemy.exc import IntegrityError
@@ -64,7 +65,7 @@ class BlackwallRepository:
     session: AsyncSession
 
     async def create(self, input: CreateBlackwall) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": input.guild_id,
             "b_channel_id": input.channel_id,
             "b_log_channel_id": input.log_channel_id,
@@ -80,24 +81,13 @@ class BlackwallRepository:
             logger.exception("Failed to create blackwall config", error=e)
             raise
 
-        row = result.mappings().first()
-        if row is None:
-            raise BlackwallNotFoundError(data={"guild_id": input.guild_id})
-
-        return Blackwall.model_validate(row)
+        return Blackwall.model_validate(result.mappings().one())
 
     async def increment(self, guild_id: int) -> Blackwall:
-        params = {
-            "b_guild_id": guild_id,
-        }
+        params: dict[str, Any] = {"b_guild_id": guild_id}
 
-        try:
-            result = await self.session.execute(STMT_INCREMENT_BANNED, params)
-        except Exception as e:
-            logger.exception("Failed to create blackwall config", error=e)
-            raise
-
-        row = result.mappings().first()
+        result = await self.session.execute(STMT_INCREMENT_BANNED, params)
+        row = result.mappings().one_or_none()
 
         if row is None:
             raise BlackwallNotFoundError(data={"guild_id": guild_id})
@@ -105,18 +95,13 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_channel_id": channel_id,
         }
 
-        try:
-            result = await self.session.execute(STMT_UPDATE_CHANNEL, params)
-        except Exception as e:
-            logger.exception("Failed to update blackwall config", error=e)
-            raise
-
-        row = result.mappings().first()
+        result = await self.session.execute(STMT_UPDATE_CHANNEL, params)
+        row = result.mappings().one_or_none()
 
         if row is None:
             raise BlackwallNotFoundError(data={"guild_id": guild_id})
@@ -124,18 +109,13 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_log_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_log_channel_id": channel_id,
         }
 
-        try:
-            result = await self.session.execute(STMT_UPDATE_LOG_CHANNEL, params)
-        except Exception as e:
-            logger.exception("Failed to update blackwall config", error=e)
-            raise
-
-        row = result.mappings().first()
+        result = await self.session.execute(STMT_UPDATE_LOG_CHANNEL, params)
+        row = result.mappings().one_or_none()
 
         if row is None:
             raise BlackwallNotFoundError(data={"guild_id": guild_id})
@@ -143,18 +123,13 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_roles(self, guild_id: int, roles: list[int]) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_whitelisted_roles": roles,
         }
 
-        try:
-            result = await self.session.execute(STMT_UPDATE_ROLES, params)
-        except Exception as e:
-            logger.exception("Failed to update blackwall config", error=e)
-            raise
-
-        row = result.mappings().first()
+        result = await self.session.execute(STMT_UPDATE_ROLES, params)
+        row = result.mappings().one_or_none()
 
         if row is None:
             raise BlackwallNotFoundError(data={"guild_id": guild_id})
@@ -162,18 +137,13 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def update_punishment(self, guild_id: int, punishment: BlackwallPunishment) -> Blackwall:
-        params = {
+        params: dict[str, Any] = {
             "b_guild_id": guild_id,
             "b_punishment": punishment.value,
         }
 
-        try:
-            result = await self.session.execute(STMT_UPDATE_PUNISHMENT, params)
-        except Exception as e:
-            logger.exception("Failed to update blackwall config", error=e)
-            raise
-
-        row = result.mappings().first()
+        result = await self.session.execute(STMT_UPDATE_PUNISHMENT, params)
+        row = result.mappings().one_or_none()
 
         if row is None:
             raise BlackwallNotFoundError(data={"guild_id": guild_id})
@@ -181,10 +151,9 @@ class BlackwallRepository:
         return Blackwall.model_validate(row)
 
     async def get(self, guild_id: int) -> Blackwall | None:
-        params = {
-            "b_guild_id": guild_id,
-        }
+        params: dict[str, Any] = {"b_guild_id": guild_id}
+
         result = await self.session.execute(STMT_GET_BLACKWALL, params)
-        row = result.mappings().first()
+        row = result.mappings().one_or_none()
 
         return Blackwall.model_validate(row) if row is not None else None

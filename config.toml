@@ -13,8 +13,8 @@ system_prompt_path = "prompts/system.xml"
 source_code_url = "https://github.com/lexxieblack/songbird"
 
 [links]
-"twitter.com" = { swap = "fxtwitter.com", clean = true, chat = true }
-"x.com" = { swap = "fxtwitter.com", clean = true, chat = true }
+"twitter.com" = { swap = "vxtwitter.com", clean = true, chat = true, pagination = { format = "{url}/p{page}", per_page = 10 } }
+"x.com" = { swap = "vxtwitter.com", clean = true, chat = true, pagination = { format = "{url}/p{page}", per_page = 10 } }
 "instagram.com" = { swap = "oginstagram.com", clean = true, chat = true }
 "reddit.com" = { swap = "vxreddit.com", clean = true, chat = true }
 "tiktok.com" = { swap = "d.tiktokez.com", follow = true, clean = true, chat = true }

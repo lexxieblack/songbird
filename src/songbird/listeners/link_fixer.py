@@ -1,7 +1,7 @@
 import contextlib
 import re
 
-from discord import AllowedMentions, HTTPException, Message, TextChannel, Thread
+from discord import AllowedMentions, Forbidden, HTTPException, Message, TextChannel, Thread
 from tldextract import tldextract
 
 from songbird.bot import SongbirdBot
@@ -27,7 +27,7 @@ def load_fix(bot: SongbirdBot) -> None:
 
         CACHED_MESSAGES.discard(before.id)
         with contextlib.suppress(HTTPException):
-            await after.edit(suppress=True)
+            await after.edit(suppress_embeds=True)
 
     @bot.listen()
     async def on_message(message: Message) -> None:
@@ -44,30 +44,52 @@ def load_fix(bot: SongbirdBot) -> None:
         if not urls:
             return
 
-        fixed_urls = []
+        fixed_urls: list[str] = []
         links_settings = settings.links
         for url in urls:
             if not _check_domain_setting(url, links_settings):
                 continue
 
-            fixed_url = await services.link_fixer.fix(url)
-            fixed_urls.append(fixed_url)
+            fixed_urls.extend(await services.link_fixer.fix(url))
 
         if not fixed_urls:
             return
 
         CACHED_MESSAGES.add(message.id)
-        with contextlib.suppress(HTTPException):
-            await message.edit(suppress=True)
+        try:
+            await message.edit(suppress_embeds=True)
+        except Forbidden:
+            with contextlib.suppress(HTTPException):
+                await message.channel.send(
+                    ("I couldn't remove the original message's link embed due to a missing permission.\n"
+                     "Missing 'Manage Messages' permission or my role isn't above the message's author's role.\n"
+                     "-# *This message will be deleted after 10 seconds.*"),
+                    delete_after=10,
+                    reference=message,
+                    allowed_mentions=AllowedMentions.none(),
+                )
+        except HTTPException:
+            pass
 
-        links_to_send = []
-        for url in fixed_urls:
-            domain = _get_domain_with_suffix(url)
-            links_to_send.append(link(domain, url))
-
-        await message.reply(
-            "\n".join(links_to_send), view=RestoreLinkView(message, CACHED_MESSAGES), allowed_mentions=AllowedMentions.none()
+        sent_messages: list[Message] = []
+        first_url, *rest_urls = fixed_urls
+        sent_messages.append(
+            await message.channel.send(
+                link(_get_domain_with_suffix(first_url), first_url),
+                reference=message,
+                view=RestoreLinkView(message, CACHED_MESSAGES, sent_messages),
+                allowed_mentions=AllowedMentions.none(),
+            )
         )
+
+        for url in rest_urls:
+            sent_messages.append(
+                await message.channel.send(
+                    link(_get_domain_with_suffix(url), url),
+                    reference=message,
+                    allowed_mentions=AllowedMentions.none(),
+                )
+            )
 
 
 def unload_fix() -> None:

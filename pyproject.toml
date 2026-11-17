@@ -4,27 +4,28 @@ version = "3.0.0"
 description = "A Discord bot that embodies the persona of Song So Mi (Songbird) from Cyberpunk 2077, featuring AI-powered conversations, translation services, and computational knowledge queries."
 requires-python = ">=3.13"
 dependencies = [
-    "py-cord>=2.8.0",
-    "sqlalchemy[asyncio]>=2.0.50",
+    "py-cord>=2.8.1",
+    "sqlalchemy[asyncio]>=2.1.8",
     "pycountry>=26.2.16",
-    "pydantic-settings[toml]>=2.13.1",
+    "pydantic-settings[toml]>=2.16.2",
     "structlog>=26.1.0",
     "httpx>=0.28.1",
     "uuid7>=0.1.0",
-    "google-genai>=2.8.0",
-    "tldextract>=5.3.1",
-    "psycopg>=3.3.4",
-    "psycopg-binary>=3.3.4",
+    "google-genai>=3.0.0",
+    "tldextract>=5.4.0",
+    "psycopg>=3.3.8",
+    "psycopg-binary>=3.3.8",
     "googletrans>=4.0.2",
-    "cachetools>=5.5.0",
+    "cachetools>=8.0.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.4.0",
-    "mypy>=2.1.0",
-    "ruff>=0.15.16",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "mypy>=2.4.1",
+    "ruff>=0.17.4",
+    "rich>=15.0.0",
 ]
 
 [build-system]
