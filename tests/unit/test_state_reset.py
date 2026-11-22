@@ -1,3 +1,5 @@
+# pyright: reportPrivateUsage=false
+
 """Order-dependent on purpose: pytest keeps definition order within a file.
 
 ``test_populates_caches`` dirties the module-level caches, and
