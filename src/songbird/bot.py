@@ -109,6 +109,10 @@ class SongbirdBot(discord.Bot):
             await context.respond("This command can only be used in direct messages.", ephemeral=True)
             return
 
+        if isinstance(original_error, commands.CheckFailure):
+            await context.respond("You are not allowed to use this bot.", ephemeral=True)
+            return
+
         if isinstance(original_error, discord.Forbidden):
             # if "Missing Access" in str(original_error) and "403 Forbidden" in str(original_error):
             await context.respond("The bot doesn't have permission to run this command.", ephemeral=True)

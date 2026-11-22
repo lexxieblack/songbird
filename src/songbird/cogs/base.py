@@ -1,4 +1,3 @@
-from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import discord
@@ -82,18 +81,11 @@ class BaseCog(commands.Cog):
     async def is_owner(self, ctx: discord.ApplicationContext) -> bool:
         return await self.bot.is_owner(ctx.author)
 
-    async def _check_banned(self, ctx: discord.ApplicationContext) -> bool:
-        """Check if the invoking user is banned.
-
-        Returns True if banned (and silently acks the interaction), False otherwise.
-        """
-        banned = await self.services.management.check_user_banned(ctx.author.id)  # type: ignore[union-attr]
-        if banned:
-            self.logger.info("Blocked banned user", user_id=ctx.author.id)
-            with suppress(discord.HTTPException):
-                await ctx.respond()
-            return True
-        return False
+    async def cog_before_invoke(self, ctx: discord.ApplicationContext) -> None:
+        """Runs before every application command in every cog, including message commands."""
+        if await self.services.management.check_user_banned(ctx.author.id):  # type: ignore[union-attr]
+            self.logger.info("Blocked banned user", user_id=ctx.author.id, username=ctx.author.name)
+            raise commands.CheckFailure("User is banned")
 
     async def cog_load(self) -> None:
         """Called when the cog is loaded."""

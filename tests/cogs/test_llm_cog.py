@@ -318,34 +318,3 @@ async def test_export_without_history_sends_error(
 
     assert ctx.last_embed is not None
     assert ctx.last_embed.description == "No conversation history found."
-
-
-@pytest.mark.parametrize(
-    ("command", "kwargs"),
-    [
-        ("summary", {"text": "text"}),
-        ("quickchat", {"question": "question"}),
-        ("chat", {"message": "message"}),
-        ("manage", {}),
-        ("export", {}),
-    ],
-)
-async def test_banned_user_is_blocked(
-    command: str,
-    kwargs: dict[str, str],
-    cog: LLMCog,
-    fake_bot: SongbirdBot,
-    fake_ctx: discord.ApplicationContext,
-) -> None:
-    ctx = _fake(fake_ctx)
-    check = AsyncMock(return_value=True)
-    _services(fake_bot).management = SimpleNamespace(
-        check_user_banned=check,
-        check_guild_banned=AsyncMock(return_value=False),
-    )
-
-    await invoke(cog, command, fake_ctx, **kwargs)
-
-    check.assert_awaited_once_with(ctx.author.id)
-    assert ctx.followup.calls == []
-    assert ctx.respond_calls == [{"args": ()}]

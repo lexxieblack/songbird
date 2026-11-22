@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from typing import Any, cast
-from unittest.mock import AsyncMock
 
 import discord
 import pytest
@@ -53,27 +52,6 @@ async def test_about_responds_with_about_view(cog: BotCog, fake_ctx: discord.App
     await invoke(cog, "about", fake_ctx)
 
     assert isinstance(ctx.respond_calls[0]["view"], AboutView)
-
-
-@pytest.mark.parametrize("command", ["help", "about", "feedback"])
-async def test_banned_user_is_blocked(
-    command: str,
-    cog: BotCog,
-    fake_bot: SongbirdBot,
-    fake_ctx: discord.ApplicationContext,
-) -> None:
-    ctx = _fake(fake_ctx)
-    check = AsyncMock(return_value=True)
-    _services(fake_bot).management = SimpleNamespace(
-        check_user_banned=check,
-        check_guild_banned=AsyncMock(return_value=False),
-    )
-
-    await invoke(cog, command, fake_ctx)
-
-    check.assert_awaited_once_with(ctx.author.id)
-    assert ctx.followup.calls == []
-    assert ctx.respond_calls == [{"args": ()}]
 
 
 async def test_feedback_disabled_when_no_channel(cog: BotCog, fake_ctx: discord.ApplicationContext) -> None:

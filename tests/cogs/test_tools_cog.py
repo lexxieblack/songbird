@@ -332,27 +332,3 @@ async def test_currency_autocomplete_swallows_errors(
     monkeypatch.setattr(cog, "currency_handler", handler)
 
     assert await cog.currency_autocomplete(cast(AutocompleteContext, SimpleNamespace(value="usd"))) == []
-
-
-@pytest.mark.parametrize(("command", "kwargs"), COMMANDS)
-async def test_banned_user_is_blocked(
-    command: str,
-    kwargs: dict[str, Any],
-    cog: ToolsCog,
-    fake_bot: SongbirdBot,
-    fake_ctx: discord.ApplicationContext,
-) -> None:
-    ctx = _fake(fake_ctx)
-    check = AsyncMock(return_value=True)
-    _services(fake_bot).management = SimpleNamespace(
-        check_user_banned=check,
-        check_guild_banned=AsyncMock(return_value=False),
-    )
-
-    await invoke(cog, command, fake_ctx, **kwargs)
-
-    check.assert_awaited_once_with(ctx.author.id)
-    assert ctx.defer_calls == []
-    assert ctx.followup.calls == []
-    assert ctx.sent_modals == []
-    assert ctx.respond_calls == [{"args": ()}]

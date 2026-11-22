@@ -2,9 +2,11 @@
 
 from types import SimpleNamespace
 from typing import Any, cast
+from unittest.mock import AsyncMock
 
 import discord
 import pytest
+from discord.ext import commands
 from tests.support.discord import FakeCtx
 
 from songbird.bot import SongbirdBot
@@ -73,3 +75,35 @@ async def test_http_exception_falls_back_to_followup(
     assert method == "send"
     assert kwargs["embed"].title == "Error"
     assert kwargs["ephemeral"] is True
+
+
+async def test_banned_user_fails_the_pre_command_hook(
+    fake_bot: SongbirdBot,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    ctx = _fake(fake_ctx)
+    check = AsyncMock(return_value=True)
+    cast(Any, fake_bot.services).management = SimpleNamespace(
+        check_user_banned=check,
+        check_guild_banned=AsyncMock(return_value=False),
+    )
+
+    with pytest.raises(commands.CheckFailure):
+        await DummyCog(fake_bot).cog_before_invoke(fake_ctx)
+
+    check.assert_awaited_once_with(ctx.author.id)
+
+
+async def test_unbanned_user_passes_the_pre_command_hook(
+    fake_bot: SongbirdBot,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    check = AsyncMock(return_value=False)
+    cast(Any, fake_bot.services).management = SimpleNamespace(
+        check_user_banned=check,
+        check_guild_banned=AsyncMock(return_value=False),
+    )
+
+    await DummyCog(fake_bot).cog_before_invoke(fake_ctx)
+
+    check.assert_awaited_once_with(fake_ctx.author.id)

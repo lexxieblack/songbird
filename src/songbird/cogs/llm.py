@@ -41,9 +41,6 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        if await self._check_banned(ctx):
-            return
-
         self.logger.info("Summary command", user_id=ctx.author.id, text=text)
 
         try:
@@ -70,9 +67,6 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        if await self._check_banned(ctx):
-            return
-
         self.logger.info("Quickchat command", user_id=ctx.author.id, question=question)
 
         try:
@@ -98,9 +92,6 @@ class LLMCog(BaseCog):
         message: str = discord.Option(str, description="The message to send to Songbird"),  # type: ignore[assignment]
     ) -> None:
         await ctx.defer()
-
-        if await self._check_banned(ctx):
-            return
 
         self.logger.info("Chat command", user_id=ctx.author.id, message=message)
 
@@ -139,9 +130,6 @@ class LLMCog(BaseCog):
         description="Manage your conversation settings",
     )
     async def manage(self, ctx: discord.ApplicationContext) -> None:
-        if await self._check_banned(ctx):
-            return
-
         main_view = ManageView(self.services)
         await ctx.respond(view=main_view, allowed_mentions=discord.AllowedMentions.none())
 
@@ -152,9 +140,6 @@ class LLMCog(BaseCog):
     @commands.cooldown(1, 43200, commands.BucketType.user)
     async def export(self, ctx: discord.ApplicationContext) -> None:
         await ctx.defer(ephemeral=True)
-
-        if await self._check_banned(ctx):
-            return
 
         self.logger.info("Export command", user_id=ctx.author.id)
 
