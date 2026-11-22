@@ -1,5 +1,4 @@
 .env
-uv.lock
 .vscode
 .venv
 .idea
@@ -17,9 +16,14 @@ docs
 .codex
 .copilot
 .cursor
-.github
+.github/*
+!.github/workflows/
 .kilocode
 .opencode
 .windsurf
 AGENTS.md
 CLAUDE.md
+
+.coverage
+coverage.xml
+htmlcov/
