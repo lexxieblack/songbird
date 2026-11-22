@@ -212,6 +212,8 @@ async def test_wolfram_sends_file(
     assert ctx.defer_calls == [{}]
     assert handler.queries == ["2+2"]
     assert ctx.followup.calls[0][1]["file"] is gif
+    assert ctx.followup.calls[0][1]["embed"].image.url == "attachment://wolfram.gif"
+    assert ctx.followup.calls[0][1]["allowed_mentions"].everyone is False
 
 
 async def test_wolfram_failure_sends_error(

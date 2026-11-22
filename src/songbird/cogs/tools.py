@@ -118,7 +118,8 @@ class ToolsCog(BaseCog):
         try:
             reply_gif = await self.wolfram_handler.query(query)
             if reply_gif:
-                await ctx.followup.send(file=reply_gif)
+                embed = discord.Embed().set_image(url=f"attachment://{reply_gif.filename}")
+                await ctx.followup.send(file=reply_gif, embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 self.logger.info("Wolfram query completed", user_id=ctx.author.id, query=query)
             else:
                 await self.send_error(ctx, "Wolfram query failed.")

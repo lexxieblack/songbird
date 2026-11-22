@@ -5,7 +5,7 @@ import respx
 from songbird.config import Settings
 from songbird.services.wolfram import WolframService
 
-URL = "http://api.wolframalpha.com/v1/simple"
+URL = "https://api.wolframalpha.com/v1/simple"
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ async def test_query_returns_image_bytes(service: WolframService, respx_mock: re
     request = route.calls[0].request  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
     assert request.url.params["i"] == "2+2"  # pyright: ignore[reportUnknownMemberType]
     assert request.url.params["appid"] == "test-wolfram-key"  # pyright: ignore[reportUnknownMemberType]
-    assert request.url.params["background"] == "193555"  # pyright: ignore[reportUnknownMemberType]
+    assert "background" not in request.url.params  # pyright: ignore[reportUnknownMemberType]
 
 
 @pytest.mark.parametrize(
