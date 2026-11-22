@@ -107,3 +107,20 @@ async def test_unbanned_user_passes_the_pre_command_hook(
     await DummyCog(fake_bot).cog_before_invoke(fake_ctx)
 
     check.assert_awaited_once_with(fake_ctx.author.id)
+
+
+async def test_owner_skips_the_ban_check(
+    monkeypatch: pytest.MonkeyPatch,
+    fake_bot: SongbirdBot,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    check = AsyncMock(return_value=True)
+    cast(Any, fake_bot.services).management = SimpleNamespace(
+        check_user_banned=check,
+        check_guild_banned=AsyncMock(return_value=False),
+    )
+    monkeypatch.setattr(fake_bot, "is_owner", AsyncMock(return_value=True))
+
+    await DummyCog(fake_bot).cog_before_invoke(fake_ctx)
+
+    check.assert_not_awaited()
