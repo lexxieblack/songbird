@@ -3,8 +3,9 @@
 A Discord bot that embodies the persona of **Song So Mi (Songbird)** from Cyberpunk 2077, post-canon (after Phantom Liberty). Features AI-powered conversations with memory, social media link fixing, translation, and computational knowledge queries.
 
 ![Python](https://img.shields.io/badge/Python-3.13%2B-3776AB?style=for-the-badge&logo=python)
-![Pycord](https://img.shields.io/badge/Pycord-2.8.0-5865f2?style=for-the-badge&logo=python&logoColor=5865f2)
+![Pycord](https://img.shields.io/badge/Pycord-2.8.1-5865f2?style=for-the-badge&logo=python&logoColor=5865f2)
 ![Gemini](https://img.shields.io/badge/Model-Gemma_4-8E75B2?style=for-the-badge&logo=googlegemini)
+![CI](https://img.shields.io/github/actions/workflow/status/lexxieblack/songbird/ci.yml?style=for-the-badge&logo=github)
 
 ---
 
