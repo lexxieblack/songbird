@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from discord import (
     ButtonStyle,
@@ -19,20 +19,20 @@ from discord.ui import (
 from songbird.config import Settings
 from songbird.models.management.blackwall import BlackwallPunishment
 from songbird.ui.custom_components import generate_container
-from songbird.ui.views.blackwall.buttons import _ActionButton, _ButtonRow
+from songbird.ui.views.blackwall.buttons import ActionButton, ButtonRow
 
 
 def _make_channel_section(
     channel_id: int | None,
     on_set: Callable[[Interaction], Any],
     on_remove: Callable[[Interaction], Any],
-) -> ViewItem:
+) -> ViewItem[Any]:
     if channel_id:
         text = f"<#{channel_id}>"
-        button = _ActionButton("Remove", ButtonStyle.danger, on_remove)
+        button = ActionButton("Remove", ButtonStyle.danger, on_remove)
     else:
         text = "*Not Set*"
-        button = _ActionButton("Set", ButtonStyle.success, on_set)
+        button = ActionButton("Set", ButtonStyle.success, on_set)
 
     return Section(TextDisplay(f"**Channel:** {text}"), accessory=button)
 
@@ -41,30 +41,30 @@ def _make_log_channel_section(
     channel_id: int | None,
     on_set: Callable[[Interaction], Any],
     on_remove: Callable[[Interaction], Any],
-) -> ViewItem:
+) -> ViewItem[Any]:
     if channel_id:
         text = f"<#{channel_id}>"
-        button = _ActionButton("Remove", ButtonStyle.danger, on_remove)
+        button = ActionButton("Remove", ButtonStyle.danger, on_remove)
     else:
         text = "*Not Set*"
-        button = _ActionButton("Set", ButtonStyle.success, on_set)
+        button = ActionButton("Set", ButtonStyle.success, on_set)
 
     return Section(TextDisplay(f"**Log Channel:** {text}"), accessory=button)
 
 
-def _make_roles_section(roles: list[int] | None, on_edit: Callable[[Interaction], Any]) -> ViewItem:
+def _make_roles_section(roles: list[int] | None, on_edit: Callable[[Interaction], Any]) -> ViewItem[Any]:
     roles_text = " ".join(f"<@&{r}>" for r in roles) if roles else "*Admins only*"
-    button = _ActionButton("Edit", ButtonStyle.primary, on_edit)
+    button = ActionButton("Edit", ButtonStyle.primary, on_edit)
     return Section(TextDisplay(f"**Allowed Roles:** {roles_text}"), accessory=button)
 
 
-def _make_punishment_section(punishment: BlackwallPunishment, on_edit: Callable[[Interaction], Any]) -> ViewItem:
-    button = _ActionButton("Change", ButtonStyle.primary, on_edit)
+def _make_punishment_section(punishment: BlackwallPunishment, on_edit: Callable[[Interaction], Any]) -> ViewItem[Any]:
+    button = ActionButton("Change", ButtonStyle.primary, on_edit)
     return Section(TextDisplay(f"**Punishment:** {punishment.value.title()}"), accessory=button)
 
 
-def _make_banned_count_section(banned_count: int | None) -> ViewItem:
-    return TextDisplay(f"**Trigger Count:** {banned_count}")
+def _make_banned_count_section(banned_count: int | None) -> ViewItem[Any]:
+    return cast(ViewItem[Any], TextDisplay(f"**Trigger Count:** {banned_count}"))
 
 
 class BlackwallView(DesignerView):
@@ -85,10 +85,10 @@ class BlackwallView(DesignerView):
     ):
         super().__init__(timeout=300)
 
-        components = []
+        components: list[Any] = []
 
         if settings.blackwall.image_url:
-            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))
+            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))  # type: ignore[no-untyped-call]
             components.append(Separator(divider=False))
 
         components.extend(
@@ -99,7 +99,7 @@ class BlackwallView(DesignerView):
                 _make_punishment_section(punishment, on_edit_punishment),
                 _make_banned_count_section(banned_count or 0),
                 Separator(),
-                _ButtonRow(settings.blackwall.warning_url, channel_id),
+                ButtonRow(settings.blackwall.warning_url, channel_id),
             ]
         )
 

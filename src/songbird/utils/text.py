@@ -28,7 +28,7 @@ def sanitize_mentions(text: str) -> str:
     text = text.replace("@here", "@\u200bhere")
 
     # Escape user mention patterns <@userid> and <@!userid>
-    text = re.sub(r"<@(!?)(\d+)>", r"<@\u200b\1\2>", text)
+    text = re.sub(r"<@(!?)(\d+)>", lambda match: f"<@\u200b{match.group(1)}{match.group(2)}>", text)
 
     return text
 
@@ -152,7 +152,7 @@ def split_message(
     final_chunks: list[str | File] = []
 
     # Split by code blocks while preserving the code blocks
-    split_pattern = r"(?s)((```[\s\S]*?```))"
+    split_pattern = r"(?s)(```[\s\S]*?```)"
     raw_chunks = re.split(pattern=split_pattern, string=text)
     raw_chunks = [chunk.strip() for chunk in raw_chunks if chunk.strip()]
 

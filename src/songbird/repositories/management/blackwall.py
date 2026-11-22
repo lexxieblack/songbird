@@ -18,6 +18,7 @@ STMT_CREATE_BLACKWALL = (
         channel_id=bindparam("b_channel_id"),
         log_channel_id=bindparam("b_log_channel_id"),
         whitelisted_roles=bindparam("b_whitelisted_roles"),
+        punishment=bindparam("b_punishment"),
     )
     .returning(blackwall_table)
 )
@@ -70,6 +71,7 @@ class BlackwallRepository:
             "b_channel_id": input.channel_id,
             "b_log_channel_id": input.log_channel_id,
             "b_whitelisted_roles": input.whitelisted_roles,
+            "b_punishment": input.punishment.value,
         }
 
         try:

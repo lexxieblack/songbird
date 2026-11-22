@@ -32,11 +32,16 @@ STMT_GET_ALL_MESSAGES = (
     select(message_table).where(message_table.c.user_id == bindparam("b_user_id")).order_by(message_table.c.created_at.asc())
 )
 
-STMT_GET_USER_STATS = select(
-    func.count(message_table.c.id).label("message_count"),
-    func.min(message_table.c.created_at).label("first_message"),
-    func.max(message_table.c.created_at).label("last_message"),
-).where(message_table.c.user_id == bindparam("b_user_id"))
+STMT_GET_USER_STATS = (
+    select(
+        message_table.c.user_id.label("user_id"),
+        func.count(message_table.c.id).label("message_count"),
+        func.min(message_table.c.created_at).label("first_message"),
+        func.max(message_table.c.created_at).label("last_message"),
+    )
+    .where(message_table.c.user_id == bindparam("b_user_id"))
+    .group_by(message_table.c.user_id)
+)
 
 STMT_GET_NEWEST_MESSAGE_ID = (
     select(message_table.c.id)

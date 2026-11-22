@@ -1,4 +1,3 @@
-
 from discord import InputTextStyle, Interaction
 from discord.ui import InputText, Modal
 

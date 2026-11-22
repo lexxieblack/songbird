@@ -23,9 +23,9 @@ class AuditLogAction(Enum):
         return self.value
 
 
-MessageRoleEnum = PGEnum(
-    *[role.value for role in AuditLogAction],
-    name="audit_log_action",
+AuditLogActionEnum = PGEnum(
+    *[action.value for action in AuditLogAction],
+    name="log_action",
     schema="management",
     create_constraint=True,
     validate_strings=True,
@@ -35,7 +35,7 @@ audit_log_table = Table(
     "audit_log",
     metadata,
     Column("id", PGUUID(as_uuid=True), primary_key=True),
-    Column("action", MessageRoleEnum, nullable=False),
+    Column("action", AuditLogActionEnum, nullable=False),
     Column("actor_id", BigInteger, nullable=True),
     Column("target_id", BigInteger, nullable=True),
     Column("guild_id", BigInteger, nullable=True),

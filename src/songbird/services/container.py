@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -153,7 +153,7 @@ async def close_container(container: ServiceContainer) -> None:
 
 
 @asynccontextmanager
-async def get_session(container: ServiceContainer) -> AsyncIterator[AsyncSession]:
+async def get_session(container: ServiceContainer) -> AsyncGenerator[AsyncSession]:
     """Context manager for obtaining a database session.
 
     Provides a database session that automatically commits on success and rolls back on exception.

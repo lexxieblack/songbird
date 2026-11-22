@@ -7,7 +7,7 @@ from discord.ui import ActionRow, DesignerView, MediaGallery, Select, Separator,
 from songbird.config import Settings
 from songbird.models.management.blackwall import BlackwallPunishment
 from songbird.ui.custom_components import generate_container
-from songbird.ui.views.blackwall.buttons import _ActionButton
+from songbird.ui.views.blackwall.buttons import ActionButton
 from songbird.utils.permissions import can_interact
 
 
@@ -29,10 +29,10 @@ class BlackwallEditPunishmentView(DesignerView):
         )
         self.punishment_select.callback = self._on_punishment_select  # type: ignore[method-assign]
 
-        components = []
+        components: list[Any] = []
 
         if settings.blackwall.image_url:
-            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))
+            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))  # type: ignore[no-untyped-call]
             components.append(Separator(divider=False))
 
         components.extend(
@@ -42,8 +42,8 @@ class BlackwallEditPunishmentView(DesignerView):
                 ),
                 ActionRow(self.punishment_select),
                 ActionRow(
-                    _ActionButton("Save", ButtonStyle.success, on_save),
-                    _ActionButton("Cancel", ButtonStyle.secondary, on_cancel),
+                    ActionButton("Save", ButtonStyle.success, on_save),
+                    ActionButton("Cancel", ButtonStyle.secondary, on_cancel),
                 ),
             ]
         )

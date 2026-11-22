@@ -1,4 +1,4 @@
-from googletrans import Translator
+from googletrans import Translator  # pyright: ignore[reportMissingTypeStubs]
 from httpx import AsyncClient
 from pycountry import languages
 from structlog import BoundLogger
@@ -18,16 +18,16 @@ class TranslationService:
 
     def get_language_code(self, language: str) -> str | None:
         try:
-            lang_code = languages.lookup(language)
+            lang_code = languages.lookup(language)  # pyright: ignore[reportUnknownVariableType]
             return lang_code.alpha_2  # type: ignore[no-any-return]
-        except LookupError:
+        except (LookupError, AttributeError):
             return None
 
     def get_language_name(self, language: str) -> str:
         try:
             if len(language) == 2:
-                lang = languages.get(alpha_2=language)
-                return lang.name if lang else language
+                lang = languages.get(alpha_2=language)  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+                return lang.name if lang else language  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
             return languages.lookup(language).name  # type: ignore[no-any-return]
         except LookupError:
             return language
@@ -45,14 +45,14 @@ class TranslationService:
         target_lang: str,
         source_lang: str,
     ) -> str:
-        sl = "auto" if source_lang == "auto" else self.get_language_code(source_lang)
+        sl = self.get_language_code(source_lang) or "auto"
         tl = self.get_language_code(target_lang)
         if not tl:
             self.logger.warning("Translation target language not supported", target_lang=target_lang)
             return "Error: target language not supported"
 
         try:
-            translated_text = await self.translator.translate(text, src=sl, dest=tl)  # type: ignore
+            translated_text = await self.translator.translate(text, src=sl, dest=tl)  # pyright: ignore[reportUnknownVariableType, reportCallIssue]
             self.logger.info(
                 "Translation successful",
                 source_lang=source_lang,

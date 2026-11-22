@@ -61,9 +61,11 @@ def load_fix(bot: SongbirdBot) -> None:
         except Forbidden:
             with contextlib.suppress(HTTPException):
                 await message.channel.send(
-                    ("I couldn't remove the original message's link embed due to a missing permission.\n"
-                     "Missing 'Manage Messages' permission or my role isn't above the message's author's role.\n"
-                     "-# *This message will be deleted after 10 seconds.*"),
+                    (
+                        "I couldn't remove the original message's link embed due to a missing permission.\n"
+                        "Missing 'Manage Messages' permission or my role isn't above the message's author's role.\n"
+                        "-# *This message will be deleted after 10 seconds.*"
+                    ),
                     delete_after=10,
                     reference=message,
                     allowed_mentions=AllowedMentions.none(),

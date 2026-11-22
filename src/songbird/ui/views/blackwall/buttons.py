@@ -8,7 +8,7 @@ from songbird.ui.views.blackwall.default_warning import BlackwallDefaultWarningV
 from songbird.utils.permissions import can_interact
 
 
-class _ActionButton(Button):
+class ActionButton(Button[Any]):
     def __init__(self, label: str, style: ButtonStyle, action: Callable[[Interaction], Any], disabled: bool = False) -> None:
         super().__init__(label=label, style=style, disabled=disabled)
         self._action = action
@@ -18,12 +18,10 @@ class _ActionButton(Button):
             await self._action(interaction)
 
 
-class _ButtonRow(ActionRow):
+class ButtonRow(ActionRow[Any]):
     def __init__(self, warning_url: str | None, channel_id: int | None) -> None:
-        super().__init__()
-
-        self.add_item(
-            _ActionButton(
+        super().__init__(  # pyright: ignore[reportUnknownMemberType]
+            ActionButton(
                 "Default Message",
                 ButtonStyle.primary,
                 self._make_send_warning(warning_url, channel_id),

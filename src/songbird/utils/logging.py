@@ -21,11 +21,11 @@ def _enrich_error(
         event_dict["error"] = str(error)
         event_dict["error_type"] = type(error).__name__
         if hasattr(error, "status"):
-            event_dict["error_status"] = error.status  # type: ignore
+            event_dict["error_status"] = error.status  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         if hasattr(error, "code"):
-            event_dict["error_code"] = error.code  # type: ignore
+            event_dict["error_code"] = error.code  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         if hasattr(error, "text"):
-            event_dict["error_text"] = error.text  # type: ignore
+            event_dict["error_text"] = error.text  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
     return event_dict
 
 

@@ -167,7 +167,7 @@ class BlackwallCog(BaseCog):
             await interaction.response.defer()
 
             try:
-                updated = await blackwall_service.update_channel(guild_id, None)
+                updated = await blackwall_service.update_log_channel(guild_id, None)
             except Exception as e:
                 self.logger.exception("Failed to remove blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
@@ -192,7 +192,9 @@ class BlackwallCog(BaseCog):
         async def on_edit_roles(interaction: discord.Interaction) -> None:
             try:
                 current_blackwall = await blackwall_service.get_blackwall(guild_id)
-                current_roles = current_blackwall.whitelisted_roles if current_blackwall is not None else blackwall.whitelisted_roles
+                current_roles = (
+                    current_blackwall.whitelisted_roles if current_blackwall is not None else blackwall.whitelisted_roles
+                )
             except Exception:
                 current_roles = blackwall.whitelisted_roles
 

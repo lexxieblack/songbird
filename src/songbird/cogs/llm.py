@@ -168,8 +168,7 @@ class LLMCog(BaseCog):
                     return
 
                 messages_data = [
-                    {"role": m.role.value, "content": m.content, "created_at": m.created_at.isoformat()}
-                    for m in messages
+                    {"role": m.role.value, "content": m.content, "created_at": m.created_at.isoformat()} for m in messages
                 ]
 
                 json_str = json.dumps(messages_data, indent=2)

@@ -4,7 +4,8 @@ from decimal import Decimal
 
 import discord
 
-from songbird.services.currency import ConversionResult, Currency, CurrencyError, CurrencyService
+from songbird.models.currency import ConversionResult, Currency, CurrencyError
+from songbird.services.currency import CurrencyService
 from songbird.utils.logging import get_logger
 
 

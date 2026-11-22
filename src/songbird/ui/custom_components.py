@@ -22,11 +22,11 @@ class DeleteButton(Button[Any]):
 class _DirectionalButton(Button[Any]):
     def __init__(self, emoji: str | GuildEmoji | AppEmoji | PartialEmoji, view: BaseView) -> None:
         super().__init__(emoji=emoji)
-        self.view = view
+        self._target_view = view
 
     async def callback(self, interaction: Interaction) -> None:
         if await can_interact(interaction):
-            await interaction.response.edit_message(view=self.view)
+            await interaction.response.edit_message(view=self._target_view)
 
 
 class BackButton(_DirectionalButton):
@@ -51,13 +51,13 @@ def generate_container(
     if subtitle:
         header.add_text(subtitle)
 
-    container.add_item(header)
+    container.add_item(header)  # pyright: ignore[reportUnknownMemberType]
 
     if components:
         container.add_separator(divider=True, spacing=SeparatorSpacingSize.large)
 
     for component in components:
-        container.add_item(component)
+        container.add_item(component)  # pyright: ignore[reportUnknownMemberType]
 
     return container
 
@@ -75,13 +75,13 @@ def generate_back_container(
     if subtitle:
         header.add_text(subtitle)
 
-    container.add_item(header)
+    container.add_item(header)  # pyright: ignore[reportUnknownMemberType]
 
     if components:
         container.add_separator(divider=True, spacing=SeparatorSpacingSize.large)
 
     for component in components:
-        container.add_item(component)
+        container.add_item(component)  # pyright: ignore[reportUnknownMemberType]
 
     return container
 
@@ -114,7 +114,7 @@ class ConfirmView(DesignerView):
         header: Section[Any] = Section(TextDisplay(prompt), accessory=DeleteButton())
         if subtitle:
             header.add_text(subtitle)
-        container.add_item(header)
+        container.add_item(header)  # pyright: ignore[reportUnknownMemberType]
         container.add_separator(divider=True, spacing=SeparatorSpacingSize.large)
         self.add_item(container)
 
@@ -122,7 +122,7 @@ class ConfirmView(DesignerView):
             ActionRow(
                 _ConfirmActionButton(confirm_label, ButtonStyle.danger, confirm_callback),
                 _ConfirmActionButton(cancel_label, ButtonStyle.secondary, cancel_callback or _default_cancel),
-            )
+            )  # pyright: ignore[reportUnknownArgumentType]
         )
 
 

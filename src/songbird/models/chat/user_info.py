@@ -11,13 +11,13 @@ user_info_table = Table(
     Column("user_id", BigInteger, primary_key=True),
     Column("user_info", Text),
     Column("created_at", DateTime(timezone=True), nullable=False, default=func.now()),
-    Column("updated_at", DateTime(timezone=True), nullable=False, default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now()),
     PrimaryKeyConstraint("user_id"),
 )
 
 
 class UserInfo(BaseDBModel):
     user_id: int
-    user_info: str
+    user_info: str | None
     created_at: datetime
     updated_at: datetime
