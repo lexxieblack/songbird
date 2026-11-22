@@ -83,6 +83,16 @@ def test_nested_debug_guild_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _build(**BASE).bot.debug_guild_id == 123
 
 
+def test_nested_debug_guild_dotenv(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("BOT__DEBUG_GUILD_ID=123\n")
+
+    values: dict[str, Any] = {"_env_file": env_file, **{key: value for key, value in BASE.items() if key != "bot"}}
+    settings = Settings(**values)
+
+    assert settings.bot.debug_guild_id == 123
+
+
 def test_init_kwargs_beat_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM__API_KEY", "env-llm")
     monkeypatch.setenv("BOT__OWNER_ID", "1")
@@ -108,6 +118,7 @@ def test_toml_beats_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None
                 'log_level = "WARNING"',
                 "[bot]",
                 "owner_id = 7",
+                "debug_guild_id = 11",
                 "[blackwall]",
                 "[db]",
                 'url = "postgresql+psycopg://toml"',
@@ -128,6 +139,7 @@ def test_toml_beats_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None
     assert settings.discord_token == "toml-token"
     assert settings.log_level == "WARNING"
     assert settings.bot.owner_id == 7
+    assert settings.bot.debug_guild_id == 11
     assert settings.llm.api_key == "toml-llm"
 
 

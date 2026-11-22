@@ -164,6 +164,39 @@ async def test_missing_config_is_created(
     assert isinstance(ctx.respond_calls[0]["view"], BlackwallView)
 
 
+async def test_remove_log_channel_clears_only_log_channel(
+    monkeypatch: pytest.MonkeyPatch,
+    cog: BlackwallCog,
+    fake_bot: SongbirdBot,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    config = _config(log_channel_id=20)
+    service = _service(config)
+    _services(fake_bot).blackwall = service
+    _admin_ctx(fake_ctx)
+
+    captured: list[tuple[Any, ...]] = []
+
+    def capture(*args: Any, **_kwargs: Any) -> object:
+        captured.append(args)
+        return object()
+
+    monkeypatch.setattr("songbird.cogs.blackwall._make_view", capture)
+
+    await invoke(cog, "blackwall", fake_ctx)
+
+    interaction = SimpleNamespace(
+        response=SimpleNamespace(defer=AsyncMock()),
+        followup=SimpleNamespace(send=AsyncMock()),
+        edit_original_response=AsyncMock(),
+    )
+    await captured[0][8](interaction)
+
+    service.update_log_channel.assert_awaited_once_with(1, None)
+    service.update_channel.assert_not_awaited()
+    interaction.edit_original_response.assert_awaited_once()
+
+
 async def test_config_lookup_failure_sends_error(
     cog: BlackwallCog,
     fake_bot: SongbirdBot,

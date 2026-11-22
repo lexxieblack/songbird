@@ -20,7 +20,7 @@ class TranslationService:
         try:
             lang_code = languages.lookup(language)  # pyright: ignore[reportUnknownVariableType]
             return lang_code.alpha_2  # type: ignore[no-any-return]
-        except LookupError:
+        except (LookupError, AttributeError):
             return None
 
     def get_language_name(self, language: str) -> str:

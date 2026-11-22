@@ -64,7 +64,7 @@ class LLMService:
         if code == 429:
             return True
         msg = str(e).lower()
-        return "quota" in msg or "exhausted" in msg or "rate" in msg
+        return "quota" in msg or "exhausted" in msg or "rate limit" in msg or "rate_limit" in msg
 
     def _build_config(self, system_prompt: str | None = None) -> GenerateContentConfig:
         return GenerateContentConfig(

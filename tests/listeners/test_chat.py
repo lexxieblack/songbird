@@ -69,7 +69,7 @@ def _guild_message(content: str = "hello", *, mentions: list[Any] | None = None)
     send = AsyncMock()
     channel = make_channel(send=send, trigger_typing=AsyncMock())
     channel.name = "general"
-    guild: Any = make_guild(leave=MagicMock())
+    guild: Any = make_guild(leave=AsyncMock())
     guild.id = 3
     guild.name = "Test Guild"
     author: Any = make_member(id=7, bot=False)
@@ -190,8 +190,7 @@ async def test_banned_guild_is_left_on_mention(fake_bot: SongbirdBot, monkeypatc
 
     await _listener(fake_bot)(message)
 
-    # Source calls `guild.leave()` without awaiting it; assert the call, not an await.
-    guild.leave.assert_called_once()
+    guild.leave.assert_awaited_once()
     handler.chat.assert_not_awaited()
     send.assert_not_awaited()
 

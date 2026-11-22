@@ -39,6 +39,7 @@ def test_language_code_lookup(service: TranslationService) -> None:
     assert service.get_language_code("English") == "en"
     assert service.get_language_code("ja") == "ja"
     assert service.get_language_code("Notalanguage") is None
+    assert service.get_language_code("Klingon") is None
 
 
 def test_language_name_lookup(service: TranslationService) -> None:

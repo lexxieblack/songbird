@@ -62,10 +62,11 @@ class TranslateMessageModal(Modal):
         self.add_item(self.target_language)
 
     async def callback(self, interaction: Interaction) -> None:
-        if self.text is None:
+        if self.text == "":
             await interaction.respond("Nothing to translate.", ephemeral=True, allowed_mentions=AllowedMentions.none())
+            return
 
-        target_language = self.target_language.value.strip()  # type: ignore
+        target_language = (self.target_language.value or "").strip()
 
         await interaction.response.defer()
         source_name, target_name, translated_text = await self.translate_callback(self.text, target_language)

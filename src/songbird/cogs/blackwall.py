@@ -167,7 +167,7 @@ class BlackwallCog(BaseCog):
             await interaction.response.defer()
 
             try:
-                updated = await blackwall_service.update_channel(guild_id, None)
+                updated = await blackwall_service.update_log_channel(guild_id, None)
             except Exception as e:
                 self.logger.exception("Failed to remove blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)

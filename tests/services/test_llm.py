@@ -121,6 +121,7 @@ class _CodedError(Exception):
         (RuntimeError("RESOURCE EXHAUSTED"), True),
         (RuntimeError("quota exceeded"), True),
         (RuntimeError("rate limit hit"), True),
+        (RuntimeError("failed to generate content"), False),
         (RuntimeError("bad request"), False),
     ],
 )

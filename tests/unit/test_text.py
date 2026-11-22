@@ -47,7 +47,6 @@ def test_sanitize_mentions_leaves_empty_text() -> None:
     assert sanitize_mentions("") == ""
 
 
-@pytest.mark.xfail(strict=True, reason="re.sub replacement string uses a \\u escape, which re rejects")
 def test_sanitize_mentions_neutralizes_pings() -> None:
     assert sanitize_mentions("@everyone @here <@123> <@!456>") == "@\u200beveryone @\u200bhere <@\u200b123> <@\u200b!456>"
 
@@ -159,7 +158,6 @@ def test_split_message_keeps_paragraphs_that_fit() -> None:
     assert split_message("one\n\ntwo\n\nthree") == ["one\n\ntwo\n\nthree"]
 
 
-@pytest.mark.xfail(strict=True, reason="the re.split pattern has two capture groups, so each code block is duplicated")
 def test_split_message_keeps_small_codeblock_once() -> None:
     assert split_message("```python\nx = 1\n```") == ["```python\nx = 1\n```"]
 

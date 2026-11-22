@@ -24,13 +24,22 @@ async def test_create_applies_defaults(session: AsyncSession) -> None:
 
 async def test_create_stores_provided_values(session: AsyncSession) -> None:
     repo = BlackwallRepository(session)
-    await repo.create(CreateBlackwall(guild_id=1, channel_id=10, log_channel_id=20, whitelisted_roles=[3, 4]))
+    await repo.create(
+        CreateBlackwall(
+            guild_id=1,
+            channel_id=10,
+            log_channel_id=20,
+            whitelisted_roles=[3, 4],
+            punishment=BlackwallPunishment.KICK,
+        )
+    )
     await session.commit()
 
     fetched = await repo.get(1)
     assert fetched is not None
     assert (fetched.channel_id, fetched.log_channel_id) == (10, 20)
     assert fetched.whitelisted_roles == [3, 4]
+    assert fetched.punishment is BlackwallPunishment.KICK
 
 
 async def test_get_missing_returns_none(session: AsyncSession) -> None:

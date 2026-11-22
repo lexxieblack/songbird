@@ -1,7 +1,11 @@
+from datetime import UTC, datetime
+
 import pytest
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from songbird.models.chat.exceptions import UserInfoAlreadyExistsError, UserInfoNotFoundError
+from songbird.models.chat.user_info import user_info_table
 from songbird.repositories.chat.user_info import UserInfoRepository
 
 pytestmark = pytest.mark.db
@@ -20,6 +24,21 @@ async def test_create_and_get_round_trip(session: AsyncSession) -> None:
     assert fetched.user_id == 7
     assert fetched.user_info == "bio"
     assert fetched.created_at == created.created_at
+
+
+async def test_update_bumps_updated_at(session: AsyncSession) -> None:
+    repo = UserInfoRepository(session)
+    await repo.create_user_info(7, "bio")
+    await session.commit()
+
+    old = datetime(2000, 1, 1, tzinfo=UTC)
+    await session.execute(update(user_info_table).where(user_info_table.c.user_id == 7).values(updated_at=old))
+    await session.commit()
+
+    updated = await repo.update_user_info(7, "new bio")
+    await session.commit()
+
+    assert updated.updated_at > old
 
 
 async def test_get_missing_raises_not_found(session: AsyncSession) -> None:

@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from typing import cast
 
 import discord
@@ -227,6 +228,23 @@ async def test_translate_message_modal_uses_message_content() -> None:
     assert calls == [("Hello", "German")]
     assert interaction.response.defer_calls == [{}]
     assert isinstance(interaction.followup.messages[0]["view"], TranslateView)
+
+
+async def test_translate_message_modal_rejects_empty_text() -> None:
+    calls: list[tuple[str, str]] = []
+
+    async def translate(text: str, target: str) -> tuple[str, str, str]:
+        calls.append((text, target))
+        return ("English", "German", "Hallo")
+
+    modal = TranslateMessageModal(cast(discord.Message, SimpleNamespace(content="")), translate)
+    interaction = FakeInteraction()
+
+    await modal.callback(as_interaction(interaction))
+
+    assert calls == []
+    assert interaction.response.defer_calls == []
+    assert interaction.respond_calls[0]["args"] == ("Nothing to translate.",)
 
 
 async def test_modals_expose_expected_inputs() -> None:

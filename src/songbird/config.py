@@ -25,7 +25,7 @@ class BotSettings(BaseModel):
     owner_id: int | None = None
     feedback_channel_id: int | None = None
     source_code_url: str | None = None
-    debug_guild_id: int | None = Field(default=None, validation_alias="DEBUG_GUILD_ID")
+    debug_guild_id: int | None = None
     management_guild_id: int | None = None
 
     @property
