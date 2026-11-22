@@ -6,7 +6,7 @@ from discord.ui import ActionRow, DesignerView, MediaGallery, RoleSelect, Separa
 
 from songbird.config import Settings
 from songbird.ui.custom_components import generate_container
-from songbird.ui.views.blackwall.buttons import _ActionButton
+from songbird.ui.views.blackwall.buttons import ActionButton
 from songbird.utils.permissions import can_interact
 
 
@@ -28,10 +28,10 @@ class BlackwallEditRolesView(DesignerView):
         )
         self.role_select.callback = self._on_role_select  # type: ignore[method-assign]
 
-        components = []
+        components: list[Any] = []
 
         if settings.blackwall.image_url:
-            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))
+            components.append(MediaGallery(MediaGalleryItem(url=settings.blackwall.image_url)))  # type: ignore[no-untyped-call]
             components.append(Separator(divider=False))
 
         components.extend(
@@ -39,8 +39,8 @@ class BlackwallEditRolesView(DesignerView):
                 TextDisplay("Select the roles that should bypass the blackwall:"),
                 ActionRow(self.role_select),
                 ActionRow(
-                    _ActionButton("Save", ButtonStyle.success, on_save),
-                    _ActionButton("Cancel", ButtonStyle.secondary, on_cancel),
+                    ActionButton("Save", ButtonStyle.success, on_save),
+                    ActionButton("Cancel", ButtonStyle.secondary, on_cancel),
                 ),
             ]
         )

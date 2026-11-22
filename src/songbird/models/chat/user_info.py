@@ -18,6 +18,6 @@ user_info_table = Table(
 
 class UserInfo(BaseDBModel):
     user_id: int
-    user_info: str
+    user_info: str | None
     created_at: datetime
     updated_at: datetime

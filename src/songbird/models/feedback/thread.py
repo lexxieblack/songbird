@@ -8,10 +8,10 @@ from songbird.models.feedback.base import metadata
 thread_table = Table(
     "thread",
     metadata,
-    Column("user_id", BigInteger, primary_key=True),
-    Column("thread_id", BigInteger, primary_key=True),
+    Column("user_id", BigInteger),
+    Column("thread_id", BigInteger),
     Column("created_at", DateTime(timezone=True), nullable=False, default=func.now()),
-    PrimaryKeyConstraint("user_id", "thread_id"),
+    PrimaryKeyConstraint("user_id"),
 )
 
 
