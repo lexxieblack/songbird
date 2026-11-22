@@ -16,8 +16,10 @@ class RestoreLinkView(View):
 
     async def on_timeout(self) -> None:
         self.clear_items()
+
         if isinstance(self.message, Message):
-            await self.message.edit(view=self)
+            with contextlib.suppress(HTTPException):  # message may have been deleted
+                await self.message.edit(view=self)
 
     @button(label="Restore", style=ButtonStyle.secondary, emoji="⬅️", id=127)
     async def restore(self, _: Button[Any], interaction: Interaction) -> None:
