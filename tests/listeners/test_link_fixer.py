@@ -271,6 +271,12 @@ def test_get_urls_finds_http_and_https_links() -> None:
     assert link_fixer_module._get_urls(text) == ["http://a.example/x", "https://b.example/y?q=1"]
 
 
+def test_get_urls_ignores_links_wrapped_in_angle_brackets() -> None:
+    text = "hidden <https://example.com/a> shown https://example.com/b"
+
+    assert link_fixer_module._get_urls(text) == ["https://example.com/b"]
+
+
 def test_domain_setting_requires_chat_enabled() -> None:
     links = _settings({"example.com": {"chat": True}, "other.com": {"chat": False}}).links
 

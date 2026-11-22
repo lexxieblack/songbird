@@ -100,7 +100,8 @@ def unload_fix() -> None:
 
 
 def _get_urls(text: str) -> list[str]:
-    url_pattern = r"https?://[^\s]+"
+    # Links wrapped in <> are intentionally embed-suppressed by the author.
+    url_pattern = r"(?<!<)https?://[^<>\s]+"
     return re.findall(url_pattern, text)
 
 
