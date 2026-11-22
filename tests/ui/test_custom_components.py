@@ -20,11 +20,11 @@ pytestmark = pytest.mark.discord
 
 
 def _row(view: ConfirmView) -> Any:
-    return view.children[1]  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+    return cast(Any, view).children[1]
 
 
-def _container(view: object) -> Any:
-    return cast(Any, view).children[0]
+# def _container(view: object) -> Any:
+#     return cast(Any, view).children[0]
 
 
 async def _noop(_interaction: discord.Interaction) -> None:
@@ -103,7 +103,7 @@ async def test_generate_back_container_uses_back_button() -> None:
     section = container.items[0]
     assert [item.content for item in section.items] == ["## Details", "sub"]
     assert isinstance(section.accessory, BackButton)
-    assert section.accessory.view is back_view
+    assert cast(Any, section.accessory)._target_view is back_view
 
 
 async def test_confirm_view_invokes_confirm_callback() -> None:
