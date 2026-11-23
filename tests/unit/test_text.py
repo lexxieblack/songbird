@@ -123,15 +123,26 @@ def test_split_sentence_splits_on_word_boundaries_and_keeps_words() -> None:
 
     assert len(chunks) > 1
     assert all(chunk for chunk in chunks)
-    assert all(len(chunk.strip()) <= 10 for chunk in chunks)
-    assert "".join(chunks).split() == ["hello", "world", "this", "is", "a", "test"]
+    assert all(len(chunk) <= 10 for chunk in chunks)
+    assert " ".join(chunks).split() == ["hello", "world", "this", "is", "a", "test"]
 
 
-def test_split_paragraph_to_sentences_preserves_the_sentence_text() -> None:
+def test_split_sentence_hard_splits_a_word_longer_than_the_limit() -> None:
+    chunks = split_sentence("a" * 25, 10)
+
+    assert chunks == ["a" * 10, "a" * 10, "a" * 5]
+
+
+def test_split_paragraph_to_sentences_keeps_punctuation_attached() -> None:
     chunks = split_paragraph_to_sentences("First sentence. Second sentence!", max_length=200)
 
-    assert len(chunks) == 1
-    assert chunks[0].split() == ["First", "sentence", ".", "Second", "sentence!"]
+    assert chunks == ["First sentence. Second sentence!"]
+
+
+def test_split_paragraph_to_sentences_packs_sentences_up_to_the_limit() -> None:
+    chunks = split_paragraph_to_sentences("First sentence. Second sentence! Third one?", max_length=33)
+
+    assert chunks == ["First sentence. Second sentence!", "Third one?"]
 
 
 def test_split_text_to_paragraphs_returns_empty_list_for_empty_text() -> None:
@@ -146,8 +157,35 @@ def test_split_text_to_paragraphs_splits_when_over_the_limit() -> None:
     assert split_text_to_paragraphs("one\n\ntwo", max_length=5) == ["one", "two"]
 
 
+def test_split_text_to_paragraphs_never_exceeds_the_limit() -> None:
+    # Regression: the joining "\n\n" was not counted, producing a 2001-char chunk.
+    chunks = split_text_to_paragraphs("x" * 1999 + " y z", 2000)
+
+    assert all(len(chunk) <= 2000 for chunk in chunks)
+
+
 def test_split_message_empty_text() -> None:
-    assert split_message("") == [""]
+    assert split_message("") == []
+
+
+def test_split_message_whitespace_only_text() -> None:
+    assert split_message("   \n\n ") == []
+
+
+def test_split_message_never_exceeds_the_limit_for_unbroken_text() -> None:
+    # Regression: a single 2500-char token produced a 1-char whitespace chunk and a 2502-char chunk.
+    chunks = split_message("a" * 2500)
+
+    assert all(isinstance(chunk, str) for chunk in chunks)
+    strs = [chunk for chunk in chunks if isinstance(chunk, str)]
+    assert all(len(chunk) <= 2000 and chunk.strip() for chunk in strs)
+    assert "".join(strs) == "a" * 2500
+
+
+def test_split_message_packs_paragraphs_instead_of_one_message_each() -> None:
+    chunks = split_message("a" * 900 + "\n\n" + "b" * 900)
+
+    assert len(chunks) == 1
 
 
 def test_split_message_keeps_short_plain_text_whole() -> None:
@@ -170,9 +208,21 @@ def test_split_message_attaches_large_codeblocks_as_files() -> None:
 
     assert files
     for file in files:
-        filename = file.filename
-        assert filename is not None
-        assert filename.startswith("codeblock.")
+        assert file.filename == "codeblock.txt"
+
+
+def test_split_message_uses_a_real_extension_for_codebox_files() -> None:
+    code = "\n".join("x = 1" for _ in range(10))
+
+    chunks = split_message(f"```python\n{code}\n```")
+
+    assert [chunk.filename for chunk in chunks if isinstance(chunk, File)] == ["codeblock.py"]
+
+
+def test_split_message_keeps_small_codeblocks_out_of_the_prose_chunks() -> None:
+    chunks = split_message("before\n\n```python\nx = 1\n```\n\nafter")
+
+    assert chunks == ["before", "```python\nx = 1\n```", "after"]
 
 
 @pytest.mark.parametrize(

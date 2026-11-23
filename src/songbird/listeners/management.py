@@ -19,9 +19,11 @@ def load_guild_ban_listener(bot: SongbirdBot) -> None:
         owner_name = str(guild.owner) if guild.owner else "Unknown"
         member_count = guild.member_count or 0
 
-        await bot.message_owner(
-            f"Left banned guild **{guild.name}** (ID: {guild.id})\nOwner: {owner_name}\nMembers: {member_count}"
-        )
-
-        with contextlib.suppress(discord.HTTPException, discord.Forbidden):
-            await guild.leave()
+        try:
+            await bot.message_owner(
+                f"Left banned guild **{guild.name}** (ID: {guild.id})\nOwner: {owner_name}\nMembers: {member_count}"
+            )
+        finally:
+            # Enforcement must not depend on the owner notification succeeding.
+            with contextlib.suppress(discord.HTTPException, discord.Forbidden):
+                await guild.leave()

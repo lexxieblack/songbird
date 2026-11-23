@@ -55,7 +55,9 @@ def _choice(currency: Currency) -> discord.OptionChoice:
 
 
 def _format_amount(value: Decimal) -> str:
-    return f"{value:,.2f}".rstrip("0").rstrip(".")
+    # Sub-cent values (0.001 BTC) would round to "0" with a fixed 2-decimal format.
+    decimals = 8 if value != 0 and abs(value) < Decimal("0.01") else 2
+    return f"{value:,.{decimals}f}".rstrip("0").rstrip(".")
 
 
 def _format_rate(value: Decimal) -> str:

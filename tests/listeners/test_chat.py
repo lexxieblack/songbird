@@ -248,14 +248,14 @@ async def test_other_channel_types_are_ignored(fake_bot: SongbirdBot, channel_cl
     assert await chat._is_message_relevant(fake_bot, message) is False
 
 
-def test_reply_context_without_reference_is_unchanged() -> None:
+async def test_reply_context_without_reference_is_unchanged() -> None:
     message = make_message()
     message.reference = None
 
-    assert chat._get_reply_context(message, "hello") == "hello"
+    assert await chat._get_reply_context(message, "hello") == "hello"
 
 
-def test_reply_context_includes_referenced_message() -> None:
+async def test_reply_context_includes_referenced_message() -> None:
     author: Any = make_member(id=7)
     author.name = "bob"
     author.display_name = "Bob"
@@ -265,9 +265,9 @@ def test_reply_context_includes_referenced_message() -> None:
     referenced = make_message(content="original")
     referenced.author = reply_author
 
-    message = make_message(author=author, reference=SimpleNamespace(resolved=referenced))
+    message = make_message(author=author, reference=SimpleNamespace(resolved=referenced, message_id=99))
 
-    text = chat._get_reply_context(message, "current")
+    text = await chat._get_reply_context(message, "current")
 
     assert "<message>current</message>" in text
     assert "<reply_message>original</reply_message>" in text
@@ -275,10 +275,39 @@ def test_reply_context_includes_referenced_message() -> None:
     assert "In reply to Alice's message" in text
 
 
-def test_reply_context_notes_deleted_message() -> None:
+async def test_reply_context_notes_deleted_message() -> None:
     message = make_message(
         author=make_member(),
-        reference=SimpleNamespace(resolved=MagicMock(spec=discord.DeletedReferencedMessage)),
+        reference=SimpleNamespace(resolved=MagicMock(spec=discord.DeletedReferencedMessage), message_id=99),
     )
 
-    assert chat._get_reply_context(message, "current").endswith("In reply to a deleted message")
+    assert (await chat._get_reply_context(message, "current")).endswith("In reply to a deleted message")
+
+
+async def test_reply_context_fetches_uncached_reference() -> None:
+    # Regression: an uncached reply target was silently dropped from the prompt.
+    author: Any = make_member(id=7)
+    author.name = "bob"
+    author.display_name = "Bob"
+    reply_author: Any = make_member(id=8)
+    reply_author.name = "alice"
+    reply_author.display_name = "Alice"
+    referenced: Any = make_message(content="original")
+    referenced.author = reply_author
+
+    message: Any = cast(Any, make_message(author=author))
+    message.reference = SimpleNamespace(resolved=None, message_id=99)
+    message.channel = SimpleNamespace(fetch_message=AsyncMock(return_value=referenced))
+
+    text = await chat._get_reply_context(message, "current")
+
+    message.channel.fetch_message.assert_awaited_once_with(99)
+    assert "<reply_message>original</reply_message>" in text
+
+
+async def test_reply_context_marks_unavailable_reference() -> None:
+    message: Any = cast(Any, make_message(author=make_member()))
+    message.reference = SimpleNamespace(resolved=None, message_id=99)
+    message.channel = SimpleNamespace(fetch_message=AsyncMock(side_effect=discord.NotFound(MagicMock(), "gone")))
+
+    assert (await chat._get_reply_context(message, "current")).endswith("In reply to a message that is no longer available")

@@ -37,7 +37,7 @@ async def test_delete_button_defers_and_deletes() -> None:
     await DeleteButton().callback(as_interaction(interaction))
 
     assert interaction.response.defer_calls == [{}]
-    assert interaction.deleted_original is True
+    assert interaction.deleted_message is True
 
 
 async def test_delete_button_ignores_other_users() -> None:
@@ -46,7 +46,7 @@ async def test_delete_button_ignores_other_users() -> None:
     await DeleteButton().callback(as_interaction(interaction))
 
     assert interaction.response.defer_calls == []
-    assert interaction.deleted_original is False
+    assert interaction.deleted_message is False
 
 
 async def test_forward_button_swaps_view() -> None:
@@ -144,7 +144,7 @@ async def test_confirm_view_default_cancel_deletes_message() -> None:
     await button.callback(as_interaction(interaction))
 
     assert interaction.response.defer_calls == [{}]
-    assert interaction.deleted_original is True
+    assert interaction.deleted_message is True
 
 
 async def test_confirm_view_custom_labels_and_timeout() -> None:

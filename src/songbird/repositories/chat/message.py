@@ -24,12 +24,14 @@ STMT_CREATE_MESSAGE = (
 STMT_GET_NEWEST_MESSAGES = (
     select(message_table)
     .where(message_table.c.user_id == bindparam("b_user_id"))
-    .order_by(message_table.c.created_at.desc())
+    .order_by(message_table.c.created_at.desc(), message_table.c.id.desc())
     .limit(bindparam("b_limit"))
 )
 
 STMT_GET_ALL_MESSAGES = (
-    select(message_table).where(message_table.c.user_id == bindparam("b_user_id")).order_by(message_table.c.created_at.asc())
+    select(message_table)
+    .where(message_table.c.user_id == bindparam("b_user_id"))
+    .order_by(message_table.c.created_at.asc(), message_table.c.id.asc())
 )
 
 STMT_GET_USER_STATS = (
@@ -46,7 +48,7 @@ STMT_GET_USER_STATS = (
 STMT_GET_NEWEST_MESSAGE_ID = (
     select(message_table.c.id)
     .where(message_table.c.user_id == bindparam("b_user_id"))
-    .order_by(message_table.c.created_at.desc())
+    .order_by(message_table.c.created_at.desc(), message_table.c.id.desc())
     .limit(1)
 )
 

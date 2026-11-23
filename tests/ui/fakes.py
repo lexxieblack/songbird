@@ -39,15 +39,24 @@ class FakeInteraction:
 
     def __init__(self, user_id: int = 7, permitted: bool = True) -> None:
         self.user = SimpleNamespace(id=user_id, name="tester")
-        # can_interact compares the clicker against the original message author.
+        # can_interact compares the clicker against the interaction's original user.
         author_id = user_id if permitted else user_id + 1
-        self.message = SimpleNamespace(interaction=SimpleNamespace(user=SimpleNamespace(id=author_id)))
+        author = SimpleNamespace(id=author_id)
+        self.message = SimpleNamespace(
+            interaction_metadata=SimpleNamespace(user=author),
+            interaction=SimpleNamespace(user=author),
+            delete=self._delete_message,
+        )
         self.response = FakeResponse()
         self.followup = FakeFollowup()
         self.client = SimpleNamespace(get_channel=lambda _channel_id: None)  # pyright: ignore[reportUnknownLambdaType]
         self.deleted_original = False
+        self.deleted_message = False
         self.edit_original: list[dict[str, Any]] = []
         self.respond_calls: list[dict[str, Any]] = []
+
+    async def _delete_message(self) -> None:
+        self.deleted_message = True
 
     async def delete_original_response(self) -> None:
         self.deleted_original = True

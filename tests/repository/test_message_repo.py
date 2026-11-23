@@ -101,6 +101,29 @@ async def test_delete_last_message_is_noop_when_empty(session: AsyncSession) -> 
     assert await repo.get_all_messages(42) == []
 
 
+async def test_tied_timestamps_are_ordered_by_id(session: AsyncSession) -> None:
+    # One exchange is inserted in a single transaction, so both rows share CURRENT_TIMESTAMP.
+    repo = MessageRepository(session)
+    await repo.create_message(42, MessageRole.USER, "question")
+    await repo.create_message(42, MessageRole.MODEL, "answer")
+    await session.commit()
+
+    assert [m.content for m in await repo.get_newest_messages(42)] == ["answer", "question"]
+    assert [m.content for m in await repo.get_all_messages(42)] == ["question", "answer"]
+
+
+async def test_delete_last_message_with_tied_timestamps_deletes_the_reply(session: AsyncSession) -> None:
+    repo = MessageRepository(session)
+    await repo.create_message(42, MessageRole.USER, "question")
+    await repo.create_message(42, MessageRole.MODEL, "answer")
+    await session.commit()
+
+    await repo.delete_last_message(42)
+    await session.commit()
+
+    assert [m.content for m in await repo.get_all_messages(42)] == ["question"]
+
+
 async def test_create_message_translates_integrity_error(session: AsyncSession, monkeypatch: pytest.MonkeyPatch) -> None:
     fixed_id = uuid.uuid4()
     monkeypatch.setattr("songbird.repositories.chat.message.make_id", lambda: fixed_id)

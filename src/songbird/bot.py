@@ -157,11 +157,19 @@ class SongbirdBot(discord.Bot):
         if self.owner_id is None:
             self.logger.warning("Owner ID not set")
             return False
-        owner = self.fetch_user(self.owner_id)
+        try:
+            owner = self.get_user(self.owner_id) or await self.fetch_user(self.owner_id)
+        except discord.HTTPException:
+            self.logger.exception("Owner fetch failed", owner_id=self.owner_id)
+            return False
         if owner is None:
             self.logger.warning("Owner not found")
             return False
-        await owner.send(message)
+        try:
+            await owner.send(message)
+        except discord.HTTPException:
+            self.logger.exception("Owner DM failed", owner_id=self.owner_id)
+            return False
         return True
 
     async def close(self) -> None:

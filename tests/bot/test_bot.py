@@ -22,6 +22,10 @@ def _class_property(value: Any) -> property:
     return property(lambda _self: value)
 
 
+def _response(status: int, reason: str) -> Any:
+    return SimpleNamespace(status=status, reason=reason)
+
+
 def test_constructor_sets_intents_and_owner(bot: SongbirdBot, settings: Settings) -> None:
     assert bot.owner_id == settings.bot.owner_id  # pyright: ignore[reportUnknownMemberType]
     assert bot.intents.members is True
@@ -118,7 +122,8 @@ async def test_message_owner_returns_false_without_owner(bot: SongbirdBot, monke
 
 async def test_message_owner_returns_false_when_user_missing(bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(bot, "owner_id", 5)
-    monkeypatch.setattr(bot, "fetch_user", lambda _user_id: None)
+    monkeypatch.setattr(bot, "get_user", lambda _user_id: None)
+    monkeypatch.setattr(bot, "fetch_user", AsyncMock(return_value=None))
 
     assert await bot.message_owner("hi") is False
 
@@ -126,10 +131,21 @@ async def test_message_owner_returns_false_when_user_missing(bot: SongbirdBot, m
 async def test_message_owner_sends_dm(bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
     send = AsyncMock()
     monkeypatch.setattr(bot, "owner_id", 5)
-    monkeypatch.setattr(bot, "fetch_user", lambda _user_id: SimpleNamespace(send=send))
+    monkeypatch.setattr(bot, "get_user", lambda _user_id: SimpleNamespace(send=send))
 
     assert await bot.message_owner("hi") is True
     send.assert_awaited_once_with("hi")
+
+
+async def test_message_owner_returns_false_when_dm_fails(bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bot, "owner_id", 5)
+    monkeypatch.setattr(
+        bot,
+        "get_user",
+        lambda _user_id: SimpleNamespace(send=AsyncMock(side_effect=discord.Forbidden(_response(403, "Forbidden"), "x"))),
+    )
+
+    assert await bot.message_owner("hi") is False
 
 
 @pytest.mark.parametrize(

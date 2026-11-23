@@ -1,4 +1,4 @@
-from discord import Bot, Forbidden, ForumChannel, Thread
+from discord import AllowedMentions, Bot, DiscordException, Forbidden, ForumChannel, Thread
 from structlog import BoundLogger
 
 from songbird.config import Settings
@@ -55,20 +55,25 @@ class FeedbackService:
 
         return 0
 
-    async def send_feedback(self, user_id: int, user_name: str, message: str) -> None:
+    async def send_feedback(self, user_id: int, user_name: str, message: str) -> bool:
         try:
             thread = await self.thread_repo.get_thread(user_id)
             thread_id = thread.thread_id
         except ThreadNotFoundError:
             thread_id = await self._create_thread(user_name, user_id)
-        except Exception:
-            raise
 
         if thread_id == 0:
-            return
+            return False
 
         channel = self.bot.get_channel(thread_id)
         if not channel or not isinstance(channel, Thread):
-            return
+            self.logger.error("Feedback thread unavailable", user_id=user_id, thread_id=thread_id)
+            return False
 
-        await channel.send(message)
+        try:
+            await channel.send(message, allowed_mentions=AllowedMentions.none())
+        except DiscordException as e:
+            self.logger.error("Feedback message failed", user_id=user_id, thread_id=thread_id, error=e)
+            return False
+
+        return True

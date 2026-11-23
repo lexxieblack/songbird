@@ -24,14 +24,14 @@ STMT_CREATE_MESSAGE = (
 STMT_GET_NEWEST_MESSAGES = (
     select(guild_message_table)
     .where(guild_message_table.c.guild_id == bindparam("b_guild_id"))
-    .order_by(guild_message_table.c.created_at.desc())
+    .order_by(guild_message_table.c.created_at.desc(), guild_message_table.c.id.desc())
     .limit(bindparam("b_limit"))
 )
 
 STMT_GET_NEWEST_MESSAGE_ID = (
     select(guild_message_table.c.id)
     .where(guild_message_table.c.guild_id == bindparam("b_guild_id"))
-    .order_by(guild_message_table.c.created_at.desc())
+    .order_by(guild_message_table.c.created_at.desc(), guild_message_table.c.id.desc())
     .limit(1)
 )
 

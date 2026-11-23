@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock
 
 import discord
 import pytest
+from discord.ext import commands
 
 from songbird.bot import SongbirdBot
 from songbird.cogs import llm as llm_cog_module
@@ -149,7 +150,7 @@ async def test_summary_with_nothing_to_summarize_deletes_followup(
 
     await invoke(cog, "summary", fake_ctx, text="")
 
-    assert ctx.followup.calls == [("delete", {"reason": "Nothing to summarize."})]
+    assert ctx.delete_calls == [{}]
 
 
 async def test_summary_failure_sends_error(
@@ -236,7 +237,7 @@ async def test_chat_without_answer_deletes_followup(
 
     await invoke(cog, "chat", fake_ctx, message="hello")
 
-    assert ctx.followup.calls == [("delete", {"reason": "No response generated."})]
+    assert ctx.delete_calls == [{}]
 
 
 async def test_chat_failure_sends_error(
@@ -318,3 +319,28 @@ async def test_export_without_history_sends_error(
 
     assert ctx.last_embed is not None
     assert ctx.last_embed.description == "No conversation history found."
+
+
+async def test_export_uses_the_configured_cooldown(
+    monkeypatch: pytest.MonkeyPatch,
+    fake_bot: SongbirdBot,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    # Regression: the decorator hardcoded 43200s and llm.export_cooldown_seconds was dead config.
+    fake_bot.settings.llm.export_cooldown_seconds = 60
+    cog = LLMCog(fake_bot)
+    _fake(fake_ctx)
+
+    @asynccontextmanager
+    async def session(_services: object) -> AsyncGenerator[SimpleNamespace]:
+        yield SimpleNamespace()
+
+    monkeypatch.setattr(llm_cog_module, "get_session", session)
+    monkeypatch.setattr(llm_cog_module, "get_message_repo", lambda _session: FakeMessageRepo([]))
+
+    await invoke(cog, "export", fake_ctx)
+
+    with pytest.raises(commands.CommandOnCooldown) as exc_info:
+        await invoke(cog, "export", fake_ctx)
+
+    assert exc_info.value.retry_after <= 60

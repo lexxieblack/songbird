@@ -76,6 +76,7 @@ class FakeCtx:
         self.last_ephemeral: bool | None = None
         self.defer_calls: list[dict[str, Any]] = []
         self.sent_modals: list[object] = []
+        self.delete_calls: list[dict[str, Any]] = []
         self.deferred = False
 
     async def defer(self, **kwargs: Any) -> None:
@@ -89,6 +90,9 @@ class FakeCtx:
 
     async def send_modal(self, modal: object) -> None:
         self.sent_modals.append(modal)
+
+    async def delete(self, **kwargs: Any) -> None:
+        self.delete_calls.append(kwargs)
 
 
 async def _not_banned(_value: object) -> bool:

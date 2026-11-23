@@ -277,6 +277,22 @@ def test_get_urls_ignores_links_wrapped_in_angle_brackets() -> None:
     assert link_fixer_module._get_urls(text) == ["https://example.com/b"]
 
 
+def test_get_urls_strips_trailing_sentence_punctuation() -> None:
+    # Regression: `https://x.com/user/status/123.` was fixed as if the dot were part of the URL.
+    text = 'see https://example.com/a. or https://example.com/b, (https://example.com/c) "https://example.com/d"'
+
+    assert link_fixer_module._get_urls(text) == [
+        "https://example.com/a",
+        "https://example.com/b",
+        "https://example.com/c",
+        "https://example.com/d",
+    ]
+
+
+def test_get_urls_strips_markdown_link_closing_paren() -> None:
+    assert link_fixer_module._get_urls("[text](https://example.com/a)") == ["https://example.com/a"]
+
+
 def test_domain_setting_requires_chat_enabled() -> None:
     links = _settings({"example.com": {"chat": True}, "other.com": {"chat": False}}).links
 

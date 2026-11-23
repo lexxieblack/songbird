@@ -1,6 +1,6 @@
 from contextlib import suppress
 
-from discord import AllowedMentions, DeletedReferencedMessage, DMChannel, Message, TextChannel, Thread
+from discord import AllowedMentions, DeletedReferencedMessage, DMChannel, HTTPException, Message, TextChannel, Thread
 
 from songbird.bot import SongbirdBot
 from songbird.commands.llm.guild_chat import GuildChatHandler
@@ -32,11 +32,16 @@ async def _is_message_relevant(bot: SongbirdBot, message: Message) -> bool:
     return False
 
 
-def _get_reply_context(message: Message, user_message: str) -> str:
+async def _get_reply_context(message: Message, user_message: str) -> str:
     if not message.reference:
         return user_message
 
-    reffered_message = message.reference.resolved
+    referred_message = message.reference.resolved
+    if referred_message is None and message.reference.message_id is not None:
+        # Not in the cache (e.g. the bot restarted); fetch it so the reply is not silently lost.
+        with suppress(HTTPException):
+            referred_message = await message.channel.fetch_message(message.reference.message_id)
+
     user_message = (
         f"Message from {message.author.display_name} (ID: {message.author.id}, Username: {message.author.name}):"
         "<message>"
@@ -44,15 +49,17 @@ def _get_reply_context(message: Message, user_message: str) -> str:
         "</message>"
     )
 
-    if isinstance(reffered_message, Message):
+    if isinstance(referred_message, Message):
         user_message = user_message + (
-            f"In reply to {reffered_message.author.display_name}'s message (ID: {reffered_message.author.id}, Username: {reffered_message.author.name}):"
+            f"In reply to {referred_message.author.display_name}'s message (ID: {referred_message.author.id}, Username: {referred_message.author.name}):"
             "<reply_message>"
-            f"{reffered_message.content}"
+            f"{referred_message.content}"
             "</reply_message>"
         )
-    elif isinstance(reffered_message, DeletedReferencedMessage):
+    elif isinstance(referred_message, DeletedReferencedMessage):
         user_message = user_message + "In reply to a deleted message"
+    else:
+        user_message = user_message + "In reply to a message that is no longer available"
 
     return user_message
 
@@ -132,7 +139,7 @@ def load_chat(bot: SongbirdBot) -> None:
             user_message = user_message.replace(f"<@{bot.user.id}>", bot.user.display_name)
             user_message = user_message.replace(f"<@!{bot.user.id}>", bot.user.display_name)
 
-        user_message = _get_reply_context(message, user_message)
+        user_message = await _get_reply_context(message, user_message)
 
         if isinstance(message.channel, DMChannel):
             response = await _handle_dm_message(bot, message, user_message)
@@ -146,6 +153,11 @@ def load_chat(bot: SongbirdBot) -> None:
 
         logger.info("Response received", user_id=message.author.id, response_length=len(response))
 
-        with suppress(Exception):
+        try:
             await send_messages(message.channel, response)
-        logger.info("Response sent successfully", user_id=message.author.id)
+            logger.info("Response sent successfully", user_id=message.author.id)
+        except Exception:
+            logger.exception("Response send failed", user_id=message.author.id)
+            await message.channel.send(
+                "I couldn't deliver my full reply. Please try again.", allowed_mentions=AllowedMentions.none()
+            )

@@ -120,6 +120,22 @@ async def test_save_failure_returns_error(monkeypatch: pytest.MonkeyPatch, sessi
     assert await messages.get_newest_messages(7) == []
 
 
+async def test_no_transaction_is_open_during_the_llm_call(session: AsyncSession, settings: Settings) -> None:
+    # Regression: the read transaction kept a pooled connection checked out for the whole model call.
+    in_transaction: list[bool] = []
+
+    class RecordingLLM(FakeLLMService):
+        async def call(self, request: Any) -> str:
+            in_transaction.append(session.in_transaction())
+            return await super().call(request)
+
+    service, _ = _service(RecordingLLM("reply"), session, settings)
+
+    await service.chat(7, "hi", CONTEXT)
+
+    assert in_transaction == [False]
+
+
 async def test_delete_helpers(session: AsyncSession, settings: Settings) -> None:
     llm = FakeLLMService()
     service, messages = _service(llm, session, settings)

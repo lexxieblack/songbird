@@ -14,7 +14,7 @@ pytestmark = pytest.mark.discord
 
 
 def _message(message_id: int = 1) -> Any:
-    message = SimpleNamespace(id=message_id)
+    message = SimpleNamespace(id=message_id, author=SimpleNamespace(id=7))
     message.channel = SimpleNamespace()
     message.edit = AsyncMock()
     return message
@@ -65,11 +65,27 @@ async def test_restore_suppresses_http_errors() -> None:
     assert interaction.response.defer_calls == [{}]
 
 
+async def test_restore_works_without_interaction_metadata() -> None:
+    # Regression: the view is sent with a plain channel.send, so the message has no interaction metadata
+    # and can_interact used to reject every click.
+    original = _message(10)
+    original.channel.fetch_message = AsyncMock(return_value=_message(10))
+    view = RestoreLinkView(original, {10})
+    interaction = FakeInteraction()
+    interaction.message.interaction_metadata = None
+    interaction.message.interaction = None
+
+    await _restore_button(view).callback(as_interaction(interaction))
+
+    assert interaction.response.defer_calls == [{}]
+    original.channel.fetch_message.assert_awaited_once_with(10)
+
+
 async def test_restore_ignores_other_users() -> None:
     original = _message(10)
     original.channel.fetch_message = AsyncMock()
     view = RestoreLinkView(original, {10})
-    interaction = FakeInteraction(permitted=False)
+    interaction = FakeInteraction(user_id=8, permitted=False)
 
     await _restore_button(view).callback(as_interaction(interaction))
 
@@ -77,9 +93,11 @@ async def test_restore_ignores_other_users() -> None:
     original.channel.fetch_message.assert_not_awaited()
 
 
-async def test_timeout_clears_items() -> None:
-    view = RestoreLinkView(_message(), set())
+async def test_timeout_clears_items_and_releases_cache_entry() -> None:
+    cached = {1}
+    view = RestoreLinkView(_message(), cached)
 
     await view.on_timeout()
 
     assert view.children == []  # pyright: ignore[reportUnknownMemberType]
+    assert cached == set()
