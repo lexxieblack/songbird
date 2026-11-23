@@ -14,9 +14,10 @@ class DeleteButton(Button[Any]):
         super().__init__(label=Text.EMOJI_X)
 
     async def callback(self, interaction: Interaction) -> None:
-        if await can_interact(interaction):
+        if await can_interact(interaction) and interaction.message is not None:
             await interaction.response.defer()
-            await interaction.delete_original_response()
+            # Delete the message the button is on, which also covers interaction follow-ups.
+            await interaction.message.delete()
 
 
 class _DirectionalButton(Button[Any]):
@@ -128,4 +129,5 @@ class ConfirmView(DesignerView):
 
 async def _default_cancel(interaction: Interaction) -> None:
     await interaction.response.defer()
-    await interaction.delete_original_response()
+    if interaction.message is not None:
+        await interaction.message.delete()

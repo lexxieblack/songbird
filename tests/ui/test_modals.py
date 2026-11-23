@@ -24,62 +24,106 @@ pytestmark = pytest.mark.discord
 
 
 class _FeedbackService:
-    def __init__(self, error: Exception | None = None) -> None:
+    def __init__(self, error: Exception | None = None, delivered: bool = True) -> None:
         self.calls: list[tuple[int, str, str]] = []
         self.error = error
+        self.delivered = delivered
 
-    async def send_feedback(self, user_id: int, username: str, text: str) -> None:
+    async def send_feedback(self, user_id: int, username: str, text: str) -> bool:
         self.calls.append((user_id, username, text))
         if self.error is not None:
             raise self.error
+        return self.delivered
 
 
-def _service(fake: _FeedbackService) -> FeedbackService:
-    return cast(FeedbackService, fake)
+def _feedback_modal(
+    monkeypatch: pytest.MonkeyPatch, fake: _FeedbackService, *, sessions: list[object] | None = None
+) -> FeedbackModal:
+    @asynccontextmanager
+    async def fake_session(_services: object) -> AsyncGenerator[object]:
+        session = object()
+        if sessions is not None:
+            sessions.append(session)
+        yield session
+
+    def fake_create(_session: object, _services: object, _bot: object) -> FeedbackService:
+        return cast(FeedbackService, fake)
+
+    monkeypatch.setattr("songbird.ui.modals.feedback.get_session", fake_session)
+    monkeypatch.setattr("songbird.ui.modals.feedback.create_feedback_service", fake_create)
+
+    return FeedbackModal(cast(ServiceContainer, object()), cast(discord.Bot, object()))
 
 
 def _message(content: str) -> discord.Message:
     return cast(discord.Message, type("_Message", (), {"content": content})())
 
 
-async def test_feedback_modal_sends_feedback() -> None:
+async def test_feedback_modal_sends_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
     service = _FeedbackService()
-    modal = FeedbackModal(_service(service))
+    modal = _feedback_modal(monkeypatch, service)
     modal.text.value = "great bot"  # pyright: ignore[reportPrivateUsage]
     interaction = FakeInteraction(user_id=11)
 
     await modal.callback(as_interaction(interaction))
 
     assert service.calls == [(11, "tester", "great bot")]
-    assert interaction.response.messages == [{"args": ("Feedback sent successfully!",), "ephemeral": True}]
+    assert interaction.response.defer_calls == [{"ephemeral": True}]
+    assert interaction.followup.messages == [{"args": ("Feedback sent successfully!",), "ephemeral": True}]
 
 
-async def test_feedback_modal_reports_missing_forum() -> None:
+async def test_feedback_modal_opens_its_own_session(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Regression: the modal used the command's session, which was already closed by submit time.
+    service = _FeedbackService()
+    sessions: list[object] = []
+    modal = _feedback_modal(monkeypatch, service, sessions=sessions)
+    modal.text.value = "hello"  # pyright: ignore[reportPrivateUsage]
+
+    await modal.callback(as_interaction(FakeInteraction()))
+
+    assert len(sessions) == 1
+
+
+async def test_feedback_modal_reports_missing_forum(monkeypatch: pytest.MonkeyPatch) -> None:
     service = _FeedbackService(NotForumChannel())
-    modal = FeedbackModal(_service(service))
+    modal = _feedback_modal(monkeypatch, service)
     modal.text.value = "hello"
     interaction = FakeInteraction()
 
     await modal.callback(as_interaction(interaction))
 
-    assert interaction.response.messages == [{"args": ("Error: feedback channel not set up properly",), "ephemeral": True}]
+    assert interaction.followup.messages == [{"args": ("Error: feedback channel not set up properly",), "ephemeral": True}]
 
 
-async def test_feedback_modal_ignores_empty_text() -> None:
+async def test_feedback_modal_reports_undelivered_feedback(monkeypatch: pytest.MonkeyPatch) -> None:
+    service = _FeedbackService(delivered=False)
+    modal = _feedback_modal(monkeypatch, service)
+    modal.text.value = "hello"
+    interaction = FakeInteraction()
+
+    await modal.callback(as_interaction(interaction))
+
+    assert interaction.followup.messages == [
+        {"args": ("Could not deliver your feedback. Please try again later.",), "ephemeral": True}
+    ]
+
+
+async def test_feedback_modal_ignores_empty_text(monkeypatch: pytest.MonkeyPatch) -> None:
     service = _FeedbackService()
-    modal = FeedbackModal(_service(service))
+    modal = _feedback_modal(monkeypatch, service)
     modal.text.value = ""
     interaction = FakeInteraction()
 
     await modal.callback(as_interaction(interaction))
 
     assert service.calls == []
-    assert interaction.response.messages == []
+    assert interaction.response.defer_calls == []
+    assert interaction.followup.messages == []
 
 
-async def test_feedback_modal_ignores_missing_user() -> None:
+async def test_feedback_modal_ignores_missing_user(monkeypatch: pytest.MonkeyPatch) -> None:
     service = _FeedbackService()
-    modal = FeedbackModal(_service(service))
+    modal = _feedback_modal(monkeypatch, service)
     modal.text.value = "hello"
     interaction = FakeInteraction()
     interaction.user = None  # type: ignore[assignment]
@@ -87,7 +131,8 @@ async def test_feedback_modal_ignores_missing_user() -> None:
     await modal.callback(as_interaction(interaction))
 
     assert service.calls == []
-    assert interaction.response.messages == []
+    assert interaction.response.defer_calls == []
+    assert interaction.followup.messages == []
 
 
 async def test_file_modal_uses_requested_extension() -> None:
@@ -210,6 +255,25 @@ async def test_translate_modal_passes_trimmed_values() -> None:
     assert interaction.response.defer_calls == [{}]
     view = interaction.followup.messages[0]["view"]
     assert isinstance(view, TranslateView)
+
+
+async def test_translate_modal_accepts_blank_optional_source() -> None:
+    # Regression: InputText.value is None for an untouched optional field; `.strip()` raised AttributeError.
+    calls: list[tuple[str, str, str | None]] = []
+
+    async def translate(text: str, target: str, source: str | None) -> tuple[str, str, str]:
+        calls.append((text, target, source))
+        return ("English", "Spanish", "Hola")
+
+    modal = TranslateModal(translate)
+    modal.source_language.value = None  # pyright: ignore[reportPrivateUsage]
+    modal.target_language.value = " Spanish "  # pyright: ignore[reportPrivateUsage]
+    modal.text.value = " Hello "  # pyright: ignore[reportPrivateUsage]
+    interaction = FakeInteraction()
+
+    await modal.callback(as_interaction(interaction))
+
+    assert calls == [("Hello", "Spanish", "")]
 
 
 async def test_translate_message_modal_uses_message_content() -> None:

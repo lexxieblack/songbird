@@ -37,7 +37,7 @@ def _service(bot: Any, session: AsyncSession, settings: Settings) -> FeedbackSer
 async def test_disabled_feedback_channel_is_a_noop(fake_bot: Any, session: AsyncSession, settings: Settings) -> None:
     settings.bot.feedback_channel_id = None
 
-    await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello")
+    assert await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello") is False
 
     with pytest.raises(ThreadNotFoundError):
         await ThreadRepository(session).get_thread(1)
@@ -51,9 +51,22 @@ async def test_existing_thread_receives_message(
     await repo.create_thread(1, 9001)
     monkeypatch.setattr(fake_bot, "get_channel", lambda channel_id: thread if channel_id == 9001 else None)
 
-    await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello")
+    assert await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello") is True
 
-    thread.send.assert_awaited_once_with("hello")
+    assert thread.send.await_args is not None
+    assert thread.send.await_args.args == ("hello",)
+    assert thread.send.await_args.kwargs["allowed_mentions"].everyone is False
+
+
+async def test_thread_send_failure_is_reported(
+    monkeypatch: pytest.MonkeyPatch, fake_bot: Any, session: AsyncSession, settings: Settings
+) -> None:
+    thread = _thread()
+    thread.send.side_effect = discord.Forbidden(cast(Any, SimpleNamespace(status=403, reason="Forbidden")), "no access")
+    await ThreadRepository(session).create_thread(1, 9001)
+    monkeypatch.setattr(fake_bot, "get_channel", lambda _channel_id: thread)
+
+    assert await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello") is False
 
 
 async def test_missing_thread_is_created_and_used(
@@ -68,7 +81,8 @@ async def test_missing_thread_is_created_and_used(
 
     forum.create_thread.assert_awaited_once_with(name="Feedback from alice", content="This is feedback from <@1>")
     assert (await ThreadRepository(session).get_thread(1)).thread_id == 9001
-    thread.send.assert_awaited_once_with("hello")
+    assert thread.send.await_args is not None
+    assert thread.send.await_args.args == ("hello",)
 
 
 async def test_created_thread_missing_from_cache_skips_send(
@@ -78,7 +92,7 @@ async def test_created_thread_missing_from_cache_skips_send(
     forum = _forum()
     monkeypatch.setattr(fake_bot, "get_channel", lambda channel_id: forum if channel_id == 500 else None)
 
-    await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello")
+    assert await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello") is False
 
     assert (await ThreadRepository(session).get_thread(1)).thread_id == 9001
     assert forum.create_thread.await_count == 1
@@ -132,7 +146,7 @@ async def test_thread_row_of_wrong_channel_type_is_skipped(
     channel = make_channel()
     monkeypatch.setattr(fake_bot, "get_channel", lambda _channel_id: channel)
 
-    await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello")
+    assert await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello") is False
 
     assert not cast(Any, channel.send).called
 

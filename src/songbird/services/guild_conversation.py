@@ -45,6 +45,9 @@ class GuildConversationService:
         messages = await self._get_past_messages(guild_id)
         system_prompt = self._build_system_prompt(context)
 
+        # End the read transaction so the pooled connection is not held through the model call.
+        await self.guild_message_repo.session.commit()
+
         try:
             user_message = (
                 f"{context.display_name} (ID: {context.user_id}, username: {context.username}) in channel {context.channel_name} said:\n"

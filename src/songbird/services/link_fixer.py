@@ -20,10 +20,16 @@ class LinkFixerService:
         self.domain_mapping = self.settings.links
 
     async def fix(self, text: str) -> list[str]:
-        url = self._extract_url(text)
-        if not url:
+        urls = self._extract_urls(text)
+        if not urls:
             return [text]
 
+        fixed: list[str] = []
+        for url in urls:
+            fixed.extend(await self._fix_url(url))
+        return fixed
+
+    async def _fix_url(self, url: str) -> list[str]:
         domain = self._get_domain_suffix(url)
         rules = self.domain_mapping.root.get(domain)
         if not rules:
@@ -121,7 +127,5 @@ class LinkFixerService:
     def _wildcard_exists(self) -> bool:
         return self.domain_mapping.root.get("*") is not None
 
-    def _extract_url(self, text: str) -> str | None:
-        url_pattern = r"https?://[^\s]+"
-        match = re.search(url_pattern, text)
-        return match.group(0) if match else None
+    def _extract_urls(self, text: str) -> list[str]:
+        return re.findall(r"https?://[^\s]+", text)

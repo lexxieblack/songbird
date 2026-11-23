@@ -142,6 +142,21 @@ def test_currency_format_result_uses_symbols() -> None:
     )
 
 
+def test_currency_format_result_keeps_sub_cent_amounts() -> None:
+    # Regression: `0.001 BTC` was rendered as `0 BTC`.
+    handler = CurrencyHandler(cast(Any, FakeCurrencyService()))
+    result = _conversion(amount="0.001", converted="100", rate="100000", base_symbol="BTC", quote_symbol="USD")
+
+    assert handler.format_result(result).splitlines()[0] == "**0.001 BTC = 100 USD**"
+
+
+def test_currency_format_amount_trims_and_keeps_precision() -> None:
+    handler = CurrencyHandler(cast(Any, FakeCurrencyService()))
+
+    assert handler.format_result(_conversion(amount="0.0001", converted="10")).splitlines()[0] == "**0.0001 USD = 10 EUR**"
+    assert handler.format_result(_conversion(amount="1234567.891")).splitlines()[0] == "**1,234,567.89 USD = 9.1 EUR**"
+
+
 async def test_fix_handler_delegates_and_records() -> None:
     service = FakeLinkFixer(["https://example.com/fixed"])
     handler = FixHandler(cast(Any, service))

@@ -1,8 +1,8 @@
 # Terms of Service
 
-**Last updated:** 2026-06-02
+**Last updated:** 2026-11-23
 **Bot:** Songbird
-**Contact:** Join the [support server](https://discord.gg/your-invite-here) or message the bot owner on Discord.
+**Contact:** Open an issue at https://github.com/lexxieblack/songbird/issues or message the bot owner on Discord.
 
 ---
 
@@ -19,6 +19,8 @@ Songbird is an AI-powered Discord bot that provides:
 - Link fixing for better embeds and tracker removal
 - Text translation
 - Wolfram Alpha computational queries
+- Currency conversion
+- Server moderation tooling (the blackwall honeypot, user and guild bans)
 - Other utility features
 
 The bot is provided "as is" for entertainment and utility purposes.
@@ -63,8 +65,10 @@ Songbird uses the following third-party services:
 | Service | Purpose |
 |---|---|
 | Google Gemini API | AI conversation processing |
+| Google Search (via Gemini grounding) | Answering `/quickchat` queries |
 | Wolfram Alpha | Computational query answering |
 | Google Translate | Text translation |
+| Frankfurter | Currency exchange rates |
 | Discord API | Bot operation |
 
 These services have their own terms and privacy policies. Songbird is not responsible for their operation.
@@ -103,7 +107,7 @@ You agree to indemnify and hold harmless the bot operator from any claims, damag
 
 ### 10.1 Rate limits
 
-Songbird enforces rate limits and cooldowns on certain commands (e.g., `/export` has a 12-hour cooldown per user). These are designed to prevent abuse and ensure fair access.
+Songbird enforces rate limits and cooldowns on certain commands (e.g., `/export` has a cooldown of 2 hours per user by default, configurable by the operator). These are designed to prevent abuse and ensure fair access.
 
 ### 10.2 Blacklisting
 
@@ -114,7 +118,7 @@ We reserve the right to:
 
 ### 10.3 Reporting
 
-To report abuse or policy violations, join the support server or DM the bot owner.
+To report abuse or policy violations, open an issue at https://github.com/lexxieblack/songbird/issues or DM the bot owner.
 
 ---
 
@@ -141,4 +145,4 @@ These terms are governed by the laws of the jurisdiction in which the bot operat
 
 ## 14. Contact
 
-For questions about these terms, join the support server or DM the bot owner on Discord.
+For questions about these terms, open an issue at https://github.com/lexxieblack/songbird/issues or DM the bot owner on Discord.

@@ -66,6 +66,20 @@ async def test_delete_last_message_is_noop_when_empty(session: AsyncSession) -> 
     assert await repo.get_newest_messages(7) == []
 
 
+async def test_tied_timestamps_are_ordered_by_id(session: AsyncSession) -> None:
+    repo = GuildMessageRepository(session)
+    await repo.create_message(7, MessageRole.USER, "question")
+    await repo.create_message(7, MessageRole.MODEL, "answer")
+    await session.commit()
+
+    assert [m.content for m in await repo.get_newest_messages(7)] == ["answer", "question"]
+
+    await repo.delete_last_message(7)
+    await session.commit()
+
+    assert [m.content for m in await repo.get_newest_messages(7)] == ["question"]
+
+
 async def test_create_message_translates_integrity_error(session: AsyncSession, monkeypatch: pytest.MonkeyPatch) -> None:
     fixed_id = uuid.uuid4()
     monkeypatch.setattr("songbird.repositories.chat.guild_message.make_id", lambda: fixed_id)

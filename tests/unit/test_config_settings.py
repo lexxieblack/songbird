@@ -194,6 +194,12 @@ def test_links_root_model_parses_domain_overrides() -> None:
     assert mapping.pagination.api == "https://api.example"
 
 
+def test_links_pagination_rejects_per_page_below_one() -> None:
+    # Regression: per_page = 0 reached `-(-count // per_page)` and raised ZeroDivisionError.
+    with pytest.raises(ValidationError):
+        _settings(links={"example.com": {"pagination": {"per_page": 0}}})
+
+
 def test_links_pagination_defaults() -> None:
     settings = _settings(links={"*": {}})
 

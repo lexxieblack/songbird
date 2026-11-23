@@ -59,17 +59,21 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
         punished = await _apply_punishment(author, message.guild, blackwall.punishment)
 
         if punished:
-            await bot.services.blackwall.increment_blackwall(guild_id)
+            try:
+                await bot.services.blackwall.increment_blackwall(guild_id)
 
-            async with get_session(bot.services) as session:
-                audit_log = create_audit_log_service(session)
-                await audit_log.log(
-                    action=AuditLogAction.BLACKWALL_BAN,
-                    target_id=author.id,
-                    guild_id=guild_id,
-                    channel_id=channel_id,
-                    metadata={"punishment": blackwall.punishment.value},
-                )
+                async with get_session(bot.services) as session:
+                    audit_log = create_audit_log_service(session)
+                    await audit_log.log(
+                        action=AuditLogAction.BLACKWALL_BAN,
+                        target_id=author.id,
+                        guild_id=guild_id,
+                        channel_id=channel_id,
+                        metadata={"punishment": blackwall.punishment.value},
+                    )
+            except Exception:
+                # Bookkeeping failure must not leave the triggering message in the honeypot.
+                logger.exception("Blackwall: failed to record punishment", guild_id=guild_id, user_id=author.id)
 
         with contextlib.suppress(discord.HTTPException):
             await message.delete()
@@ -109,6 +113,9 @@ async def _apply_warn(author: discord.Member, guild: discord.Guild) -> bool:
     if cooldown_key in _warn_cooldown:
         return True
 
+    # Record the cooldown before the DM, so a user with closed DMs is not retried on every message.
+    _warn_cooldown[cooldown_key] = True
+
     try:
         await author.send(
             f"**Warning from {guild.name}**\n"
@@ -117,9 +124,9 @@ async def _apply_warn(author: discord.Member, guild: discord.Guild) -> bool:
         )
     except discord.Forbidden:
         logger.warning("Blackwall: could not DM user", guild_id=guild.id, user_id=author.id)
+        return False
     except discord.HTTPException as e:
         logger.error("Blackwall: failed to DM user", guild_id=guild.id, user_id=author.id, error=str(e))
-    else:
-        _warn_cooldown[cooldown_key] = True
+        return False
 
     return True

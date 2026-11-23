@@ -68,71 +68,118 @@ def get_codeblock_language(text: str) -> str:
     return text[3 : text.find("\n")].strip()
 
 
+_CODEBLOCK_RE = re.compile(r"(?s)(```[\s\S]*?```)")
+_SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
+
+# Real file extensions, so the attached code gets syntax highlighting.
+_CODE_FILE_EXTENSIONS = {
+    "python": "py",
+    "py": "py",
+    "javascript": "js",
+    "js": "js",
+    "typescript": "ts",
+    "ts": "ts",
+    "tsx": "tsx",
+    "jsx": "jsx",
+    "json": "json",
+    "yaml": "yaml",
+    "yml": "yaml",
+    "toml": "toml",
+    "sql": "sql",
+    "bash": "sh",
+    "sh": "sh",
+    "zsh": "sh",
+    "html": "html",
+    "css": "css",
+    "rust": "rs",
+    "go": "go",
+    "java": "java",
+    "c": "c",
+    "cpp": "cpp",
+    "csharp": "cs",
+    "cs": "cs",
+    "ruby": "rb",
+    "rb": "rb",
+    "php": "php",
+    "markdown": "md",
+    "md": "md",
+    "diff": "diff",
+    "xml": "xml",
+}
+
+
+def _hard_split(text: str, limit: int) -> list[str]:
+    """Cut text longer than `limit`, preferring a newline break, then a space, then a hard cut."""
+    pieces: list[str] = []
+    while len(text) > limit:
+        cut = max(text.rfind("\n", 0, limit + 1), text.rfind(" ", 0, limit + 1))
+        cut = cut if cut > 0 else limit
+        piece = text[:cut].rstrip()
+        if piece:
+            pieces.append(piece)
+        text = text[cut:].lstrip()
+    if text:
+        pieces.append(text)
+    return pieces
+
+
+def _pack(units: list[str], limit: int, separator: str) -> list[str]:
+    """Greedily join units into chunks of at most `limit` chars, splitting over-long units."""
+    chunks: list[str] = []
+    current = ""
+    for unit in units:
+        for piece in _hard_split(unit, limit):
+            candidate = f"{current}{separator}{piece}" if current else piece
+            if len(candidate) > limit:
+                chunks.append(current)
+                current = piece
+            else:
+                current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
 def split_sentence(text: str, max_length: int = 2000) -> list[str]:
-    if len(text) < max_length:
+    if not text:
+        return []
+    if len(text) <= max_length:
         return [text]
 
-    words = text.split()
-    chunks: list[str] = []
-    current_chunk = ""
-
-    for word in words:
-        if len(current_chunk) + len(word) > max_length:
-            chunks.append(current_chunk)
-            current_chunk = ""
-        current_chunk += word + " "
-
-    if current_chunk:
-        chunks.append(current_chunk)
-
-    return chunks
+    return _pack(text.split(), max_length, " ")
 
 
 def split_paragraph_to_sentences(text: str, max_length: int = 2000) -> list[str]:
-    sentences = re.split(r"([.!?])\s+", text)
-    chunks: list[str] = []
-    current_chunk = ""
+    if not text:
+        return []
+    if len(text) <= max_length:
+        return [text]
 
-    for sentence in sentences:
-        if len(sentence) > max_length:
-            split_sentences = split_sentence(sentence, max_length)
-            for s_sentence in split_sentences:
-                if len(current_chunk) + len(s_sentence) > max_length:
-                    chunks.append(current_chunk)
-                    current_chunk = ""
-                current_chunk += s_sentence + " "
-        else:
-            if len(current_chunk) + len(sentence) > max_length:
-                chunks.append(current_chunk)
-                current_chunk = ""
-            current_chunk += sentence + " "
-
-    if current_chunk:
-        chunks.append(current_chunk)
-
-    return chunks
+    return _pack(_SENTENCE_END_RE.split(text), max_length, " ")
 
 
 def split_text_to_paragraphs(text: str, max_length: int = 2000) -> list[str]:
-    paragraphs = text.split("\n\n")
     chunks: list[str] = []
     current_chunk = ""
 
-    for paragraph in paragraphs:
-        if len(paragraph) >= max_length:
+    for paragraph in text.split("\n\n"):
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+
+        if len(paragraph) > max_length:
             if current_chunk:
                 chunks.append(current_chunk)
                 current_chunk = ""
-            sentence_chunks = split_paragraph_to_sentences(paragraph, max_length)
-            chunks.extend(sentence_chunks)
-        elif current_chunk and len(current_chunk) + 2 + len(paragraph) > max_length:
+            chunks.extend(split_paragraph_to_sentences(paragraph, max_length))
+            continue
+
+        candidate = f"{current_chunk}\n\n{paragraph}" if current_chunk else paragraph
+        if len(candidate) > max_length:
             chunks.append(current_chunk)
             current_chunk = paragraph
         else:
-            if current_chunk:
-                current_chunk += "\n\n" + paragraph
-            else:
-                current_chunk = paragraph
+            current_chunk = candidate
 
     if current_chunk:
         chunks.append(current_chunk)
@@ -146,27 +193,26 @@ def split_message(
     max_codeblock_length: int = 200,
     max_codeblock_lines: int = 5,
 ) -> list[str | File]:
-    if not text:
-        return [""]
+    if not text or not text.strip():
+        return []
 
     final_chunks: list[str | File] = []
 
-    # Split by code blocks while preserving the code blocks
-    split_pattern = r"(?s)(```[\s\S]*?```)"
-    raw_chunks = re.split(pattern=split_pattern, string=text)
-    raw_chunks = [chunk.strip() for chunk in raw_chunks if chunk.strip()]
+    # Code blocks are sent on their own: as a message when small, as a file when large.
+    for raw_chunk in _CODEBLOCK_RE.split(text):
+        raw_chunk = raw_chunk.strip()
+        if not raw_chunk:
+            continue
 
-    for raw_chunk in raw_chunks:
         if is_codeblock(raw_chunk):
-            codeblock_lines = raw_chunk.count("\n")
-            if codeblock_lines > max_codeblock_lines or len(raw_chunk) > max_codeblock_length:
-                lang = get_codeblock_language(raw_chunk) or "md"
-                final_chunks.append(create_file_text(raw_chunk, f"codeblock.{lang}"))
+            if raw_chunk.count("\n") > max_codeblock_lines or len(raw_chunk) > max_codeblock_length:
+                language = get_codeblock_language(raw_chunk).lower()
+                extension = _CODE_FILE_EXTENSIONS.get(language, language or "txt")
+                final_chunks.append(create_file_text(raw_chunk, f"codeblock.{extension}"))
             else:
                 final_chunks.append(raw_chunk)
         else:
-            paragraphs = split_text_to_paragraphs(raw_chunk, max_length=max_text_length)
-            final_chunks.extend(paragraphs)
+            final_chunks.extend(split_text_to_paragraphs(raw_chunk, max_length=max_text_length))
 
     return final_chunks
 

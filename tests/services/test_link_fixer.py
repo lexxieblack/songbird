@@ -103,6 +103,16 @@ async def test_text_without_url_is_returned_unchanged() -> None:
     assert await service.fix("no links here") == ["no links here"]
 
 
+async def test_every_url_in_the_text_is_fixed() -> None:
+    # Regression: only the first URL was extracted, so /fix silently ignored the rest.
+    service = LinkFixerService(_settings({"twitter.com": {"swap": "fxtwitter.com"}}))
+
+    assert await service.fix("a https://twitter.com/u/status/1 b https://twitter.com/u/status/2") == [
+        "https://fxtwitter.com/u/status/1",
+        "https://fxtwitter.com/u/status/2",
+    ]
+
+
 async def test_unknown_domain_without_wildcard_returns_url() -> None:
     service = LinkFixerService(_settings({}))
 

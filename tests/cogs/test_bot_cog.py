@@ -1,16 +1,11 @@
 """`/help`, `/about` and `/feedback` user-visible behaviour."""
 
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-from types import SimpleNamespace
 from typing import Any, cast
-from unittest.mock import AsyncMock
 
 import discord
 import pytest
 
 from songbird.bot import SongbirdBot
-from songbird.cogs import bot as bot_cog_module
 from songbird.cogs.bot import BotCog
 from songbird.ui.modals.feedback import FeedbackModal
 from songbird.ui.views.about import AboutView
@@ -55,27 +50,6 @@ async def test_about_responds_with_about_view(cog: BotCog, fake_ctx: discord.App
     assert isinstance(ctx.respond_calls[0]["view"], AboutView)
 
 
-@pytest.mark.parametrize("command", ["help", "about", "feedback"])
-async def test_banned_user_is_blocked(
-    command: str,
-    cog: BotCog,
-    fake_bot: SongbirdBot,
-    fake_ctx: discord.ApplicationContext,
-) -> None:
-    ctx = _fake(fake_ctx)
-    check = AsyncMock(return_value=True)
-    _services(fake_bot).management = SimpleNamespace(
-        check_user_banned=check,
-        check_guild_banned=AsyncMock(return_value=False),
-    )
-
-    await invoke(cog, command, fake_ctx)
-
-    check.assert_awaited_once_with(ctx.author.id)
-    assert ctx.followup.calls == []
-    assert ctx.respond_calls == [{"args": ()}]
-
-
 async def test_feedback_disabled_when_no_channel(cog: BotCog, fake_ctx: discord.ApplicationContext) -> None:
     ctx = _fake(fake_ctx)
 
@@ -85,21 +59,9 @@ async def test_feedback_disabled_when_no_channel(cog: BotCog, fake_ctx: discord.
     assert ctx.respond_calls[0]["ephemeral"] is True
 
 
-async def test_feedback_opens_modal(
-    monkeypatch: pytest.MonkeyPatch,
-    cog: BotCog,
-    fake_bot: SongbirdBot,
-    fake_ctx: discord.ApplicationContext,
-) -> None:
+async def test_feedback_opens_modal(cog: BotCog, fake_bot: SongbirdBot, fake_ctx: discord.ApplicationContext) -> None:
     fake_bot.settings.bot.feedback_channel_id = 123
     ctx = _fake(fake_ctx)
-
-    @asynccontextmanager
-    async def session(_services: object) -> AsyncGenerator[SimpleNamespace]:
-        yield SimpleNamespace()
-
-    monkeypatch.setattr(bot_cog_module, "get_session", session)
-    monkeypatch.setattr(bot_cog_module, "create_feedback_service", lambda *_args: SimpleNamespace())  # pyright: ignore[reportUnknownLambdaType, reportUnknownArgumentType]
 
     await invoke(cog, "feedback", fake_ctx)
 
@@ -108,21 +70,14 @@ async def test_feedback_opens_modal(
     assert isinstance(kwargs["modal"], FeedbackModal)
 
 
-async def test_feedback_reports_database_failure(
-    monkeypatch: pytest.MonkeyPatch,
-    cog: BotCog,
-    fake_bot: SongbirdBot,
-    fake_ctx: discord.ApplicationContext,
-) -> None:
+async def test_feedback_reports_modal_failure(cog: BotCog, fake_bot: SongbirdBot, fake_ctx: discord.ApplicationContext) -> None:
     fake_bot.settings.bot.feedback_channel_id = 123
     ctx = _fake(fake_ctx)
 
-    @asynccontextmanager
-    async def failing_session(_services: object) -> AsyncGenerator[SimpleNamespace]:
-        raise RuntimeError("db down")
-        yield SimpleNamespace()
+    async def failing_send_modal(**_kwargs: object) -> None:
+        raise RuntimeError("interaction expired")
 
-    monkeypatch.setattr(bot_cog_module, "get_session", failing_session)
+    ctx.response.send_modal = failing_send_modal
 
     await invoke(cog, "feedback", fake_ctx)
 

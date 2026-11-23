@@ -38,3 +38,15 @@ def test_cogs_are_cog_subclasses(extension: str, fake_bot: SongbirdBot) -> None:
     module.setup(fake_bot)
 
     assert isinstance(_cogs(fake_bot)[0], commands.Cog)
+
+
+@pytest.mark.parametrize("extension", EXTENSIONS)
+def test_every_command_runs_under_the_ban_hook(extension: str, fake_bot: SongbirdBot) -> None:
+    module = importlib.import_module(extension)
+    module.setup(fake_bot)
+
+    cog = _cogs(fake_bot)[0]
+    assert isinstance(cog, BaseCog)
+    assert list(cog.get_commands())  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType] # every extension registers something
+    # No cog may shadow the base hook, or its commands would skip the ban check.
+    assert type(cog).cog_before_invoke is BaseCog.cog_before_invoke

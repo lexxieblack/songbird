@@ -55,6 +55,9 @@ class PrivateConversationService:
             user_info=user_info,
         )
 
+        # End the read transaction so the pooled connection is not held through the model call.
+        await self.message_repo.session.commit()
+
         try:
             llm_request = LLMRequest(
                 system_prompt=system_prompt,

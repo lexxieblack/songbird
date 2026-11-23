@@ -1,8 +1,8 @@
 # Privacy Policy
 
-**Last updated:** 2026-08-28
+**Last updated:** 2026-11-23
 **Bot:** Songbird
-**Contact:** Join the [support server](https://discord.gg/your-invite-here) or message the bot owner on Discord.
+**Contact:** Open an issue at https://github.com/lexxieblack/songbird/issues or message the bot owner on Discord.
 
 ---
 
@@ -13,7 +13,7 @@
 | Data | Where it's stored | Purpose |
 |---|---|---|
 | Message content sent to the bot (DMs and @mentions) | PostgreSQL (`chat.message`, `chat.guild_message` tables) | To power AI conversations with memory |
-| Optional biographical info (name, age, bio, gender) set via `/manage` | PostgreSQL (`chat.user_info` table) | To let you provide context the AI can reference |
+| Optional information you set via `/manage` | PostgreSQL (`chat.user_info` table) | To let you provide context the AI can reference |
 | Feedback you submit via `/feedback` | Discord forum threads (not in our database beyond the thread mapping) | To receive and respond to user feedback |
 | Slash command inputs | Not stored long-term; processed in memory | To execute the command you requested |
 
@@ -24,12 +24,12 @@
 | Discord User ID | PostgreSQL (all chat/user_info/management tables) | To associate conversations with your account; to enforce user bans |
 | Discord Guild ID | PostgreSQL (`chat.guild_message`, `management.guild_ban` tables) | To associate server conversations with that guild; to enforce guild bans |
 | Ban reason text (if provided by bot owner) | PostgreSQL (`management.user_ban`, `management.guild_ban` tables) | To document why a user or guild was banned |
-| Blackwall config (server ID, configured channel IDs, whitelisted role IDs, ban counter) | PostgreSQL (`management.blackwall` table) | To enforce the server-admin-configured blackwall channel |
-| Blackwall ban audit events (action, target user ID, server ID, channel ID, timestamp) | PostgreSQL (`management.audit_log` table) | To record blackwall ban events for moderation auditing |
+| Blackwall config (server ID, configured channel IDs, whitelisted role IDs, punishment mode, ban counter) | PostgreSQL (`management.blackwall` table) | To enforce the server-admin-configured blackwall channel |
+| Blackwall audit events (action, target user ID, server ID, channel ID, timestamp) | PostgreSQL (`management.audit_log` table) | To record blackwall events for moderation auditing |
 | Discord username and display name | Sent to the LLM provider as context; not stored separately | To give the AI awareness of who it's talking to |
 | Message timestamps | PostgreSQL (all chat tables) | To maintain conversation ordering |
 
-> **Note on the blackwall:** When a server moderator configures the blackwall channel and a non-whitelisted, non-admin member posts there, Songbird bans that member (Discord also removes their recent messages) and may post identifying details to the server's configured log channel — including the user's username, avatar, account age, join date, server roles, and the triggering message content. This information is surfaced within that server's own log channel for moderation purposes; it is not sent to any third party, nor is it saved by Songbird.
+> **Note on the blackwall:** When a server moderator configures the blackwall channel and a non-whitelisted, non-admin member posts there, Songbird deletes that message and applies the mode configured by the server admin: it may DM the member a warning, kick them, ban them (Discord also removes their recent messages), or only log the event. The event is counted and written to the audit log (user ID, server ID, channel ID, timestamp). If a log channel is configured, identifying details are posted there — the user's username, avatar, account age, join date, server roles, and the triggering message content. This information is surfaced within that server's own log channel for moderation purposes; it is not sent to any third party, nor is it saved by Songbird beyond the audit record.
 
 ### 1.3 Data we do NOT collect
 
@@ -61,7 +61,11 @@ When you chat with Songbird, your messages (including conversation history) are 
 - The conversation history (up to 30 prior messages)
 - Your current message
 - Your Discord username and display name
+- The server and channel name the conversation happens in
 - Any user info you've provided via `/manage`
+- Content of a message you reply to, when the bot can read it
+
+`/quickchat` additionally lets the model use Google Search grounding, so the query is also processed by Google Search. `/summary` sends the text or URL content you provide to the same API.
 
 Google's processing is governed by [Google's Privacy Policy](https://policies.google.com/privacy) and [Google's AI Terms](https://ai.google.dev/terms). Songbird does not control how Google handles data sent to their API.
 
@@ -75,7 +79,11 @@ When you use `/translate`, your text is sent to Google Translate. See [Google's 
 
 ### 3.4 Link resolution
 
-When you use `/fix` or the auto link-fixer processes a message, HEAD requests may be sent to the URL's host to resolve redirects. No identifying information beyond standard HTTP headers is sent.
+When you use `/fix` or the auto link-fixer processes a message, requests may be sent to the URL's host and to the configured embed provider (for example `api.vxtwitter.com`) to resolve redirects and count gallery images. No identifying information beyond standard HTTP headers is sent.
+
+### 3.5 Currency conversion
+
+When you use `/convert`, only the currency pair is sent to [Frankfurter](https://frankfurter.dev) for European Central Bank reference rates. No user data is sent.
 
 ---
 
@@ -84,7 +92,7 @@ When you use `/fix` or the auto link-fixer processes a message, HEAD requests ma
 - **Database:** PostgreSQL, hosted on the bot operator's infrastructure (chat, feedback, and management schemas)
 - **Encryption:** Standard database-level security practices are followed
 - **Logs:** Message content may appear in application logs (stdout) for debugging. Logs are not publicly accessible.
-- **In-memory caches:** Suppressed message IDs are cached ephemerally (cleared on restart)
+- **In-memory caches:** These hold no message content and are cleared on restart: ban-check results (user and guild IDs, 60 seconds), recently fixed message IDs (dropped when the message is edited or its Restore button times out after a minute), and a per-server/user blackwall warning cooldown (5 minutes).
 - **No third-party analytics:** We do not use Google Analytics, Sentry, or similar services
 
 ### Security measures
@@ -127,7 +135,7 @@ Use `/export` to download your DM conversation history as a JSON file. This incl
 
 ### 6.3 Request manual deletion
 
-If you need data deleted that isn't covered by the commands above, contact us via the support server.
+If you need data deleted that isn't covered by the commands above, open an issue at https://github.com/lexxieblack/songbird/issues.
 
 ### 6.4 Object to processing
 
@@ -135,7 +143,7 @@ If you do not want your data processed by the LLM, do not use the chat features.
 
 ### 6.5 Ban records
 
-Ban records (user ID or guild ID plus optional reason) are stored for moderation enforcement. These records are **not user-deletable** — they are managed exclusively by the bot owner. If you believe you have been incorrectly banned, contact the bot owner via the support server.
+Ban records (user ID or guild ID plus optional reason) are stored for moderation enforcement. These records are **not user-deletable** — they are managed exclusively by the bot owner. If you believe you have been incorrectly banned, open an issue at https://github.com/lexxieblack/songbird/issues.
 
 When a ban is issued, **all conversation history and biographical info** associated with that user or guild is permanently deleted from the database. Only the ban record itself (ID, reason, timestamp) is retained. If the ban is later lifted, no prior data is restored.
 
@@ -163,4 +171,4 @@ If this policy changes, the "Last updated" date at the top will be revised. Cont
 
 ## 10. Contact
 
-For privacy-related inquiries, join the support server or DM the bot owner on Discord.
+For privacy-related inquiries, open an issue at https://github.com/lexxieblack/songbird/issues or DM the bot owner on Discord.

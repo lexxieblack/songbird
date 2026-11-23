@@ -102,7 +102,8 @@ def unload_fix() -> None:
 def _get_urls(text: str) -> list[str]:
     # Links wrapped in <> are intentionally embed-suppressed by the author.
     url_pattern = r"(?<!<)https?://[^<>\s]+"
-    return re.findall(url_pattern, text)
+    # Trailing sentence punctuation belongs to the prose, not the URL.
+    return [url.rstrip(".,;:!?'\")]}") for url in re.findall(url_pattern, text)]
 
 
 def _check_domain_setting(url: str, links_settings: LinksSettings) -> bool:

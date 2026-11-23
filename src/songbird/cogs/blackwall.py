@@ -51,9 +51,6 @@ class BlackwallCog(BaseCog):
 
         await ctx.defer()
 
-        if await self._check_banned(ctx):
-            return
-
         guild_id = ctx.guild.id
         if ctx.channel is None:
             await self.send_error(ctx, "Could not determine the current channel.")

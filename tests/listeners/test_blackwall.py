@@ -325,22 +325,40 @@ async def test_message_delete_http_error_is_suppressed(fake_bot: SongbirdBot, mo
     member.ban.assert_awaited_once()
 
 
-async def test_warn_forbidden_returns_true_without_setting_cooldown() -> None:
+async def test_warn_forbidden_returns_false_but_sets_cooldown() -> None:
     send = AsyncMock(side_effect=_forbidden())
     author = _member(send=send)
     guild = make_guild(id=1)
     guild.name = "Test Guild"
 
+    assert await blackwall_module._apply_punishment(author, guild, BlackwallPunishment.WARN) is False
+    assert (1, 9) in blackwall_module._warn_cooldown
+
+    # The failed DM is not retried on the next message.
     assert await blackwall_module._apply_punishment(author, guild, BlackwallPunishment.WARN) is True
-    assert (1, 9) not in blackwall_module._warn_cooldown
+    send.assert_awaited_once()
 
 
-async def test_warn_http_error_returns_true() -> None:
+async def test_warn_http_error_returns_false() -> None:
     send = AsyncMock(side_effect=_http_error())
     author = _member(send=send)
     guild = make_guild(id=1)
 
-    assert await blackwall_module._apply_punishment(author, guild, BlackwallPunishment.WARN) is True
+    assert await blackwall_module._apply_punishment(author, guild, BlackwallPunishment.WARN) is False
+    assert (guild.id, 9) in blackwall_module._warn_cooldown
+
+
+async def test_audit_failure_still_deletes_the_message(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
+    member = _member()
+    service, audit = _install(monkeypatch, fake_bot, _blackwall(punishment=BlackwallPunishment.BAN))
+    audit.log.side_effect = RuntimeError("db down")
+    message = _trigger_message(member)
+    blackwall_module.load_blackwall_listener(fake_bot)
+
+    await _listener(fake_bot)(message)
+
+    service.increment_blackwall.assert_awaited_once_with(1)
+    message.delete.assert_awaited_once()
 
 
 async def test_kick_http_error_returns_false() -> None:

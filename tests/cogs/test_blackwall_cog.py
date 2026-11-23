@@ -112,25 +112,6 @@ async def test_requires_administrator(
     assert ctx.defer_calls == []
 
 
-async def test_banned_user_is_blocked_after_defer(
-    cog: BlackwallCog,
-    fake_bot: SongbirdBot,
-    fake_ctx: discord.ApplicationContext,
-) -> None:
-    service = _service()
-    check = AsyncMock(return_value=True)
-    _services(fake_bot).blackwall = service
-    _services(fake_bot).management = SimpleNamespace(check_user_banned=check, check_guild_banned=AsyncMock())
-    ctx = _admin_ctx(fake_ctx)
-
-    await invoke(cog, "blackwall", fake_ctx)
-
-    check.assert_awaited_once_with(ctx.author.id)
-    assert ctx.defer_calls == [{}]
-    service.get_blackwall.assert_not_awaited()
-    assert ctx.respond_calls == [{"args": ()}]
-
-
 async def test_existing_config_renders_view(
     cog: BlackwallCog,
     fake_bot: SongbirdBot,

@@ -12,15 +12,15 @@ class WolframService:
         logger: BoundLogger | None = None,
     ) -> None:
         self._api_key = settings.wolfram.api_key
-        self._api_url = "http://api.wolframalpha.com/v1/simple"
+        self._api_url = "https://api.wolframalpha.com/v1/simple"
         self._logger = logger or get_logger(__name__)
 
     async def query(self, question: str) -> bytes:
+        # Wolfram only recolors its own text elements, never the result content, so a dark
+        # background leaves black text on black. Ship the default light image.
         params = {
             "i": question,
             "appid": self._api_key,
-            "background": "193555",
-            "foreground": "white",
         }
 
         try:

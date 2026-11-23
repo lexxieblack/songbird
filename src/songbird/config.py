@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 
 class PaginationSettings(BaseModel):
     format: str = "{url}/{page}"
-    per_page: int = 10
+    per_page: int = Field(default=10, ge=1)
     api: str | None = None
 
 

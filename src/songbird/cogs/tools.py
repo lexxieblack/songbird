@@ -43,9 +43,6 @@ class ToolsCog(BaseCog):
             str, description="Source language (auto-detect if not specified)", required=False, default=None
         ),  # type: ignore[assignment]
     ) -> None:
-        if await self._check_banned(ctx):
-            return
-
         if not text:
             modal = TranslateModal(self.translate_handler.translate_with_meta)
             await ctx.interaction.response.send_modal(modal)
@@ -90,9 +87,6 @@ class ToolsCog(BaseCog):
         ctx: discord.ApplicationContext,
         message: discord.Message,
     ) -> None:
-        if await self._check_banned(ctx):
-            return
-
         modal = TranslateMessageModal(message, self.translate_handler.translate_with_meta)
         await ctx.send_modal(modal)
 
@@ -101,9 +95,6 @@ class ToolsCog(BaseCog):
         description="Sends a text file with the given content",
     )
     async def file(self, ctx: discord.ApplicationContext) -> None:
-        if await self._check_banned(ctx):
-            return
-
         modal = FileModal()
         await ctx.send_modal(modal)
 
@@ -116,9 +107,6 @@ class ToolsCog(BaseCog):
         ctx: discord.ApplicationContext,
         query: str = discord.Option(str, description="The query to send to Wolfram Alpha"),  # type: ignore[assignment]
     ) -> None:
-        if await self._check_banned(ctx):
-            return
-
         if not query:
             await self.send_error(ctx, "Please provide a query for Wolfram Alpha.")
             return
@@ -130,7 +118,8 @@ class ToolsCog(BaseCog):
         try:
             reply_gif = await self.wolfram_handler.query(query)
             if reply_gif:
-                await ctx.followup.send(file=reply_gif)
+                embed = discord.Embed().set_image(url=f"attachment://{reply_gif.filename}")
+                await ctx.followup.send(file=reply_gif, embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 self.logger.info("Wolfram query completed", user_id=ctx.author.id, query=query)
             else:
                 await self.send_error(ctx, "Wolfram query failed.")
@@ -167,9 +156,6 @@ class ToolsCog(BaseCog):
             autocomplete=currency_autocomplete,
         ),
     ) -> None:
-        if await self._check_banned(ctx):
-            return
-
         await ctx.defer()
 
         self.logger.info("Convert command", user_id=ctx.author.id, amount=amount, base=from_, to=to_)
@@ -201,9 +187,6 @@ class ToolsCog(BaseCog):
         ctx: discord.ApplicationContext,
         link: str = discord.Option(str, description="The link to fix and sanitize"),  # type: ignore[assignment]
     ) -> None:
-        if await self._check_banned(ctx):
-            return
-
         if not link:
             await self.send_error(ctx, "Please provide a link to fix.")
             return
@@ -231,9 +214,6 @@ class ToolsCog(BaseCog):
         description="Ping the bot",
     )
     async def ping(self, ctx: discord.ApplicationContext) -> None:
-        if await self._check_banned(ctx):
-            return
-
         latency = round(self.bot.latency * 1000)
         await ctx.respond(f":satellite: `{latency}`ms")
 

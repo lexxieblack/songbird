@@ -93,3 +93,14 @@ async def test_leave_failures_are_suppressed(fake_bot: SongbirdBot, monkeypatch:
 
     owner_message.assert_awaited_once()
     guild.leave.assert_awaited_once()
+
+
+async def test_guild_is_left_even_when_owner_notification_fails(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, owner_message = _install(fake_bot, monkeypatch, banned=True)
+    owner_message.side_effect = RuntimeError("dm failed")
+    guild = _guild()
+
+    with pytest.raises(RuntimeError):
+        await _listener(fake_bot)(guild)
+
+    guild.leave.assert_awaited_once()

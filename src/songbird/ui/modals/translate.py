@@ -38,9 +38,9 @@ class TranslateModal(Modal):
     async def callback(self, interaction: Interaction) -> None:
         await interaction.response.defer()
 
-        source_language = self.source_language.value.strip()  # type: ignore
-        target_language = self.target_language.value.strip()  # type: ignore
-        text = self.text.value.strip()  # type: ignore
+        source_language = (self.source_language.value or "").strip()
+        target_language = (self.target_language.value or "").strip()
+        text = (self.text.value or "").strip()
         source_name, target_name, translated_text = await self.translate_callback(text, target_language, source_language)
 
         view = TranslateView(source_name, target_name, translated_text)

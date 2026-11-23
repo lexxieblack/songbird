@@ -8,6 +8,7 @@ from songbird.cogs.base import BaseCog
 from songbird.commands.llm.private_chat import PrivateChatHandler
 from songbird.commands.llm.quickchat import QuickchatHandler
 from songbird.commands.llm.summary import SummaryHandler
+from songbird.listeners.common import send_messages
 from songbird.services.container import (
     create_private_conversation_service,
     get_message_repo,
@@ -15,7 +16,7 @@ from songbird.services.container import (
 )
 from songbird.ui.views.manage import ManageView
 from songbird.utils.discord import create_file_text
-from songbird.utils.text import split_message, truncate_text
+from songbird.utils.text import truncate_text
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
@@ -27,6 +28,10 @@ class LLMCog(BaseCog):
 
         self.summary_handler = SummaryHandler(self.settings, self.services.llm)
         self.quickchat_handler = QuickchatHandler(self.settings, self.services.llm)
+        # Decorator cooldowns are fixed at import time, so /export enforces the configured window itself.
+        self._export_cooldown: commands.CooldownMapping = commands.CooldownMapping.from_cooldown(  # pyright: ignore[reportUnknownMemberType]
+            1, self.settings.llm.export_cooldown_seconds, commands.BucketType.user
+        )
 
         self.logger.debug("LLM handlers initialized")
 
@@ -41,15 +46,12 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        if await self._check_banned(ctx):
-            return
-
         self.logger.info("Summary command", user_id=ctx.author.id, text=text)
 
         try:
             summary_result = await self.summary_handler.summarize(text or "")
             if not summary_result:
-                await ctx.followup.delete(reason="Nothing to summarize.")
+                await ctx.delete()
                 return
 
             await ctx.followup.send(truncate_text(summary_result, 2000), allowed_mentions=discord.AllowedMentions.none())
@@ -70,18 +72,11 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        if await self._check_banned(ctx):
-            return
-
         self.logger.info("Quickchat command", user_id=ctx.author.id, question=question)
 
         try:
             answer = await self.quickchat_handler.quickchat(question)
-            for chunk in split_message(answer):
-                if isinstance(chunk, str):
-                    await ctx.followup.send(chunk, allowed_mentions=discord.AllowedMentions.none())
-                else:
-                    await ctx.followup.send(file=chunk, allowed_mentions=discord.AllowedMentions.none())
+            await send_messages(ctx.followup, answer)
             self.logger.info("Quickchat success", user_id=ctx.author.id)
 
         except Exception as e:
@@ -99,9 +94,6 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        if await self._check_banned(ctx):
-            return
-
         self.logger.info("Chat command", user_id=ctx.author.id, message=message)
 
         try:
@@ -117,18 +109,14 @@ class LLMCog(BaseCog):
                     username=ctx.author.name,
                     display_name=ctx.author.display_name,
                     guild_name=ctx.guild.name if ctx.guild else None,
-                    channel_name=channel_name,
+                    channel_name=channel_name,  # pyright: ignore[reportUnknownArgumentType]
                 )
 
                 if answer:
-                    for chunk in split_message(answer):
-                        if isinstance(chunk, str):
-                            await ctx.followup.send(chunk, allowed_mentions=discord.AllowedMentions.none())
-                        else:
-                            await ctx.followup.send(file=chunk, allowed_mentions=discord.AllowedMentions.none())
+                    await send_messages(ctx.followup, answer)
                     self.logger.info("Chat success", user_id=ctx.author.id)
                 else:
-                    await ctx.followup.delete(reason="No response generated.")
+                    await ctx.delete()
 
         except Exception as e:
             self.logger.error("Chat failed", user_id=ctx.author.id, error=e)
@@ -139,9 +127,6 @@ class LLMCog(BaseCog):
         description="Manage your conversation settings",
     )
     async def manage(self, ctx: discord.ApplicationContext) -> None:
-        if await self._check_banned(ctx):
-            return
-
         main_view = ManageView(self.services)
         await ctx.respond(view=main_view, allowed_mentions=discord.AllowedMentions.none())
 
@@ -149,12 +134,13 @@ class LLMCog(BaseCog):
         name="export",
         description="Export your private conversation history as JSON",
     )
-    @commands.cooldown(1, 43200, commands.BucketType.user)
     async def export(self, ctx: discord.ApplicationContext) -> None:
-        await ctx.defer(ephemeral=True)
+        # CooldownMapping is typed for Message, but BucketType.user only reads `.author`.
+        bucket = self._export_cooldown.get_bucket(ctx)  # type: ignore[arg-type]
+        if (retry_after := bucket.update_rate_limit()) is not None:
+            raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.user)
 
-        if await self._check_banned(ctx):
-            return
+        await ctx.defer(ephemeral=True)
 
         self.logger.info("Export command", user_id=ctx.author.id)
 

@@ -12,10 +12,13 @@ class RestoreLinkView(View):
         super().__init__(timeout=60)
         self.original_message = original_message
         self.cached_messages = cached_messages
-        self.fixed_messages = fixed_messages or []
+        self.fixed_messages = fixed_messages if fixed_messages is not None else []
+        self.author_id = original_message.author.id
 
     async def on_timeout(self) -> None:
         self.clear_items()
+        # The Restore button is gone, so the entry is no longer needed; this keeps the set bounded.
+        self.cached_messages.discard(self.original_message.id)
 
         if isinstance(self.message, Message):
             with contextlib.suppress(HTTPException):  # message may have been deleted
@@ -23,7 +26,7 @@ class RestoreLinkView(View):
 
     @button(label="Restore", style=ButtonStyle.secondary, emoji="⬅️", id=127)
     async def restore(self, _: Button[Any], interaction: Interaction) -> None:
-        if not await can_interact(interaction):
+        if not await can_interact(interaction, self.author_id):
             return
 
         await interaction.response.defer()
