@@ -3,7 +3,17 @@
 from collections.abc import Awaitable, Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
-from discord import AppEmoji, ButtonStyle, Color, GuildEmoji, Interaction, NotFound, PartialEmoji, SeparatorSpacingSize
+from discord import (
+    AppEmoji,
+    ButtonStyle,
+    Color,
+    Forbidden,
+    GuildEmoji,
+    Interaction,
+    NotFound,
+    PartialEmoji,
+    SeparatorSpacingSize,
+)
 from discord.ui import ActionRow, BaseView, Button, Container, DesignerView, Section, TextDisplay, ViewItem
 
 from songbird.utils import emojis
@@ -50,7 +60,7 @@ class DeleteButton(Button[Any]):
 
 
 async def _delete_interaction_message(interaction: Interaction) -> None:
-    """Delete the message a component sits on, ephemeral or not."""
+    """Delete the message a component sits on, ephemeral, followup or channel message."""
     if interaction.message is None:
         return
     try:
@@ -58,7 +68,16 @@ async def _delete_interaction_message(interaction: Interaction) -> None:
             # Ephemeral messages have no channel copy, so message.delete() returns 404.
             await interaction.delete_original_response()
         else:
-            await interaction.message.delete()
+            try:
+                await interaction.message.delete()
+            except Forbidden:
+                # User-install apps run where the bot is not a guild member, so the channel
+                # route is forbidden. The interaction webhook owns every message the app
+                # sent, so delete through it: the original response directly, followups by id.
+                if (await interaction.original_response()).id == interaction.message.id:
+                    await interaction.delete_original_response()
+                else:
+                    await interaction.followup.delete_message(interaction.message.id)
     except NotFound:
         # Already gone, which is the outcome the callers want anyway.
         pass

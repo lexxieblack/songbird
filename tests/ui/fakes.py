@@ -29,25 +29,30 @@ class FakeResponse:
 class FakeFollowup:
     def __init__(self) -> None:
         self.messages: list[dict[str, Any]] = []
+        self.deleted_ids: list[int] = []
 
     async def send(self, *args: Any, **kwargs: Any) -> None:
         self.messages.append({"args": args, **kwargs})
+
+    async def delete_message(self, message_id: int) -> None:
+        self.deleted_ids.append(message_id)
 
 
 class FakeInteraction:
     """Duck-types the interaction surface: response, followup, client and message."""
 
-    def __init__(self, user_id: int = 7, permitted: bool = True) -> None:
+    def __init__(self, user_id: int = 7, permitted: bool = True, delete_forbidden: bool = False) -> None:
         self.user = SimpleNamespace(id=user_id, name="tester")
         # can_interact compares the clicker against the interaction's original user.
         author_id = user_id if permitted else user_id + 1
-        author = SimpleNamespace(id=author_id)
         self.message = SimpleNamespace(
-            interaction_metadata=SimpleNamespace(user=author),
-            interaction=SimpleNamespace(user=author),
+            id=100,
+            interaction_metadata=SimpleNamespace(user=SimpleNamespace(id=author_id)),
+            interaction=SimpleNamespace(user=SimpleNamespace(id=author_id)),
             flags=discord.MessageFlags(),
-            delete=self._delete_message,
+            delete=self._forbidden_delete if delete_forbidden else self._delete_message,
         )
+        self.original = SimpleNamespace(id=100)
         self.response = FakeResponse()
         self.followup = FakeFollowup()
         self.client = SimpleNamespace(get_channel=lambda _channel_id: None)  # pyright: ignore[reportUnknownLambdaType]
@@ -58,6 +63,12 @@ class FakeInteraction:
 
     async def _delete_message(self) -> None:
         self.deleted_message = True
+
+    async def _forbidden_delete(self) -> None:
+        raise discord.Forbidden(cast(Any, SimpleNamespace(status=403, reason="Forbidden")), "Missing Access")
+
+    async def original_response(self) -> SimpleNamespace:
+        return self.original
 
     async def delete_original_response(self) -> None:
         self.deleted_original = True

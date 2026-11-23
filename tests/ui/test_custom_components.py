@@ -1,5 +1,6 @@
 """Custom buttons, container builders and the confirm view."""
 
+from types import SimpleNamespace
 from typing import Any, cast
 
 import discord
@@ -57,6 +58,26 @@ async def test_delete_button_deletes_ephemeral_via_original_response() -> None:
 
     assert interaction.deleted_original is True
     assert interaction.deleted_message is False
+
+
+async def test_delete_button_falls_back_to_webhook_for_original_response() -> None:
+    # User-install apps can lack bot guild membership, so message.delete() raises 403.
+    interaction = FakeInteraction(delete_forbidden=True)
+
+    await DeleteButton().callback(as_interaction(interaction))
+
+    assert interaction.deleted_original is True
+    assert interaction.followup.deleted_ids == []
+
+
+async def test_delete_button_falls_back_to_webhook_for_followup() -> None:
+    interaction = FakeInteraction(delete_forbidden=True)
+    interaction.original = SimpleNamespace(id=1)
+
+    await DeleteButton().callback(as_interaction(interaction))
+
+    assert interaction.followup.deleted_ids == [interaction.message.id]
+    assert interaction.deleted_original is False
 
 
 async def test_forward_button_swaps_view() -> None:
