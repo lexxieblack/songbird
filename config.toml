@@ -1,8 +1,8 @@
 log_level = "INFO"
 
 [blackwall]
-image_url = "https://cdn.discordapp.com/attachments/1542994101941698702/1542994447162286120/b3.png?ex=6a93410f&is=6a91ef8f&hm=4a06eec5ba44c618586a3466fe0b5e438ab11ca08fb95708aed23ae72fc9585e&"
-warning_url = "https://cdn.discordapp.com/attachments/1542994101941698702/1542994198590922772/image.png?ex=6a9340d4&is=6a91ef54&hm=4e07367b812b02bea9ec2c96d6e40049fd8948da2d46ff7288b2853a21a42fd1&"
+image_url = "https://raw.githubusercontent.com/lexxieblack/songbird/main/assets/blackwall_banner.png"
+warning_url = "https://raw.githubusercontent.com/lexxieblack/songbird/main/assets/blackwall_warning.png"
 
 [llm]
 model = "gemini-2.5-flash"
@@ -11,6 +11,7 @@ system_prompt_path = "prompts/system.xml"
 
 [bot]
 source_code_url = "https://github.com/lexxieblack/songbird"
+help_banner_url = "https://raw.githubusercontent.com/lexxieblack/songbird/main/assets/songbird_command_index.png"
 
 [links]
 "twitter.com" = { swap = "vxtwitter.com", clean = true, chat = true, pagination = { format = "{url}/p{page}", per_page = 10 } }
@@ -20,6 +21,8 @@ source_code_url = "https://github.com/lexxieblack/songbird"
 "tiktok.com" = { swap = "d.tiktokez.com", follow = true, clean = true, chat = true }
 "youtube.com" = { clean = true, clean_exceptions = ["t", "v", "list"] }
 "youtu.be" = { clean = true, clean_exceptions = ["t", "v", "list"] }
-"facebook.com" = { swap = "facebed.com", clean = true, clean_exceptions = [ "fbid" ], chat = true }
+"facebook.com" = { swap = "facebed.com", clean = true, clean_exceptions = [
+    "fbid"
+], chat = true }
 "threads.com" = { swap = "fixthreads.seria.moe", chat = true }
 "*" = { clean = true }

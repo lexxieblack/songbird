@@ -25,6 +25,7 @@ class BotSettings(BaseModel):
     owner_id: int | None = None
     feedback_channel_id: int | None = None
     source_code_url: str | None = None
+    help_banner_url: str | None = None
     debug_guild_id: int | None = None
     management_guild_id: int | None = None
 
@@ -38,6 +39,12 @@ class BotSettings(BaseModel):
     def terms_of_service_url(self) -> str | None:
         if self.source_code_url:
             return f"{self.source_code_url}/blob/main/TERMS.md"
+        return None
+
+    @property
+    def issues_url(self) -> str | None:
+        if self.source_code_url:
+            return f"{self.source_code_url}/issues"
         return None
 
 

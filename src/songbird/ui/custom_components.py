@@ -1,12 +1,51 @@
-from collections.abc import Awaitable, Callable, Sequence
-from typing import Any
+# pyright: reportUnknownMemberType=false
 
-from discord import AppEmoji, ButtonStyle, Color, GuildEmoji, Interaction, PartialEmoji, SeparatorSpacingSize
+from collections.abc import Awaitable, Callable, Sequence
+from typing import TYPE_CHECKING, Any
+
+from discord import (
+    AppEmoji,
+    ButtonStyle,
+    Color,
+    Forbidden,
+    GuildEmoji,
+    Interaction,
+    NotFound,
+    PartialEmoji,
+    SeparatorSpacingSize,
+)
 from discord.ui import ActionRow, BaseView, Button, Container, DesignerView, Section, TextDisplay, ViewItem
 
 from songbird.utils import emojis
 from songbird.utils.constants import SColor, Text
 from songbird.utils.permissions import can_interact
+
+if TYPE_CHECKING:
+    from songbird.bot import SongbirdBot
+
+INVITE_LINK = "https://discord.com/oauth2/authorize?client_id="
+
+
+class BotLinkRow(ActionRow[Any]):
+    """Invite, source, issues, privacy and terms links shared by the about and help menus."""
+
+    def __init__(self, bot: "SongbirdBot") -> None:
+        super().__init__()
+
+        invite_link = INVITE_LINK + str(bot.user.id) if bot.user else ""
+        self.add_item(Button(label="Invite", url=invite_link, disabled=not bot.app_info.bot_public, style=ButtonStyle.url))
+
+        source_link = bot.settings.bot.source_code_url
+        self.add_item(Button(label="Source", url=source_link, disabled=not source_link))
+
+        issues_link = bot.settings.bot.issues_url
+        self.add_item(Button(label="Issues", url=issues_link, disabled=not issues_link))
+
+        privacy_link = bot.settings.bot.privacy_policy_url
+        self.add_item(Button(label="Privacy", url=privacy_link, disabled=not privacy_link))
+
+        terms_link = bot.settings.bot.terms_of_service_url
+        self.add_item(Button(label="Terms", url=terms_link, disabled=not terms_link))
 
 
 class DeleteButton(Button[Any]):
@@ -14,10 +53,34 @@ class DeleteButton(Button[Any]):
         super().__init__(label=Text.EMOJI_X)
 
     async def callback(self, interaction: Interaction) -> None:
-        if await can_interact(interaction) and interaction.message is not None:
-            await interaction.response.defer()
-            # Delete the message the button is on, which also covers interaction follow-ups.
-            await interaction.message.delete()
+        if not await can_interact(interaction):
+            return
+        await interaction.response.defer()
+        await _delete_interaction_message(interaction)
+
+
+async def _delete_interaction_message(interaction: Interaction) -> None:
+    """Delete the message a component sits on, ephemeral, followup or channel message."""
+    if interaction.message is None:
+        return
+    try:
+        if interaction.message.flags.ephemeral:
+            # Ephemeral messages have no channel copy, so message.delete() returns 404.
+            await interaction.delete_original_response()
+        else:
+            try:
+                await interaction.message.delete()
+            except Forbidden:
+                # User-install apps run where the bot is not a guild member, so the channel
+                # route is forbidden. The interaction webhook owns every message the app
+                # sent, so delete through it: the original response directly, followups by id.
+                if (await interaction.original_response()).id == interaction.message.id:
+                    await interaction.delete_original_response()
+                else:
+                    await interaction.followup.delete_message(interaction.message.id)
+    except NotFound:
+        # Already gone, which is the outcome the callers want anyway.
+        pass
 
 
 class _DirectionalButton(Button[Any]):
@@ -129,5 +192,4 @@ class ConfirmView(DesignerView):
 
 async def _default_cancel(interaction: Interaction) -> None:
     await interaction.response.defer()
-    if interaction.message is not None:
-        await interaction.message.delete()
+    await _delete_interaction_message(interaction)

@@ -189,6 +189,16 @@ async def test_translate_auto_detects_source() -> None:
     assert service.detections == ["hello"]
 
 
+async def test_translate_defaults_to_auto_source_and_english_target() -> None:
+    service = FakeTranslation()
+    handler = TranslateHandler(cast(Any, service))
+
+    result = await handler.translate_with_meta("hello")
+
+    assert result == ("German", "english", "Hallo")
+    assert service.calls == [("hello", "english", "auto")]
+
+
 async def test_translate_plain_forwards() -> None:
     service = FakeTranslation()
     handler = TranslateHandler(cast(Any, service))

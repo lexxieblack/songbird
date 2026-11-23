@@ -10,8 +10,8 @@ class TranslateHandler:
     async def translate_with_meta(
         self,
         text: str,
-        target_lang: str,
-        source_lang: str | None = None,
+        target_lang: str = "english",
+        source_lang: str | None = "auto",
     ) -> tuple[str, str, str]:
         source_lang = source_lang or "auto"
         translated_text = await self.translate(text, target_lang, source_lang)
@@ -27,8 +27,8 @@ class TranslateHandler:
     async def translate(
         self,
         text: str,
-        target_lang: str,
-        source_lang: str | None = None,
+        target_lang: str = "english",
+        source_lang: str | None = "auto",
     ) -> str:
         source_lang = source_lang or "auto"
         translated_text = await self.translation_service.translate(

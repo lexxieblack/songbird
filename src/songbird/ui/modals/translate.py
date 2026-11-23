@@ -16,12 +16,14 @@ class TranslateModal(Modal):
         self.source_language = InputText(
             label="Source Language (Optional)",
             placeholder="auto",
+            value="auto",
             required=False,
         )
         self.target_language = InputText(
             label="Target Language",
             placeholder="english",
-            min_length=1,
+            value="english",
+            required=False,
         )
         self.text = InputText(
             label="Text to Translate",
@@ -31,15 +33,15 @@ class TranslateModal(Modal):
             max_length=4000,
         )
 
+        self.add_item(self.text)
         self.add_item(self.source_language)
         self.add_item(self.target_language)
-        self.add_item(self.text)
 
     async def callback(self, interaction: Interaction) -> None:
         await interaction.response.defer()
 
-        source_language = (self.source_language.value or "").strip()
-        target_language = (self.target_language.value or "").strip()
+        source_language = (self.source_language.value or "").strip() or "auto"
+        target_language = (self.target_language.value or "").strip() or "english"
         text = (self.text.value or "").strip()
         source_name, target_name, translated_text = await self.translate_callback(text, target_language, source_language)
 
@@ -55,8 +57,9 @@ class TranslateMessageModal(Modal):
         self.translate_callback = translate_callback
         self.target_language = InputText(
             label="Target Language",
-            placeholder="Enter the target language...",
-            required=True,
+            placeholder="english",
+            value="english",
+            required=False,
         )
 
         self.add_item(self.target_language)
@@ -66,7 +69,7 @@ class TranslateMessageModal(Modal):
             await interaction.respond("Nothing to translate.", ephemeral=True, allowed_mentions=AllowedMentions.none())
             return
 
-        target_language = (self.target_language.value or "").strip()
+        target_language = (self.target_language.value or "").strip() or "english"
 
         await interaction.response.defer()
         source_name, target_name, translated_text = await self.translate_callback(self.text, target_language)

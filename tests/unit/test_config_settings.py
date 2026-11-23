@@ -37,6 +37,7 @@ def test_defaults() -> None:
     assert settings.bot.activity == "Hello World"
     assert settings.bot.owner_id is None
     assert settings.bot.debug_guild_id is None
+    assert settings.bot.help_banner_url is None
     assert settings.llm.model == "gemini-2.5-flash"
     assert settings.llm.message_count == 30
     assert settings.llm.retry.max_attempts == 5
@@ -213,6 +214,7 @@ def test_privacy_and_terms_urls() -> None:
 
     assert settings.bot.privacy_policy_url == "https://github.com/example/songbird/blob/main/PRIVACY.md"
     assert settings.bot.terms_of_service_url == "https://github.com/example/songbird/blob/main/TERMS.md"
+    assert settings.bot.issues_url == "https://github.com/example/songbird/issues"
 
 
 def test_privacy_and_terms_urls_absent_without_source() -> None:
@@ -220,3 +222,4 @@ def test_privacy_and_terms_urls_absent_without_source() -> None:
 
     assert settings.bot.privacy_policy_url is None
     assert settings.bot.terms_of_service_url is None
+    assert settings.bot.issues_url is None

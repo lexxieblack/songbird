@@ -1,5 +1,6 @@
 """Tools cog: translate/file/wolfram/convert/fix/ping behaviour and ban gating."""
 
+import inspect
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
@@ -129,6 +130,13 @@ def _conversion() -> ConversionResult:
 @pytest.fixture
 def cog(fake_bot: SongbirdBot) -> ToolsCog:
     return ToolsCog(fake_bot)
+
+
+def test_translate_slash_defaults_to_auto_source_and_english_target() -> None:
+    params = inspect.signature(ToolsCog.translate.callback).parameters
+
+    assert params["to_lang"].default.default == "english"
+    assert params["from_lang"].default.default == "auto"
 
 
 async def test_translate_without_text_opens_modal(cog: ToolsCog, fake_ctx: discord.ApplicationContext) -> None:

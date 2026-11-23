@@ -38,9 +38,9 @@ class ToolsCog(BaseCog):
         self,
         ctx: discord.ApplicationContext,
         text: str | None = discord.Option(str, description="The text to translate", required=False, default=None),  # type: ignore[assignment]
-        to_lang: str = discord.Option(str, description="Target language to translate to", required=False, default="en"),  # type: ignore[assignment]
-        from_lang: str | None = discord.Option(
-            str, description="Source language (auto-detect if not specified)", required=False, default=None
+        to_lang: str = discord.Option(str, description="Target language to translate to", required=False, default="english"),  # type: ignore[assignment]
+        from_lang: str = discord.Option(
+            str, description="Source language (auto-detect if not specified)", required=False, default="auto"
         ),  # type: ignore[assignment]
     ) -> None:
         if not text:
