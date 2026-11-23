@@ -257,7 +257,7 @@ async def test_translate_modal_passes_trimmed_values() -> None:
     assert isinstance(view, TranslateView)
 
 
-async def test_translate_modal_accepts_blank_optional_source() -> None:
+async def test_translate_modal_defaults_blank_fields() -> None:
     # Regression: InputText.value is None for an untouched optional field; `.strip()` raised AttributeError.
     calls: list[tuple[str, str, str | None]] = []
 
@@ -267,13 +267,13 @@ async def test_translate_modal_accepts_blank_optional_source() -> None:
 
     modal = TranslateModal(translate)
     modal.source_language.value = None  # pyright: ignore[reportPrivateUsage]
-    modal.target_language.value = " Spanish "  # pyright: ignore[reportPrivateUsage]
+    modal.target_language.value = None  # pyright: ignore[reportPrivateUsage]
     modal.text.value = " Hello "  # pyright: ignore[reportPrivateUsage]
     interaction = FakeInteraction()
 
     await modal.callback(as_interaction(interaction))
 
-    assert calls == [("Hello", "Spanish", "")]
+    assert calls == [("Hello", "english", "auto")]
 
 
 async def test_translate_message_modal_uses_message_content() -> None:
@@ -292,6 +292,22 @@ async def test_translate_message_modal_uses_message_content() -> None:
     assert calls == [("Hello", "German")]
     assert interaction.response.defer_calls == [{}]
     assert isinstance(interaction.followup.messages[0]["view"], TranslateView)
+
+
+async def test_translate_message_modal_defaults_target_to_english() -> None:
+    calls: list[tuple[str, str]] = []
+
+    async def translate(text: str, target: str) -> tuple[str, str, str]:
+        calls.append((text, target))
+        return ("German", "English", "Hello")
+
+    modal = TranslateMessageModal(_message("Hallo"), translate)
+    modal.target_language.value = None  # pyright: ignore[reportPrivateUsage]
+    interaction = FakeInteraction()
+
+    await modal.callback(as_interaction(interaction))
+
+    assert calls == [("Hallo", "english")]
 
 
 async def test_translate_message_modal_rejects_empty_text() -> None:
