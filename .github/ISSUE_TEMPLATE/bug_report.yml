@@ -1,0 +1,88 @@
+name: Bug report
+description: Something in Songbird didn't work as expected
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Redact before pasting.** Remove Discord tokens, API keys, other people's user IDs and private message content. Issues are public.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What went wrong?
+      description: What did you do, and what did Songbird do instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: feature
+    attributes:
+      label: Which feature?
+      options:
+        - Chat (/chat)
+        - Quick chat (/quickchat)
+        - Summary (/summary)
+        - Manage (/manage)
+        - Export (/export)
+        - Translate (/translate)
+        - Wolfram (/wolfram)
+        - Convert (/convert)
+        - Fix links (/fix)
+        - Feedback (/feedback)
+        - Blackwall (/blackwall)
+        - Moderation
+        - Help / About / Ping
+        - Permissions / bot won't respond
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: hosting
+    attributes:
+      label: Where are you running Songbird?
+      options:
+        - Hosted bot (someone else runs it)
+        - Self-hosted
+    validations:
+      required: true
+  - type: textarea
+    id: reply
+    attributes:
+      label: What did the bot reply?
+      description: The exact error text, if there was any. A generic "An error occurred" needs no screenshot — the details below are enough.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Only if you can make it happen again.
+      placeholder: |
+        1. Run /chat
+        2. Send "hello"
+        3. ...
+  - type: input
+    id: when
+    attributes:
+      label: When did it happen?
+      description: Date and approximate time, plus your timezone (e.g. 2026-11-23 21:40 CET).
+  - type: input
+    id: who
+    attributes:
+      label: Your Discord username or user ID
+      description: Hosted bot only — lets the owner find the matching log entry.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or traceback (self-hosted only)
+      description: Paste the full text, not a screenshot.
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit (self-hosted only)
+      placeholder: e.g. 3.0.0 or 9aa65c8
+  - type: checkboxes
+    id: redacted
+    attributes:
+      label: Before submitting
+      options:
+        - label: I removed tokens, API keys, other people's IDs and private message content from anything I pasted.
+          required: true

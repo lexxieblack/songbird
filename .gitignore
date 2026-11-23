@@ -16,8 +16,6 @@ docs
 .codex
 .copilot
 .cursor
-.github/*
-!.github/workflows/
 .kilocode
 .opencode
 .windsurf

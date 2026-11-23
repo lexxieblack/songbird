@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a change or addition to Songbird
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem first — it's easier to judge than a solution.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation or limitation you ran into.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Songbird to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds you've considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this touch?
+      options:
+        - Chat (/chat)
+        - Quick chat (/quickchat)
+        - Summary (/summary)
+        - Manage (/manage)
+        - Export (/export)
+        - Translate (/translate)
+        - Wolfram (/wolfram)
+        - Convert (/convert)
+        - Fix links (/fix)
+        - Feedback (/feedback)
+        - Blackwall (/blackwall)
+        - Moderation
+        - Help / About / Ping
+        - Other
