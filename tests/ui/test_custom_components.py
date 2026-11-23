@@ -49,6 +49,16 @@ async def test_delete_button_ignores_other_users() -> None:
     assert interaction.deleted_message is False
 
 
+async def test_delete_button_deletes_ephemeral_via_original_response() -> None:
+    interaction = FakeInteraction()
+    interaction.message.flags = discord.MessageFlags(ephemeral=True)
+
+    await DeleteButton().callback(as_interaction(interaction))
+
+    assert interaction.deleted_original is True
+    assert interaction.deleted_message is False
+
+
 async def test_forward_button_swaps_view() -> None:
     interaction = FakeInteraction()
     target = generate_container("back", [])

@@ -122,6 +122,10 @@ class FakeBot:
         self.logger = get_logger(__name__)
         self.listeners: list[Callable[..., Any]] = []
         self.cogs: list[object] = []
+        self.application_commands: list[object] = []
+
+    def walk_application_commands(self) -> list[object]:
+        return self.application_commands
 
     def listen(self) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         def decorator(callback: Callable[..., Any]) -> Callable[..., Any]:

@@ -32,7 +32,7 @@ def cog(fake_bot: SongbirdBot) -> BotCog:
 async def test_help_responds_with_help_view(cog: BotCog, fake_ctx: discord.ApplicationContext) -> None:
     ctx = _fake(fake_ctx)
 
-    await invoke(cog, "help", fake_ctx)
+    await invoke(cog, "help", fake_ctx, query=None)
 
     assert len(ctx.respond_calls) == 1
     call = ctx.respond_calls[0]

@@ -45,6 +45,7 @@ class FakeInteraction:
         self.message = SimpleNamespace(
             interaction_metadata=SimpleNamespace(user=author),
             interaction=SimpleNamespace(user=author),
+            flags=discord.MessageFlags(),
             delete=self._delete_message,
         )
         self.response = FakeResponse()

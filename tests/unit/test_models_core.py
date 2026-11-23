@@ -13,7 +13,7 @@ from songbird.models.chat.message import Message
 from songbird.models.conversation import ConversationContext
 from songbird.models.currency import ConversionResult, Currency, CurrencyError, RateResult
 from songbird.models.exception import SongbirdException
-from songbird.models.help import CategoryDef, HelpCommandEntry
+from songbird.models.help import CategoryDef
 from songbird.models.llm import LLMRequest
 
 NOW = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
@@ -150,28 +150,3 @@ def test_category_def_requires_all_fields() -> None:
 
     with pytest.raises(ValidationError):
         CategoryDef(label="General", emoji="❓")  # type: ignore[call-arg]
-
-
-def test_help_command_entry_defaults_emoji_to_none() -> None:
-    entry = HelpCommandEntry(
-        key="help",
-        label="Help",
-        description="Show help",
-        short_description="Help",
-        category="general",
-    )
-
-    assert entry.emoji is None
-
-
-def test_help_command_entry_keeps_an_emoji() -> None:
-    entry = HelpCommandEntry(
-        key="help",
-        label="Help",
-        emoji="❓",
-        description="Show help",
-        short_description="Help",
-        category="general",
-    )
-
-    assert entry.emoji == "❓"

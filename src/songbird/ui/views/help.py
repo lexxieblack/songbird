@@ -1,307 +1,291 @@
-from typing import Any
+"""The `/help` menu.
 
-from discord.ui import BaseView, DesignerView, Section, TextDisplay
+Structure mirrors Lawliet's help: category overview -> command list -> command detail,
+with breadcrumbs, a back button and a category jump select. Everything is derived from
+the live command registry, so names, usage and options cannot drift; only the tips,
+per-command emoji and examples are hand-written.
+"""
 
-from songbird.models.help import CategoryDef, HelpCommandEntry
-from songbird.ui.custom_components import ForwardButton, generate_back_container, generate_container
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
-CATEGORIES: dict[str, CategoryDef] = {
-    "tools": CategoryDef(label="Tools", emoji="🛠️", description="Utility and tool commands"),
-    "llm": CategoryDef(label="LLM", emoji="🤖", description="AI-powered language model commands"),
-    "bot": CategoryDef(label="Bot", emoji="ℹ️", description="General bot information and feedback"),
-    "moderation": CategoryDef(label="Moderation", emoji="🛡️", description="Server configuration and moderation commands"),
+import discord
+from discord import MediaGalleryItem
+from discord.commands import MessageCommand, SlashCommand, UserCommand
+from discord.ui import ActionRow, BaseView, DesignerView, MediaGallery, Section, Select, Separator, TextDisplay
+from pydantic import BaseModel
+
+from songbird.models.help import CategoryDef
+from songbird.ui.custom_components import BotLinkRow, ForwardButton, generate_back_container, generate_container
+from songbird.utils.permissions import can_interact
+
+if TYPE_CHECKING:
+    from songbird.bot import SongbirdBot
+
+_CATEGORY_BY_COG: dict[str, CategoryDef] = {
+    "ToolsCog": CategoryDef(label="Tools", emoji="🛠️", description="Utility and tool commands"),
+    "LLMCog": CategoryDef(label="LLM", emoji="🤖", description="AI-powered language model commands"),
+    "BotCog": CategoryDef(label="Bot", emoji="ℹ️", description="General bot information and feedback"),
+    "BlackwallCog": CategoryDef(label="Moderation", emoji="🛡️", description="Server configuration and moderation commands"),
+}
+# Owner-only cogs are never listed, not even for the owner: there is nothing to browse.
+_HIDDEN_COGS = frozenset({"ManagementCog"})
+_DEFAULT_CATEGORY = CategoryDef(label="Other", emoji="📦", description="Other commands")
+
+# Cosmetic only: a command missing from this map falls back to its category emoji.
+_EMOJI: dict[str, str] = {
+    "chat": "💬",
+    "file": "📄",
+    "fix": "🔧",
+    "blackwall": "🛡️",
+    "manage": "⚙️",
+    "ping": "🏓",
+    "quickchat": "⚡",
+    "summary": "📝",
+    "translate": "🌍",
+    "wolfram": "🐺",
+    "about": "📋",
+    "feedback": "💌",
+    "help": "❓",
+    "convert": "💱",
+    "export": "📤",
 }
 
-_COMMAND_ENTRIES: list[HelpCommandEntry] = [
-    HelpCommandEntry(
-        key="chat",
-        label="Chat",
-        emoji="💬",
-        category="llm",
-        description="\n".join(
-            [
-                "**Talk with Songbird**\n",
-                "Talk with Songbird (AI persona). The command can enrich replies by looking up URLs and web results.\n",
-                "**Usage:** `/chat message:<your message>`\n",
-                "**What it does:**",
-                "- Maintains conversation context.",
-                "- Uses web/URL lookups to add detail when relevant.\n",
-                "**Tips:**",
-                "- Messages are private between you and the bot.",
-                "- You can DM Songbird for one-on-one chats — messages there are added to your conversation.",
-                "- Use `/manage` to control conversation history and settings.",
-            ]
-        ),
-        short_description="Chat with Songbird",
+# Hints the registry cannot know. Usage, options and descriptions are generated.
+_NOTES: dict[str, str] = {
+    "chat": (
+        "Conversation stays private to you. DMs to Songbird join the same conversation. "
+        "Use `/manage` to reset history or edit what the AI knows about you."
     ),
-    HelpCommandEntry(
-        key="file",
-        label="File",
-        emoji="📄",
-        category="tools",
-        description=(
-            "**Send text as a file**\n\n"
-            "Sends a text file with the given content and an optional file extension.\n\n"
-            "**Usage:** `/file` (opens a modal)\n\n"
-            "**What it does:**\n"
-            "- Prompts for file content and an optional extension.\n"
-            "- Creates and sends a text file to the channel.\n\n"
-            "**Example:** Use to share code snippets or long text passages."
-        ),
-        short_description="Send text as a file",
+    "quickchat": "One-off answer, not saved to your conversation history.",
+    "translate": ("Leave `text` out to get a form instead. You can also right-click a message → **Apps** → **Translate**."),
+    "file": "Opens a form: paste the content, optionally set a file extension.",
+    "fix": "Strips trackers and rewrites links (X/Twitter, TikTok, Reddit and more) so they embed properly.",
+    "blackwall": (
+        "Server admins only. Anyone else posting in the configured channel gets banned, "
+        "so whitelist roles that need legitimate access."
     ),
-    HelpCommandEntry(
-        key="fix",
-        label="Fix",
-        emoji="🔧",
-        category="tools",
-        description=(
-            "**Auto-fix links**\n\n"
-            "Attempt to automatically fix links for better embeds.\n\n"
-            "**Usage:** `/fix link:<url>`\n\n"
-            "**What it does:**\n"
-            "- Fixes links for websites like Twitter, Tiktok, Reddit, and more for better embeds and removes trackers.\n\n"
-            "**Example:** `/fix link:http//example.com`"
-        ),
-        short_description="Fix links",
-    ),
-    HelpCommandEntry(
-        key="blackwall",
-        label="Blackwall",
-        emoji="🛡️",
-        category="moderation",
-        description=(
-            "**Manage the Blackwall channel**\n\n"
-            "Configure the Blackwall: a honeypot channel that detects and bans bots.\n\n"
-            "**Usage:** `/blackwall` (server administrators only)\n\n"
-            "**What it does:**\n"
-            "- Sets the Blackwall channel where posting triggers a ban.\n"
-            "- Optionally sets a log channel to record trigger events.\n"
-            "- Lets you whitelist roles that may post without being banned.\n\n"
-            "**How it works:**\n"
-            "- Anyone who is not a server admin or whitelisted who posts in the Blackwall channel is automatically banned.\n"
-            "- The event is logged if a log channel is set, and the ban counter is updated.\n\n"
-            "**Tips:**\n"
-            "- Make the channel as accessible as possible, requiring no roles or permission to write messages in.\n"
-            "- Whitelist roles (e.g. staff) that need legitimate access.\n"
-            "- Toggle the functionality by removing the channel in the Blackwall settings."
-        ),
-        short_description="Manage the Blackwall channel",
-    ),
-    HelpCommandEntry(
-        key="manage",
-        label="Manage",
-        emoji="⚙️",
-        category="llm",
-        description=(
-            "**Manage your conversation settings**\n\n"
-            "Control your AI conversation history and personal context.\n\n"
-            "**Usage:** `/manage`\n\n"
-            "**What it does:**\n"
-            "- Opens a management panel with these options:\n"
-            "  - **Reset Conversation**: Deletes all your conversation history.\n"
-            "  - **Delete Last Message**: Removes the most recent message.\n"
-            "  - **Edit User Info**: Update context information the AI knows about you.\n\n"
-            "**Tips:**\n"
-            "- Use this to start fresh or correct the AI's understanding of you."
-        ),
-        short_description="Manage your conversation settings",
-    ),
-    HelpCommandEntry(
-        key="ping",
-        label="Ping",
-        emoji="🏓",
-        category="tools",
-        description=(
-            "**Check latency**\n\n"
-            "Quickly measure bot latency.\n\n"
-            "**Usage:** `/ping`\n\n"
-            "**What it does:**\n"
-            "- Shows the bot's current latency between the bot and the server."
-        ),
-        short_description="Check bot latency",
-    ),
-    HelpCommandEntry(
-        key="quickchat",
-        label="Quick Chat",
-        emoji="⚡",
-        category="llm",
-        description=(
-            "**Quick AI chat without memory**\n\n"
-            "Engage with Songbird (AI persona) for a single exchange without affecting conversation history.\n\n"
-            "**Usage:** `/quickchat message:<your message>`\n\n"
-            "**What it does:**\n"
-            "- Uses Google Gemini AI for a response.\n"
-            "- Includes web/URL lookups for enriched replies.\n"
-            "- Does NOT save to conversation history.\n\n"
-            "**Tips:**\n"
-            "- Ideal for one-off questions or requests that don't require context.\n"
-            "- All messages are private."
-        ),
-        short_description="Quick AI chat without saving history",
-    ),
-    HelpCommandEntry(
-        key="summary",
-        label="Summary",
-        emoji="📝",
-        category="llm",
-        description=(
-            "**Summarize text**\n\n"
-            "Create a short summary of the provided text or message.\n\n"
-            "**Usage:** `/summary text:<text to summarize>`\n\n"
-            "**What it does:**\n"
-            "- Produces a concise summary suitable for quick reading or previews.\n"
-            "- Can be used as an option on a message instead of a command.\n\n"
-            "**Example:** `/summary text:Paste long article here...`"
-        ),
-        short_description="Summarize a message or text",
-    ),
-    HelpCommandEntry(
-        key="translate",
-        label="Translate",
-        emoji="🌍",
-        category="tools",
-        description=(
-            "**Translate text**\n\n"
-            "Translate text between languages using Google Translate.\n\n"
-            "**Usage:** `/translate text:<text> language:<language code>`\n\n"
-            "**What it does:**\n"
-            "- Returns a translation in the target language.\n"
-            "- Can be used as an option on a message instead of a command.\n\n"
-            "**Example:** `/translate text:Hello world language:es`"
-        ),
-        short_description="Translate a message or text",
-    ),
-    HelpCommandEntry(
-        key="wolfram",
-        label="Wolfram Alpha",
-        emoji="🐺",
-        category="tools",
-        description=(
-            "**Wolfram Alpha query**\n\n"
-            "Run computational or factual queries via Wolfram Alpha (requires API key).\n\n"
-            "**Usage:** `/wolfram query:<math or question>`\n\n"
-            "**What it does:**\n"
-            "- Forwards your query to Wolfram Alpha and returns a short result or link.\n\n"
-            "**Example:** `/wolfram query:x^2 + 2x + 1 = 0`"
-        ),
-        short_description="Query Wolfram Alpha",
-    ),
-    HelpCommandEntry(
-        key="about",
-        label="About",
-        emoji="📋",
-        category="bot",
-        description=(
-            "**About Songbird**\n\n"
-            "Displays general information about the bot, including invite and source code links.\n\n"
-            "**Usage:** `/about`\n\n"
-            "**What it does:**\n"
-            "- Shows the bot's name, avatar, and short description.\n"
-            "- Provides buttons to invite the bot to other servers and view its source code."
-        ),
-        short_description="Get information about the bot",
-    ),
-    HelpCommandEntry(
-        key="feedback",
-        label="Feedback",
-        emoji="💌",
-        category="bot",
-        description=(
-            "**Send feedback**\n\n"
-            "Send a message directly to the bot owner.\n\n"
-            "**Usage:** `/feedback` (opens a modal)\n\n"
-            "**What it does:**\n"
-            "- Opens a form where you can type your message.\n"
-            "- Your message is forwarded to the bot owner's feedback channel.\n\n"
-            "**Tips:**\n"
-            "- Use this to report bugs, suggest features, or share your thoughts."
-        ),
-        short_description="Send feedback to the bot owner",
-    ),
-    HelpCommandEntry(
-        key="help",
-        label="Help",
-        emoji="❓",
-        category="bot",
-        description=(
-            "**Get help with Songbird**\n\n"
-            "Browse all available commands organized by category.\n\n"
-            "**Usage:** `/help`\n\n"
-            "**What it does:**\n"
-            "- Opens an interactive help menu with four categories:\n"
-            "  - **Tools**: Utility commands like Translate, Fix, and Ping.\n"
-            "  - **LLM**: AI-powered chat and summary commands.\n"
-            "  - **Bot**: General bot information and feedback.\n"
-            "  - **Moderation**: Server configuration and moderation commands.\n"
-            "- Navigate through categories to see commands and their details."
-        ),
-        short_description="Browse available commands",
-    ),
-]
+    "summary": "Paste long text or a URL and get a short version back.",
+    "export": "Sends your conversation as a JSON file, visible only to you.",
+}
+
+_EXAMPLES: dict[str, list[str]] = {
+    "chat": ["/chat message:How do I get started with Python?"],
+    "quickchat": ["/quickchat question:What is the capital of Norway?"],
+    "convert": ["/convert amount:100 from:USD to:EUR"],
+    "translate": ["/translate text:Good morning to_lang:ja"],
+    "fix": ["/fix link:https://x.com/Songbird/status/123"],
+    "wolfram": ["/wolfram query:integrate x^2 dx"],
+}
 
 
-def _get_commands_by_category() -> dict[str, list[HelpCommandEntry]]:
-    result: dict[str, list[HelpCommandEntry]] = {}
-    for entry in _COMMAND_ENTRIES:
-        result.setdefault(entry.category, []).append(entry)
-    return result
+class CommandDoc(BaseModel):
+    name: str
+    label: str
+    emoji: str
+    summary: str
+    usage: str
+    options: list[str]
+    examples: list[str]
+    notes: str | None = None
+    category: CategoryDef
 
 
-class CommandDetailView(DesignerView):
-    def __init__(self, entry: HelpCommandEntry, back_view: BaseView):
-        super().__init__()
-        title = f"{(entry.emoji + ' ') if entry.emoji else ''} {entry.label}"
-        container = generate_back_container(
-            title=title,
-            view=back_view,
-            components=[TextDisplay(entry.description)],
-        )
-        self.add_item(container)
+class CategoryGroup(BaseModel):
+    category: CategoryDef
+    docs: list[CommandDoc]
 
 
-class CategoryView(DesignerView):
-    def __init__(self, category: CategoryDef, commands: list[HelpCommandEntry], main_view: BaseView):
-        super().__init__()
-        title = f"{category.emoji} {category.label}"
+def _category(cmd: discord.ApplicationCommand[Any, Any, Any]) -> CategoryDef:
+    return _CATEGORY_BY_COG.get(type(cmd.cog).__name__, _DEFAULT_CATEGORY)
 
-        sections: list[Section[Any]] = []
-        if commands:
-            for entry in commands:
-                entry_title = f"{(entry.emoji + ' ') if entry.emoji else ''} {entry.label}"
-                sections.append(
-                    Section(
-                        TextDisplay(entry_title),
-                        TextDisplay(entry.short_description),
-                        accessory=ForwardButton(CommandDetailView(entry, self)),
-                    )
+
+def _slash_usage(cmd: SlashCommand) -> str:
+    args = " ".join(f"<{option.name}>" if option.required else f"[{option.name}]" for option in cmd.options)
+    return f"`/{cmd.qualified_name}{f' {args}' if args else ''}`"
+
+
+def _slash_options(cmd: SlashCommand) -> list[str]:
+    return [
+        f"- `{option.name}` ({option.input_type.name}, {'required' if option.required else 'optional'}) — {option.description}"
+        for option in cmd.options
+    ]
+
+
+def build_docs(commands: Iterable[discord.ApplicationCommand[Any, Any, Any]]) -> list[CommandDoc]:
+    docs: list[CommandDoc] = []
+    for cmd in commands:
+        if type(cmd.cog).__name__ in _HIDDEN_COGS:
+            continue
+        category = _category(cmd)
+        key = cmd.name.lower()
+        if isinstance(cmd, SlashCommand):
+            docs.append(
+                CommandDoc(
+                    name=cmd.qualified_name,
+                    label=f"/{cmd.qualified_name}",
+                    emoji=_EMOJI.get(key, category.emoji),
+                    summary=cmd.description,
+                    usage=_slash_usage(cmd),
+                    options=_slash_options(cmd),
+                    examples=_EXAMPLES.get(key, []),
+                    notes=_NOTES.get(key),
+                    category=category,
                 )
-        else:
-            sections.append(Section(TextDisplay("No commands available in this category")))
+            )
+        elif isinstance(cmd, (MessageCommand, UserCommand)):
+            target = "message" if isinstance(cmd, MessageCommand) else "user"
+            docs.append(
+                CommandDoc(
+                    name=cmd.name,
+                    label=f"{cmd.name} ({target} menu)",
+                    emoji=_EMOJI.get(key, category.emoji),
+                    summary=f"Right-click a {target} → Apps → {cmd.name}",
+                    usage=f"Right-click a {target} → **Apps** → **{cmd.name}**",
+                    options=[],
+                    examples=_EXAMPLES.get(key, []),
+                    notes=_NOTES.get(key),
+                    category=category,
+                )
+            )
+    return docs
 
-        container = generate_back_container(
-            title=f"## {title}",
-            view=main_view,
-            components=sections,
+
+def group_by_category(docs: list[CommandDoc]) -> list[CategoryGroup]:
+    groups: dict[str, CategoryGroup] = {}
+    for doc in docs:
+        group = groups.get(doc.category.label)
+        if group is None:
+            group = groups[doc.category.label] = CategoryGroup(category=doc.category, docs=[])
+        group.docs.append(doc)
+    return list(groups.values())
+
+
+def _render_detail(doc: CommandDoc) -> str:
+    parts = [f"## {doc.emoji} {doc.label}", doc.summary, f"### Usage\n{doc.usage}"]
+    if doc.options:
+        parts.append("### Options\n" + "\n".join(doc.options))
+    if doc.examples:
+        parts.append("### Examples\n" + "\n".join(f"- {example}" for example in doc.examples))
+    if doc.notes:
+        parts.append(f"### Notes\n{doc.notes}")
+    return "\n\n".join(parts)
+
+
+class _CategorySelect(Select):
+    def __init__(self, groups: list[CategoryGroup], current: str, back_view: BaseView, author_id: int | None) -> None:
+        super().__init__(
+            placeholder="Jump to another category",
+            options=[
+                discord.SelectOption(
+                    label=group.category.label,
+                    value=group.category.label,
+                    description=f"{len(group.docs)} commands",
+                    emoji=group.category.emoji,
+                    default=group.category.label == current,
+                )
+                for group in groups
+            ],
         )
-        self.add_item(container)
+        self.groups = groups
+        self.back_view = back_view
+        self.author_id = author_id
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        # The author is passed explicitly so ephemeral messages work even without interaction metadata.
+        if not await can_interact(interaction, self.author_id):
+            return
+        values = self.values or []
+        group = next((group for group in self.groups if group.category.label == (values[0] if values else None)), None)
+        if group is not None:
+            await interaction.response.edit_message(view=CategoryMenuView(self.groups, group, self.back_view, self.author_id))
+
+
+class CommandMenuView(DesignerView):
+    def __init__(self, doc: CommandDoc, back_view: BaseView) -> None:
+        super().__init__()
+        self.doc = doc
+        self.add_item(
+            generate_back_container(
+                title="## Help",
+                view=back_view,
+                subtitle=f"-# {doc.category.emoji} {doc.category.label}",
+                components=[TextDisplay(_render_detail(doc))],
+            )
+        )
+
+
+class CategoryMenuView(DesignerView):
+    def __init__(
+        self, groups: list[CategoryGroup], group: CategoryGroup, back_view: BaseView, author_id: int | None = None
+    ) -> None:
+        super().__init__()
+        # shortcut: one page per category; paginate if a category passes ~10 rows (Discord caps 40 components).
+        components: list[Any] = [
+            Section(
+                TextDisplay(f"{doc.emoji} **{doc.label}** — {doc.summary}"),
+                accessory=ForwardButton(CommandMenuView(doc, self)),
+            )
+            for doc in group.docs
+        ]
+        components += [
+            Separator(),
+            ActionRow(_CategorySelect(groups, group.category.label, back_view, author_id)),
+        ]
+        self.add_item(
+            generate_back_container(
+                title="## Help",
+                view=back_view,
+                subtitle=f"-# {group.category.emoji} {group.category.label} · {len(group.docs)} commands",
+                components=components,
+            )
+        )
 
 
 class HelpView(DesignerView):
-    def __init__(self) -> None:
+    def __init__(self, bot: "SongbirdBot", docs: list[CommandDoc], author_id: int | None = None) -> None:
         super().__init__()
-        commands_by_category = _get_commands_by_category()
+        self.groups = group_by_category(docs)
+        self.category_views: dict[str, CategoryMenuView] = {}
         sections: list[Section[Any]] = []
-        for cat_key, cat_def in CATEGORIES.items():
-            cat_commands = commands_by_category.get(cat_key, [])
-            title = f"{cat_def.emoji} {cat_def.label}"
+        for group in self.groups:
+            view = CategoryMenuView(self.groups, group, self, author_id)
+            self.category_views[group.category.label] = view
             sections.append(
                 Section(
-                    TextDisplay(title),
-                    TextDisplay(cat_def.description),
-                    accessory=ForwardButton(CategoryView(cat_def, cat_commands, self)),
+                    TextDisplay(f"{group.category.emoji} **{group.category.label}**\n{group.category.description}"),
+                    accessory=ForwardButton(view),
                 )
             )
+        components: list[Any] = []
+        if banner_url := bot.settings.bot.help_banner_url:
+            components += [
+                MediaGallery(MediaGalleryItem(url=banner_url)),  # type: ignore[no-untyped-call]
+                Separator(divider=False, spacing=discord.SeparatorSpacingSize.small),
+            ]
+        components += [BotLinkRow(bot), Separator(), *sections]
+        self.add_item(
+            generate_container(
+                title="## Help",
+                subtitle=f"-# {len(docs)} commands · pick a category",
+                components=components,
+            )
+        )
 
-        container = generate_container(title="## Help", components=sections)
-        self.add_item(container)
+
+def resolve(bot: "SongbirdBot", docs: list[CommandDoc], query: str, author_id: int | None = None) -> DesignerView | None:
+    """Root, category or command view for a `/help` query, or None when nothing matches."""
+    root = HelpView(bot, docs, author_id)
+    needle = query.strip().lower()
+    doc = next((doc for doc in docs if doc.label.lower() == needle), None)
+    if doc is None:
+        # Exact case first: "/translate" and the "Translate" message menu share a lowercase name.
+        doc = next((doc for doc in docs if doc.name == query.strip()), None) or next(
+            (doc for doc in docs if doc.name.lower() == needle), None
+        )
+    if doc is not None:
+        return CommandMenuView(doc, root.category_views[doc.category.label])
+    group = next((group for group in root.groups if group.category.label.lower() == needle), None)
+    if group is not None:
+        return root.category_views[group.category.label]
+    return None
