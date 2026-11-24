@@ -21,7 +21,7 @@ class BotSettings(BaseModel):
     command_prefix: str = "/"
     status: str = "online"
     activity: str = "Hello World"
-    short_description: str = "A Discord bot that embodies the persona of Song So Mi (Songbird) from Cyberpunk 2077, featuring AI-powered conversations, translation services, and computational knowledge queries, and more."
+    short_description: str = "Song So Mi, netrunner, ex-FIA — now taking calls wherever you are. She'll talk, translate, run the numbers, and scrub the trackers off your links. Ask her anything; she's heard worse."
     owner_id: int | None = None
     feedback_channel_id: int | None = None
     source_code_url: str | None = None

@@ -8,6 +8,7 @@ from typing import Any, cast
 import pytest
 from discord.ui import ActionRow
 
+from songbird import __version__
 from songbird.bot import SongbirdBot
 from songbird.config import Settings
 from songbird.ui.views.about import AboutView
@@ -39,18 +40,19 @@ async def test_about_view_builds_container_and_links(settings: Settings) -> None
     view = AboutView(_bot(settings))
 
     container = _container(view)
-    assert len(container.items) == 6  # header, separator, section, love text, separator, button row
-    button_row = cast(ActionRow[Any], container.items[5])
+    assert len(container.items) == 7  # header, separator, section, pitch, love text, separator, button row
+    assert any(__version__ in getattr(item, "content", "") for item in container.items)
+    button_row = cast(ActionRow[Any], container.items[6])
     labels = [cast(Any, button).label for button in button_row.children]
-    assert labels == ["Invite", "Source", "Issues", "Privacy", "Terms"]
-    # No source URL in the fixture, so invite stays enabled but the rest are disabled.
+    assert labels == ["Add App", "Source", "Issues", "Privacy", "Terms"]
+    # No source URL in the fixture, so install stays enabled but the rest are disabled.
     assert [cast(Any, button).disabled for button in button_row.children] == [False, True, True, True, True]
 
 
-async def test_about_view_disables_invite_for_private_bot(settings: Settings) -> None:
+async def test_about_view_disables_install_for_private_bot(settings: Settings) -> None:
     view = AboutView(_bot(settings, public=False))
 
-    button_row = cast(ActionRow[Any], _container(view).items[5])
+    button_row = cast(ActionRow[Any], _container(view).items[6])
     assert cast(Any, button_row.children[0]).disabled is True
 
 
@@ -61,7 +63,7 @@ async def test_about_view_enables_source_links(settings: Settings) -> None:
 
     view = AboutView(_bot(configured))
 
-    button_row = cast(ActionRow[Any], _container(view).items[5])
+    button_row = cast(ActionRow[Any], _container(view).items[6])
     assert [cast(Any, button).disabled for button in button_row.children] == [False, False, False, False, False]
     assert cast(Any, button_row.children[1]).url == "https://github.com/example/songbird"
     assert cast(Any, button_row.children[2]).url == "https://github.com/example/songbird/issues"

@@ -1,6 +1,6 @@
 [project]
 name = "songbird"
-version = "3.0.0"
+version = "3.1.0"
 description = "A Discord bot that embodies the persona of Song So Mi (Songbird) from Cyberpunk 2077, featuring AI-powered conversations, translation services, and computational knowledge queries."
 requires-python = ">=3.13"
 dependencies = [
