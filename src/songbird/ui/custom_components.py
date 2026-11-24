@@ -27,13 +27,14 @@ INVITE_LINK = "https://discord.com/oauth2/authorize?client_id="
 
 
 class BotLinkRow(ActionRow[Any]):
-    """Invite, source, issues, privacy and terms links shared by the about and help menus."""
+    """Install, source, issues, privacy and terms links shared by the about and help menus."""
 
     def __init__(self, bot: "SongbirdBot") -> None:
         super().__init__()
 
+        # Discord's dialog behind this link asks whether to install to the account or to a server.
         invite_link = INVITE_LINK + str(bot.user.id) if bot.user else ""
-        self.add_item(Button(label="Invite", url=invite_link, disabled=not bot.app_info.bot_public, style=ButtonStyle.url))
+        self.add_item(Button(label="Add App", url=invite_link, disabled=not bot.app_info.bot_public, style=ButtonStyle.url))
 
         source_link = bot.settings.bot.source_code_url
         self.add_item(Button(label="Source", url=source_link, disabled=not source_link))

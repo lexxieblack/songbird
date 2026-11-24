@@ -23,6 +23,10 @@ class AboutView(DesignerView):
                         TextDisplay(bot.settings.bot.short_description),
                         accessory=Thumbnail(url=bot.user.display_avatar.url),
                     ),
+                    TextDisplay(
+                        "**One install, two ways.** Add me to your account and I travel with you; add me to a server and we can share the room. "
+                        "Your conversations stay yours either way."
+                    ),
                     TextDisplay(love_message),
                     Separator(),
                     BotLinkRow(bot),

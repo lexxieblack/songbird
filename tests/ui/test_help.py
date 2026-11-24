@@ -174,7 +174,7 @@ async def test_root_view_lists_one_section_per_category() -> None:
 
     assert "2 commands" in items[0].items[1].content
     assert isinstance(items[2], MediaGallery)
-    assert [button.label for button in items[4].children] == ["Invite", "Source", "Issues", "Privacy", "Terms"]
+    assert [button.label for button in items[4].children] == ["Add App", "Source", "Issues", "Privacy", "Terms"]
     categories = items[6:]
     assert [section.items[0].content.split("\n")[0] for section in categories] == ["🛠️ **Tools**", "🤖 **LLM**"]
     assert isinstance(categories[0].accessory, type(categories[1].accessory))
@@ -185,7 +185,7 @@ async def test_root_view_skips_the_banner_when_unset() -> None:
 
     items = _items(view)
     assert not any(isinstance(item, MediaGallery) for item in items)
-    assert [button.label for button in items[2].children] == ["Invite", "Source", "Issues", "Privacy", "Terms"]
+    assert [button.label for button in items[2].children] == ["Add App", "Source", "Issues", "Privacy", "Terms"]
 
 
 async def test_root_forward_button_opens_category_view() -> None:

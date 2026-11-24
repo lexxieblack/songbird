@@ -85,7 +85,7 @@ class LLMCog(BaseCog):
 
     @discord.slash_command(
         name="chat",
-        description="Chat with Songbird",
+        description="Chat with Songbird — works in DMs too",
     )
     async def chat(
         self,
