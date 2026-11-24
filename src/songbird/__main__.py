@@ -3,6 +3,7 @@
 import asyncio
 import sys
 
+from songbird import __version__
 from songbird.listeners import load_listeners
 
 
@@ -25,7 +26,7 @@ def main() -> None:
     logger = setup_logging(settings.log_level)
     logger.info(
         "Songbird starting",
-        version="3.0.0",
+        version=__version__,
         log_level=settings.log_level,
     )
 

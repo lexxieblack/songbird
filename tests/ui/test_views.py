@@ -8,6 +8,7 @@ from typing import Any, cast
 import pytest
 from discord.ui import ActionRow
 
+from songbird import __version__
 from songbird.bot import SongbirdBot
 from songbird.config import Settings
 from songbird.ui.views.about import AboutView
@@ -40,6 +41,7 @@ async def test_about_view_builds_container_and_links(settings: Settings) -> None
 
     container = _container(view)
     assert len(container.items) == 7  # header, separator, section, pitch, love text, separator, button row
+    assert any(__version__ in getattr(item, "content", "") for item in container.items)
     button_row = cast(ActionRow[Any], container.items[6])
     labels = [cast(Any, button).label for button in button_row.children]
     assert labels == ["Add App", "Source", "Issues", "Privacy", "Terms"]

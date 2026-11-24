@@ -1,5 +1,6 @@
 from discord.ui import DesignerView, Section, Separator, TextDisplay, Thumbnail
 
+from songbird import __version__
 from songbird.bot import SongbirdBot
 from songbird.ui.custom_components import BotLinkRow, generate_container
 from songbird.utils.constants import SColor
@@ -11,9 +12,9 @@ class AboutView(DesignerView):
         if not bot.user:
             return
 
-        love_message = (
-            f"-# *Made with :hearts: by <@{owner}>*" if (owner := bot.settings.bot.owner_id) else "-# *Made with :hearts:*"
-        )
+        owner_id = bot.settings.bot.owner_id
+        owner_mention = f"<@{owner_id}> · " if owner_id else ""
+        love_message = f"-# *Made with :hearts: by {owner_mention}v{__version__}*"
 
         self.add_item(
             generate_container(
