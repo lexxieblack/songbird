@@ -77,9 +77,11 @@ async def test_ban_user_reports_success_with_reason(
     await invoke(cog, "ban_user", fake_ctx, user_id="123", reason="spam")
 
     service.ban_user.assert_awaited_once_with(123, "spam")
+    assert ctx.defer_calls == [{"ephemeral": True}]
     assert ctx.last_embed is not None
     assert ctx.last_embed.title == "Success"
     assert ctx.last_embed.description == "User **123** banned. Reason: spam"
+    assert ctx.last_ephemeral is True
 
 
 async def test_ban_user_reports_duplicate(
@@ -153,9 +155,26 @@ async def test_list_user_bans_builds_embed(
 
     await invoke(cog, "list_user_bans", fake_ctx)
 
-    embed = ctx.respond_calls[0]["embed"]
+    embed = ctx.followup.calls[0][1]["embed"]
     assert embed.title == "Banned Users"
     assert embed.description == "• **123** — spam (banned 2024-01-02 03:04 UTC)"
+    assert ctx.followup.calls[0][1]["ephemeral"] is True
+
+
+async def test_list_user_bans_caps_long_lists(
+    cog: ManagementCog,
+    fake_bot: SongbirdBot,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    bans = [UserBan(user_id=i, reason=None, created_at=datetime(2024, 1, 2, 3, 4, tzinfo=UTC)) for i in range(35)]
+    _install(fake_bot, _management(list_user_bans=AsyncMock(return_value=bans)))
+    ctx = _fake(fake_ctx)
+
+    await invoke(cog, "list_user_bans", fake_ctx)
+
+    description = ctx.followup.calls[0][1]["embed"].description
+    assert description.count("•") == 30
+    assert description.endswith("... and 5 more")
 
 
 async def test_ban_guild_rejects_invalid_id(cog: ManagementCog, fake_ctx: discord.ApplicationContext) -> None:
@@ -224,7 +243,7 @@ async def test_list_guild_bans_builds_embed(
 
     await invoke(cog, "list_guild_bans", fake_ctx)
 
-    embed = ctx.respond_calls[0]["embed"]
+    embed = ctx.followup.calls[0][1]["embed"]
     assert embed.title == "Banned Guilds"
     assert embed.description == "• **456** (banned 2024-05-06 07:08 UTC)"
 

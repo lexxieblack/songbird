@@ -17,8 +17,6 @@ STMT_CREATE_BAN = (
     .returning(guild_ban_table)
 )
 
-STMT_GET_BAN = select(guild_ban_table).where(guild_ban_table.c.guild_id == bindparam("b_guild_id"))
-
 STMT_IS_BANNED = select(exists().where(guild_ban_table.c.guild_id == bindparam("b_guild_id")))
 
 STMT_DELETE_BAN = (
@@ -44,17 +42,6 @@ class GuildBanRepository:
             raise GuildBanAlreadyExistsError(data={"guild_id": guild_id}) from e
 
         return GuildBan.model_validate(result.mappings().one())
-
-    async def get_ban(self, guild_id: int) -> GuildBan:
-        params: dict[str, Any] = {"b_guild_id": guild_id}
-
-        result = await self.session.execute(STMT_GET_BAN, params)
-        row = result.mappings().one_or_none()
-
-        if row is None:
-            raise GuildBanNotFoundError(data={"guild_id": guild_id})
-
-        return GuildBan.model_validate(row)
 
     async def is_banned(self, guild_id: int) -> bool:
         params: dict[str, Any] = {"b_guild_id": guild_id}

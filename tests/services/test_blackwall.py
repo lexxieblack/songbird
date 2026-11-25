@@ -43,6 +43,16 @@ async def test_get_missing_returns_none(db_container: ServiceContainer) -> None:
     assert await BlackwallService(db_container).get_blackwall(999) is None
 
 
+async def test_get_missing_is_cached(db_container: ServiceContainer, session: AsyncSession) -> None:
+    service = BlackwallService(db_container)
+    assert await service.get_blackwall(999) is None
+
+    await BlackwallRepository(session).create(CreateBlackwall(guild_id=999, channel_id=None))
+    await session.commit()
+
+    assert await service.get_blackwall(999) is None
+
+
 async def test_increment_counts_bans(db_container: ServiceContainer) -> None:
     service = BlackwallService(db_container)
     await service.create_blackwall(1)

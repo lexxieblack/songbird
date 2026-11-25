@@ -8,10 +8,6 @@ from songbird.listeners import load_listeners
 
 
 def main() -> None:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-
     from songbird.config import load_config
     from songbird.utils.logging import setup_logging
 

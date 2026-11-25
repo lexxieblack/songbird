@@ -81,3 +81,11 @@ async def test_translate_view_has_timeout() -> None:
     view = TranslateView("a", "b", "c")
 
     assert view.timeout == 180
+
+
+async def test_translate_view_truncates_long_text() -> None:
+    view = TranslateView("English", "Spanish", "x" * 4500)
+
+    text = _container(view).items[2].content
+    assert len(text) == 4000
+    assert text.endswith("...")

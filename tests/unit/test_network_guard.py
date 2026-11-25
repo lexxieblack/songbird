@@ -1,6 +1,5 @@
 """The autouse guard blocks real traffic without breaking respx mocks."""
 
-import aiohttp
 import httpx
 import pytest
 import respx
@@ -18,12 +17,6 @@ async def test_async_httpx_is_blocked() -> None:
     async with httpx.AsyncClient() as client:
         with pytest.raises(RuntimeError, match=BLOCKED):
             await client.get("https://example.com")
-
-
-async def test_aiohttp_is_blocked() -> None:
-    async with aiohttp.ClientSession() as session:
-        with pytest.raises(RuntimeError, match=BLOCKED):
-            await session.get("https://example.com")
 
 
 def test_tldextract_is_blocked() -> None:

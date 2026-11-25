@@ -56,18 +56,26 @@ class FeedbackService:
         return 0
 
     async def send_feedback(self, user_id: int, user_name: str, message: str) -> bool:
+        def thread_channel(thread_id: int) -> Thread | None:
+            channel = self.bot.get_channel(thread_id) if thread_id else None
+            return channel if isinstance(channel, Thread) else None
+
         try:
             thread = await self.thread_repo.get_thread(user_id)
-            thread_id = thread.thread_id
         except ThreadNotFoundError:
             thread_id = await self._create_thread(user_name, user_id)
+        else:
+            thread_id = thread.thread_id
+            if thread_channel(thread_id) is None:
+                # The stored thread was deleted; forget it and open a fresh one instead of failing forever.
+                self.logger.info("Feedback thread missing, recreating", user_id=user_id, thread_id=thread_id)
+                await self.thread_repo.delete_thread(user_id)
+                thread_id = await self._create_thread(user_name, user_id)
 
-        if thread_id == 0:
-            return False
-
-        channel = self.bot.get_channel(thread_id)
-        if not channel or not isinstance(channel, Thread):
-            self.logger.error("Feedback thread unavailable", user_id=user_id, thread_id=thread_id)
+        channel = thread_channel(thread_id)
+        if channel is None:
+            if thread_id:
+                self.logger.error("Feedback thread unavailable", user_id=user_id, thread_id=thread_id)
             return False
 
         try:

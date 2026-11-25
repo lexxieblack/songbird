@@ -230,6 +230,14 @@ async def test_log_view_includes_member_details_and_message() -> None:
     assert items[6].content == "**Attachments:**\n- a\\*b.txt"
 
 
+async def test_log_view_truncates_long_message() -> None:
+    items = _container(BlackwallLogView(_member(), _log_message("x" * 5000))).items
+
+    message_item = next(item for item in items if "**Message:**" in getattr(item, "content", ""))
+    assert len(message_item.content) < 4000
+    assert message_item.content.endswith("```")
+
+
 async def test_log_view_skips_empty_message_and_missing_join_date() -> None:
     member = _member()
     member = cast(discord.Member, SimpleNamespace(**{**vars(member), "joined_at": None, "roles": [SimpleNamespace(id=2)]}))

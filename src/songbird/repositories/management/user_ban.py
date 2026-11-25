@@ -17,8 +17,6 @@ STMT_CREATE_BAN = (
     .returning(user_ban_table)
 )
 
-STMT_GET_BAN = select(user_ban_table).where(user_ban_table.c.user_id == bindparam("b_user_id"))
-
 STMT_IS_BANNED = select(exists().where(user_ban_table.c.user_id == bindparam("b_user_id")))
 
 STMT_DELETE_BAN = (
@@ -44,17 +42,6 @@ class UserBanRepository:
             raise UserBanAlreadyExistsError(data={"user_id": user_id}) from e
 
         return UserBan.model_validate(result.mappings().one())
-
-    async def get_ban(self, user_id: int) -> UserBan:
-        params: dict[str, Any] = {"b_user_id": user_id}
-
-        result = await self.session.execute(STMT_GET_BAN, params)
-        row = result.mappings().one_or_none()
-
-        if row is None:
-            raise UserBanNotFoundError(data={"user_id": user_id})
-
-        return UserBan.model_validate(row)
 
     async def is_banned(self, user_id: int) -> bool:
         params: dict[str, Any] = {"b_user_id": user_id}

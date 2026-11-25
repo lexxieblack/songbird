@@ -27,7 +27,7 @@ async def _is_message_relevant(bot: SongbirdBot, message: Message) -> bool:
         if await bot.services.management.check_guild_banned(message.guild.id):  # type: ignore[union-attr]
             await message.guild.leave()  # type: ignore
             return False
-        return True
+        return not await bot.services.management.check_user_banned(message.author.id)  # type: ignore[union-attr]
 
     return False
 

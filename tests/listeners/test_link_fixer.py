@@ -46,7 +46,7 @@ def _fake_extract(url: str) -> SimpleNamespace:
 
 @pytest.fixture(autouse=True)
 def _offline_tldextract(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(link_fixer_module, "tldextract", SimpleNamespace(extract=_fake_extract))
+    monkeypatch.setattr(link_fixer_module, "_EXTRACT", _fake_extract)
 
 
 def _listener(bot: SongbirdBot, index: int) -> Listener:
@@ -227,8 +227,34 @@ async def test_embed_suppression_http_error_is_suppressed(monkeypatch: pytest.Mo
 async def test_cached_message_edit_suppresses_embeds_and_forgets_id(monkeypatch: pytest.MonkeyPatch) -> None:
     bot, _ = _bot_with_fix(monkeypatch, [])
     after_edit = AsyncMock()
-    after = make_message(id=10, edit=after_edit)
-    before = make_message(id=10)
+    after = make_message(id=10, content="edited", edit=after_edit)
+    before = make_message(id=10, content="original")
+    CACHED_MESSAGES.add(10)
+
+    await _listener(bot, 0)(before, after)
+
+    after_edit.assert_awaited_once_with(suppress_embeds=True)
+    assert 10 not in CACHED_MESSAGES
+
+
+async def test_bot_edit_with_unchanged_content_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Regression: the bot's own suppress_embeds edit was handled again, discarding the cached ID.
+    bot, _ = _bot_with_fix(monkeypatch, [])
+    after_edit = AsyncMock()
+    CACHED_MESSAGES.add(10)
+
+    await _listener(bot, 0)(make_message(id=10, content="same"), make_message(id=10, content="same", edit=after_edit))
+
+    after_edit.assert_not_awaited()
+    assert 10 in CACHED_MESSAGES
+
+
+async def test_cached_user_edit_still_suppresses_embeds(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The bot's own suppress_embeds edit keeps the content; a real user edit changes it.
+    bot, _ = _bot_with_fix(monkeypatch, [])
+    after_edit = AsyncMock()
+    after = make_message(id=10, content="edited", edit=after_edit)
+    before = make_message(id=10, content="original")
     CACHED_MESSAGES.add(10)
 
     await _listener(bot, 0)(before, after)
@@ -241,7 +267,7 @@ async def test_uncached_message_edit_is_ignored(monkeypatch: pytest.MonkeyPatch)
     bot, _ = _bot_with_fix(monkeypatch, [])
     after_edit = AsyncMock()
 
-    await _listener(bot, 0)(make_message(id=99), make_message(id=99, edit=after_edit))
+    await _listener(bot, 0)(make_message(id=99, content="before"), make_message(id=99, content="after", edit=after_edit))
 
     after_edit.assert_not_awaited()
 
@@ -251,7 +277,7 @@ async def test_cached_message_edit_http_error_is_suppressed(monkeypatch: pytest.
     after_edit = AsyncMock(side_effect=discord.HTTPException(_response(500, "Server Error"), "boom"))
     CACHED_MESSAGES.add(10)
 
-    await _listener(bot, 0)(make_message(id=10), make_message(id=10, edit=after_edit))
+    await _listener(bot, 0)(make_message(id=10, content="original"), make_message(id=10, content="edited", edit=after_edit))
 
     after_edit.assert_awaited_once()
     assert 10 not in CACHED_MESSAGES

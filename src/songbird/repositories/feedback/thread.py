@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import bindparam, insert, select
+from sqlalchemy import bindparam, delete, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +18,8 @@ STMT_CREATE_THREAD = (
 )
 
 STMT_GET_THREAD = select(thread_table).where(thread_table.c.user_id == bindparam("b_user_id"))
+
+STMT_DELETE_THREAD = delete(thread_table).where(thread_table.c.user_id == bindparam("b_user_id"))
 
 
 @dataclass
@@ -47,3 +49,6 @@ class ThreadRepository:
             raise ThreadNotFoundError(data={"user_id": user_id})
 
         return Thread.model_validate(row)
+
+    async def delete_thread(self, user_id: int) -> None:
+        await self.session.execute(STMT_DELETE_THREAD, {"b_user_id": user_id})

@@ -1,6 +1,7 @@
 from discord.ui import DesignerView, TextDisplay
 
 from songbird.ui.custom_components import generate_container
+from songbird.utils.text import truncate_text
 
 
 class TranslateView(DesignerView):
@@ -9,6 +10,7 @@ class TranslateView(DesignerView):
         self.add_item(
             generate_container(
                 title=f"## {source_name} > {target_name}",
-                components=[TextDisplay(translated_text)],
+                # TextDisplay stops at 4000 characters.
+                components=[TextDisplay(truncate_text(translated_text, 4000))],  # pyright: ignore[reportUnknownArgumentType]
             )
         )

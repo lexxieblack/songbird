@@ -33,7 +33,4 @@ class AuditLogService:
             channel_id=channel_id,
             metadata=metadata or {},
         )
-        try:
-            await self.repository.create(create_audit_log)
-        except Exception:
-            raise
+        await self.repository.create(create_audit_log)

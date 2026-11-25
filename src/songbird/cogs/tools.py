@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import discord
 from discord.commands import AutocompleteContext
-from tldextract import tldextract
+from tldextract import TLDExtract
 
 from songbird.cogs.base import BaseCog
 from songbird.commands.tools.currency import CurrencyHandler
@@ -17,6 +18,9 @@ from songbird.utils.text import link as format_link
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
+
+# Empty suffix_list_urls: use the bundled snapshot and never fetch the list on the event loop.
+_EXTRACT = TLDExtract(suffix_list_urls=())
 
 
 class ToolsCog(BaseCog):
@@ -191,6 +195,11 @@ class ToolsCog(BaseCog):
             await self.send_error(ctx, "Please provide a link to fix.")
             return
 
+        parsed = urlparse(link)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            await self.send_error(ctx, "Please provide a valid http(s) link.")
+            return
+
         await ctx.defer()
 
         self.logger.info("Fix command", user_id=ctx.author.id, text_length=len(link))
@@ -199,7 +208,7 @@ class ToolsCog(BaseCog):
             fixed_links = await self.fix_handler.fix_link(link)
 
             for fixed_link in fixed_links:
-                ext = tldextract.extract(fixed_link)
+                ext = _EXTRACT(fixed_link)
                 domain = f"{ext.domain}.{ext.suffix}"
                 await ctx.followup.send(format_link(domain, fixed_link), allowed_mentions=discord.AllowedMentions.none())
 

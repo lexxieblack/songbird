@@ -1,5 +1,5 @@
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from google.genai import Client
@@ -21,6 +21,9 @@ from songbird.utils.logging import get_logger
 if TYPE_CHECKING:
     from songbird.config import Settings
 
+# Gemini's 429s are usually per-minute limits, so the primary is retried soon instead of being parked until midnight.
+_PRIMARY_BLOCK_SECONDS = 300
+
 
 class LLMService:
     def __init__(
@@ -30,8 +33,7 @@ class LLMService:
     ) -> None:
         self._model = settings.llm.model
         self._fallback_model = settings.llm.fallback_model
-        self._primary_exhausted = False
-        self._exhausted_date = datetime.now(UTC).date()
+        self._primary_blocked_until: datetime | None = None
         retry = settings.llm.retry
         self._client = Client(
             api_key=settings.llm.api_key,
@@ -48,15 +50,16 @@ class LLMService:
         self.logger = logger or get_logger(__name__)
 
     async def call(self, request: LLMRequest) -> str:
-        self._check_reset()
         messages = self._build_messages(request)
         return await self._call_llm(request.system_prompt, messages)
 
-    def _check_reset(self) -> None:
-        today = datetime.now(UTC).date()
-        if self._exhausted_date != today:
-            self._primary_exhausted = False
-            self._exhausted_date = today
+    def _primary_blocked(self) -> bool:
+        if self._primary_blocked_until is None:
+            return False
+        if datetime.now(UTC) >= self._primary_blocked_until:
+            self._primary_blocked_until = None
+            return False
+        return True
 
     @staticmethod
     def _is_quota_error(e: Exception) -> bool:
@@ -81,13 +84,14 @@ class LLMService:
         system_prompt: str | None = None,
         messages: list[Content] | None = None,
     ) -> str:
-        model = self._fallback_model if self._primary_exhausted else self._model
+        use_primary = not self._primary_blocked()
+        model = self._model if use_primary else self._fallback_model
 
         self.logger.info(
             "LLM call",
             model=model,
             message_count=len(messages or []),
-            primary_exhausted=self._primary_exhausted,
+            primary_blocked=not use_primary,
         )
 
         try:
@@ -99,9 +103,13 @@ class LLMService:
             )
             return response.text or ""
         except Exception as e:
-            if model == self._model and self._is_quota_error(e):
-                self._primary_exhausted = True
-                self.logger.info("Primary model exhausted, falling back", error=str(e), fallback=self._fallback_model)
+            if use_primary and self._is_quota_error(e):
+                self._primary_blocked_until = datetime.now(UTC) + timedelta(seconds=_PRIMARY_BLOCK_SECONDS)
+                self.logger.info(
+                    "Primary model rate-limited, falling back",
+                    error=str(e),
+                    fallback=self._fallback_model,
+                )
                 return await self._call_llm(system_prompt, messages)
             raise
 

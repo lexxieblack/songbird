@@ -1,10 +1,12 @@
+# pyright: reportUnknownMemberType=false
+
 from datetime import UTC, datetime
 from typing import Any
 
 from discord import Member, Message
 from discord.ui import Container, DesignerView, Section, TextDisplay, Thumbnail
 
-from songbird.utils.text import escape_markdown, format_code_block, humanize_timedelta
+from songbird.utils.text import escape_markdown, format_code_block, humanize_timedelta, truncate_text
 
 
 class BlackwallLogView(DesignerView):
@@ -33,7 +35,8 @@ class BlackwallLogView(DesignerView):
         container.add_separator()
 
         if message.content.strip():
-            container.add_item(TextDisplay(f"**Message:**\n{format_code_block(message.content)}"))
+            # A logged message shares a TextDisplay with the header and stops at 4000 characters.
+            container.add_item(TextDisplay(f"**Message:**\n{format_code_block(truncate_text(message.content, 1500))}"))
 
         if message.attachments:
             files = "\n".join(f"- {escape_markdown(attachment.filename)}" for attachment in message.attachments)

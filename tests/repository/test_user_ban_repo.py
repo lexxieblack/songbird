@@ -7,14 +7,14 @@ from songbird.repositories.management.user_ban import UserBanRepository
 pytestmark = pytest.mark.db
 
 
-async def test_create_and_get_round_trip(session: AsyncSession) -> None:
+async def test_create_and_list_round_trip(session: AsyncSession) -> None:
     repo = UserBanRepository(session)
     created = await repo.create_ban(7, reason="harassment")
     await session.commit()
 
     assert created.reason == "harassment"
     assert created.created_at.tzinfo is not None
-    fetched = await repo.get_ban(7)
+    [fetched] = await repo.list_bans()
     assert fetched.user_id == 7
     assert fetched.reason == "harassment"
 
@@ -25,17 +25,8 @@ async def test_create_without_reason_stores_null(session: AsyncSession) -> None:
     await session.commit()
 
     assert created.reason is None
-    assert (await repo.get_ban(7)).reason is None
-
-
-async def test_get_missing_raises_not_found(session: AsyncSession) -> None:
-    repo = UserBanRepository(session)
-
-    with pytest.raises(UserBanNotFoundError) as exc_info:
-        await repo.get_ban(404)
-
-    assert str(exc_info.value) == "User ban not found"
-    assert exc_info.value.data == {"user_id": 404}
+    [fetched] = await repo.list_bans()
+    assert fetched.reason is None
 
 
 async def test_create_duplicate_translates_integrity_error(session: AsyncSession) -> None:
@@ -49,7 +40,8 @@ async def test_create_duplicate_translates_integrity_error(session: AsyncSession
 
     assert str(exc_info.value) == "User ban already exists"
     assert exc_info.value.data == {"user_id": 7}
-    assert (await repo.get_ban(7)).reason == "first"
+    [fetched] = await repo.list_bans()
+    assert fetched.reason == "first"
 
 
 async def test_is_banned(session: AsyncSession) -> None:

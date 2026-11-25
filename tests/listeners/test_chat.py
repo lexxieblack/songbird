@@ -137,6 +137,18 @@ async def test_banned_user_dm_is_ignored(fake_bot: SongbirdBot, monkeypatch: pyt
     send.assert_not_awaited()
 
 
+async def test_banned_user_mention_is_ignored(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
+    handler = _install_handler(monkeypatch)
+    _management(fake_bot, monkeypatch, user_banned=True)
+    message, _, send = _guild_message("hello", mentions=[fake_bot.user])
+    chat.load_chat(fake_bot)
+
+    await _listener(fake_bot)(message)
+
+    handler.chat.assert_not_awaited()
+    send.assert_not_awaited()
+
+
 async def test_guild_message_without_mention_is_ignored(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
     handler = _install_handler(monkeypatch)
     _management(fake_bot, monkeypatch)

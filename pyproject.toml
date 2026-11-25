@@ -1,12 +1,13 @@
 [project]
 name = "songbird"
-version = "3.1.0"
+version = "3.1.1"
 description = "A Discord bot that embodies the persona of Song So Mi (Songbird) from Cyberpunk 2077, featuring AI-powered conversations, translation services, and computational knowledge queries."
 requires-python = ">=3.13"
 dependencies = [
     "py-cord>=2.8.1",
     "sqlalchemy[asyncio]>=2.1.9",
     "pycountry>=26.2.16",
+    "pydantic>=2.14.4",
     "pydantic-settings[toml]>=2.16.3",
     "structlog>=26.1.0",
     "httpx>=0.28.1",
@@ -25,7 +26,6 @@ dev = [
     "pytest-asyncio>=1.5.0",
     "mypy>=2.4.1",
     "ruff>=0.17.6",
-    "rich>=15.0.0",
     "testcontainers[postgres]>=4.15.0",
     "pytest-cov>=7.1.0",
     "respx>=0.23.1",
@@ -45,19 +45,21 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # Pyflakes
-    "I",      # isort
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade
-    "ARG",    # flake8-unused-arguments
-    "SIM",    # flake8-simplify
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # Pyflakes
+    "I", # isort
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+
 ]
 ignore = [
-    "E501",   # line too long (handled by formatter)
-    "B008",   # do not perform function calls in argument defaults
+    "E501", # line too long (handled by formatter)
+    "B008", # do not perform function calls in argument defaults
+
 ]
 
 [tool.ruff.lint.isort]
@@ -84,7 +86,6 @@ ignore_missing_imports = true
 # [[tool.mypy.overrides]]
 # module = ["discord.*", "litellm.*"]
 # ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
@@ -98,17 +99,11 @@ markers = [
     "discord: exercises py-cord objects and fakes",
     "slow: long-running test",
 ]
-filterwarnings = [
-    "ignore::DeprecationWarning:discord.*",
-]
+filterwarnings = ["ignore::DeprecationWarning:discord.*"]
 
 [tool.coverage.run]
 source = ["songbird"]
 branch = true
 
 [tool.coverage.report]
-exclude_lines = [
-    "if TYPE_CHECKING:",
-    "raise NotImplementedError",
-    "@overload",
-]
+exclude_lines = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload"]

@@ -34,7 +34,21 @@ def test_get_system_prompt_without_a_path_returns_the_default() -> None:
     assert get_system_prompt() == DEFAULT_SYSTEM_PROMPT
 
 
-def test_get_system_prompt_falls_back_when_the_file_is_missing(tmp_path: Path) -> None:
+def test_get_system_prompt_falls_back_to_the_default_prompt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "prompts").mkdir()
+    (tmp_path / "prompts" / "default.xml").write_text("Default persona {datetime}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    prompt = get_system_prompt(str(tmp_path / "missing.xml"))
+
+    assert prompt.startswith("Default persona 20")
+
+
+def test_get_system_prompt_falls_back_to_hard_coded_prompt_when_default_is_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
     assert get_system_prompt(str(tmp_path / "missing.xml")) == DEFAULT_SYSTEM_PROMPT
 
 
@@ -45,6 +59,7 @@ def test_get_system_prompt_formats_datetime_and_keeps_unknown_placeholders(tmp_p
     prompt = get_system_prompt(str(prompt_file))
 
     assert prompt.startswith("Now: 20")
+    assert "(UK local time)" in prompt
     assert "{datetime}" not in prompt
     assert "{unknown}" in prompt
 

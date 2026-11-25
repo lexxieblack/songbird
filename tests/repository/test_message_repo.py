@@ -30,14 +30,6 @@ async def test_delete_messages(session: AsyncSession) -> None:
     assert await repo.get_newest_messages(42) == []
 
 
-async def test_user_stats(session: AsyncSession) -> None:
-    repo = MessageRepository(session)
-    await repo.create_message(42, MessageRole.USER, "hello")
-    await session.commit()
-
-    assert (await repo.get_user_stats(42)).message_count == 1
-
-
 async def test_create_returns_db_defaults(session: AsyncSession) -> None:
     repo = MessageRepository(session)
     created = await repo.create_message(42, MessageRole.MODEL, "hi")
