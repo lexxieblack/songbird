@@ -13,7 +13,7 @@ class BlackwallService:
         logger: BoundLogger | None = None,
     ):
         self._container = container
-        self._cache: TTLCache[int, Blackwall] = TTLCache[int, Blackwall](maxsize=1024, ttl=30)
+        self._cache: TTLCache[int, Blackwall | None] = TTLCache[int, Blackwall | None](maxsize=1024, ttl=30)
         self.logger = logger or get_logger(__name__)
 
     async def create_blackwall(
@@ -80,16 +80,13 @@ class BlackwallService:
         return blackwall
 
     async def get_blackwall(self, guild_id: int) -> Blackwall | None:
-        cached = self._cache.get(guild_id)
-        if cached is not None:
-            return cached
+        # Negative results are cached too: unconfigured guilds would otherwise query on every message.
+        if guild_id in self._cache:
+            return self._cache[guild_id]
 
         async with get_session(self._container) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.get(guild_id)
-
-        if blackwall is None:
-            return None
 
         self._cache[guild_id] = blackwall
         return blackwall

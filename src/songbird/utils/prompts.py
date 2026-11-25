@@ -3,6 +3,8 @@ from pathlib import Path
 
 _prompt_cache: dict[str, str] = {}
 
+DEFAULT_PROMPT_PATH = "prompts/default.xml"
+
 DEFAULT_SYSTEM_PROMPT = """You are Songbird, a helpful and friendly Discord bot assistant.
 You are talking over Discord messages.
 
@@ -42,14 +44,18 @@ def load_prompt(file_path: str | Path) -> str:
 
 
 def get_system_prompt(config_path: str | None = None) -> str:
-    now = datetime.now()
-    datetime_str = now.strftime("%Y-%m-%d %H:%M:%S %Z").strip()
+    now = datetime.now().astimezone()
+    # The owner's host is in the UK; astimezone() keeps the populated %Z and the label tells the model where it is.
+    datetime_str = f"{now.strftime('%Y-%m-%d %H:%M:%S %Z')} (UK local time)"
 
     if config_path:
         try:
             base_prompt = load_prompt(config_path)
         except FileNotFoundError:
-            base_prompt = DEFAULT_SYSTEM_PROMPT
+            try:
+                base_prompt = load_prompt(DEFAULT_PROMPT_PATH)
+            except FileNotFoundError:
+                base_prompt = DEFAULT_SYSTEM_PROMPT
     else:
         base_prompt = DEFAULT_SYSTEM_PROMPT
 

@@ -7,14 +7,14 @@ from songbird.repositories.management.guild_ban import GuildBanRepository
 pytestmark = pytest.mark.db
 
 
-async def test_create_and_get_round_trip(session: AsyncSession) -> None:
+async def test_create_and_list_round_trip(session: AsyncSession) -> None:
     repo = GuildBanRepository(session)
     created = await repo.create_ban(7, reason="spam")
     await session.commit()
 
     assert created.reason == "spam"
     assert created.created_at.tzinfo is not None
-    fetched = await repo.get_ban(7)
+    [fetched] = await repo.list_bans()
     assert fetched.guild_id == 7
     assert fetched.reason == "spam"
 
@@ -25,17 +25,8 @@ async def test_create_without_reason_stores_null(session: AsyncSession) -> None:
     await session.commit()
 
     assert created.reason is None
-    assert (await repo.get_ban(7)).reason is None
-
-
-async def test_get_missing_raises_not_found(session: AsyncSession) -> None:
-    repo = GuildBanRepository(session)
-
-    with pytest.raises(GuildBanNotFoundError) as exc_info:
-        await repo.get_ban(404)
-
-    assert str(exc_info.value) == "Guild ban not found"
-    assert exc_info.value.data == {"guild_id": 404}
+    [fetched] = await repo.list_bans()
+    assert fetched.reason is None
 
 
 async def test_create_duplicate_translates_integrity_error(session: AsyncSession) -> None:
@@ -49,7 +40,8 @@ async def test_create_duplicate_translates_integrity_error(session: AsyncSession
 
     assert str(exc_info.value) == "Guild ban already exists"
     assert exc_info.value.data == {"guild_id": 7}
-    assert (await repo.get_ban(7)).reason == "first"
+    [fetched] = await repo.list_bans()
+    assert fetched.reason == "first"
 
 
 async def test_is_banned(session: AsyncSession) -> None:

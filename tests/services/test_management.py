@@ -84,8 +84,7 @@ async def test_unban_user_clears_cache(db_container: ServiceContainer, session: 
     await service.unban_user(1)
 
     assert await service.check_user_banned(1) is False
-    with pytest.raises(UserBanNotFoundError):
-        await UserBanRepository(session).get_ban(1)
+    assert await UserBanRepository(session).is_banned(1) is False
 
 
 async def test_unban_missing_raises(db_container: ServiceContainer) -> None:

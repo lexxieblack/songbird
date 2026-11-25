@@ -293,7 +293,7 @@ async def test_fix_sends_formatted_links(
     def extract(_url: str) -> SimpleNamespace:
         return SimpleNamespace(domain="example", suffix="com")
 
-    monkeypatch.setattr("songbird.cogs.tools.tldextract.extract", extract)
+    monkeypatch.setattr("songbird.cogs.tools._EXTRACT", extract)
     send = _capture_send(_fake(fake_ctx))
 
     await invoke(cog, "fix", fake_ctx, link="https://example.com/a")
@@ -310,6 +310,23 @@ async def test_fix_rejects_empty_link(cog: ToolsCog, fake_ctx: discord.Applicati
 
     assert ctx.last_embed is not None
     assert ctx.last_embed.description == "Please provide a link to fix."
+
+
+async def test_fix_rejects_non_url(
+    monkeypatch: pytest.MonkeyPatch,
+    cog: ToolsCog,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    handler = FakeFix([])
+    monkeypatch.setattr(cog, "fix_handler", handler)
+    ctx = _fake(fake_ctx)
+
+    await invoke(cog, "fix", fake_ctx, link="not a link")
+
+    assert ctx.last_embed is not None
+    assert ctx.last_embed.description == "Please provide a valid http(s) link."
+    assert handler.links == []
+    assert ctx.defer_calls == []
 
 
 async def test_ping_reports_latency(cog: ToolsCog, fake_bot: SongbirdBot, fake_ctx: discord.ApplicationContext) -> None:

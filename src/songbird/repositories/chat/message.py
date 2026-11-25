@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import bindparam, delete, func, insert, select
+from sqlalchemy import bindparam, delete, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from songbird.models.chat.base import MessageRole
 from songbird.models.chat.exceptions import MessageAlreadyExistsError
-from songbird.models.chat.message import Message, UserStats, message_table
+from songbird.models.chat.message import Message, message_table
 from songbird.utils.id_factory import make_id
 
 STMT_CREATE_MESSAGE = (
@@ -32,17 +32,6 @@ STMT_GET_ALL_MESSAGES = (
     select(message_table)
     .where(message_table.c.user_id == bindparam("b_user_id"))
     .order_by(message_table.c.created_at.asc(), message_table.c.id.asc())
-)
-
-STMT_GET_USER_STATS = (
-    select(
-        message_table.c.user_id.label("user_id"),
-        func.count(message_table.c.id).label("message_count"),
-        func.min(message_table.c.created_at).label("first_message"),
-        func.max(message_table.c.created_at).label("last_message"),
-    )
-    .where(message_table.c.user_id == bindparam("b_user_id"))
-    .group_by(message_table.c.user_id)
 )
 
 STMT_GET_NEWEST_MESSAGE_ID = (
@@ -95,12 +84,6 @@ class MessageRepository:
 
         result = await self.session.execute(stmt, params)
         return [Message.model_validate(row) for row in result.mappings()]
-
-    async def get_user_stats(self, user_id: int) -> UserStats:
-        params: dict[str, Any] = {"b_user_id": user_id}
-
-        result = await self.session.execute(STMT_GET_USER_STATS, params)
-        return UserStats.model_validate(result.mappings().one())
 
     async def delete_messages(self, user_id: int) -> int:
         params: dict[str, Any] = {"b_user_id": user_id}

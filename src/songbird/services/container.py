@@ -137,6 +137,12 @@ async def close_container(container: ServiceContainer) -> None:
 
     # Close HTTP clients in services that have them
     try:
+        await container.link_fixer.close()
+        log.debug("Link fixer service closed")
+    except Exception as e:
+        log.warning("Link fixer service close error", error=e)
+
+    try:
         await container.translation.close()
         log.debug("Translation service closed")
     except Exception as e:

@@ -2,7 +2,6 @@
 
 from typing import NoReturn
 
-import aiohttp
 import httpx
 import pytest
 from tldextract.tldextract import TLDExtract
@@ -25,5 +24,4 @@ def _block_network(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("respx.mocks.DEFAULT_MOCKER", "httpx")
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", _blocked)
     monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", _blocked_async)
-    monkeypatch.setattr(aiohttp.ClientSession, "_request", _blocked_async)
     monkeypatch.setattr(TLDExtract, "__call__", _blocked)

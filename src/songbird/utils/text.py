@@ -19,20 +19,6 @@ def truncate_text(text: str, max_length: int, suffix: str = "...") -> str:
     return text[: max_length - len(suffix)] + suffix
 
 
-def sanitize_mentions(text: str) -> str:
-    if not text:
-        return text
-
-    # Replace @everyone and @here with zero-width space to prevent pings
-    text = text.replace("@everyone", "@\u200beveryone")
-    text = text.replace("@here", "@\u200bhere")
-
-    # Escape user mention patterns <@userid> and <@!userid>
-    text = re.sub(r"<@(!?)(\d+)>", lambda match: f"<@\u200b{match.group(1)}{match.group(2)}>", text)
-
-    return text
-
-
 def format_code_block(code: str, language: str = "") -> str:
     if not code:
         return f"```{language}\n\n```"
@@ -138,15 +124,6 @@ def _pack(units: list[str], limit: int, separator: str) -> list[str]:
     if current:
         chunks.append(current)
     return chunks
-
-
-def split_sentence(text: str, max_length: int = 2000) -> list[str]:
-    if not text:
-        return []
-    if len(text) <= max_length:
-        return [text]
-
-    return _pack(text.split(), max_length, " ")
 
 
 def split_paragraph_to_sentences(text: str, max_length: int = 2000) -> list[str]:

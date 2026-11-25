@@ -139,7 +139,7 @@ async def test_thread_creation_failure_is_swallowed(
         await ThreadRepository(session).get_thread(1)
 
 
-async def test_thread_row_of_wrong_channel_type_is_skipped(
+async def test_thread_row_of_wrong_channel_type_is_forgotten(
     monkeypatch: pytest.MonkeyPatch, fake_bot: Any, session: AsyncSession, settings: Settings
 ) -> None:
     await ThreadRepository(session).create_thread(1, 9001)
@@ -149,6 +149,28 @@ async def test_thread_row_of_wrong_channel_type_is_skipped(
     assert await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello") is False
 
     assert not cast(Any, channel.send).called
+    with pytest.raises(ThreadNotFoundError):
+        await ThreadRepository(session).get_thread(1)
+
+
+async def test_deleted_thread_is_recreated(
+    monkeypatch: pytest.MonkeyPatch, fake_bot: Any, session: AsyncSession, settings: Settings
+) -> None:
+    settings.bot.feedback_channel_id = 500
+    await ThreadRepository(session).create_thread(1, 9001)
+
+    forum = _forum()
+    forum.create_thread = AsyncMock(return_value=SimpleNamespace(id=9002))
+    new_thread = _thread()
+    new_thread.id = 9002
+    channels = {500: forum, 9002: new_thread}
+    monkeypatch.setattr(fake_bot, "get_channel", lambda channel_id: channels.get(channel_id))
+
+    assert await _service(fake_bot, session, settings).send_feedback(1, "alice", "hello") is True
+
+    assert (await ThreadRepository(session).get_thread(1)).thread_id == 9002
+    assert new_thread.send.await_args is not None
+    assert new_thread.send.await_args.args == ("hello",)
 
 
 async def test_unexpected_repository_error_propagates(

@@ -25,10 +25,3 @@ class Message(BaseDBModel):
     role: MessageRole
     content: str
     created_at: datetime
-
-
-class UserStats(BaseDBModel):
-    user_id: int
-    message_count: int
-    first_message: datetime
-    last_message: datetime

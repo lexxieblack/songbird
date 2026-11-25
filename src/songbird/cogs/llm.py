@@ -21,6 +21,9 @@ from songbird.utils.text import truncate_text
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
 
+# A 25 MB upload caps out around this many message-sized rows; the newest ones are the useful part.
+_EXPORT_MESSAGE_LIMIT = 5000
+
 
 class LLMCog(BaseCog):
     def __init__(self, bot: "SongbirdBot") -> None:
@@ -147,7 +150,7 @@ class LLMCog(BaseCog):
         try:
             async with get_session(self.services) as session:
                 repo = get_message_repo(session)
-                messages = await repo.get_all_messages(ctx.author.id)
+                messages = list(reversed(await repo.get_newest_messages(ctx.author.id, _EXPORT_MESSAGE_LIMIT)))
 
                 if not messages:
                     await self.send_error(ctx, "No conversation history found.")

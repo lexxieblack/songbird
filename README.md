@@ -45,7 +45,7 @@ Convert between currencies using ECB reference rates.
 Reset your conversation history, delete the last message, or edit your user info that the AI references.
 
 ### Export (`/export`)
-Download your DM conversation history as JSON (2-hour cooldown by default, configurable via `LLM__EXPORT_COOLDOWN_SECONDS`).
+Download your DM conversation history as JSON (newest 5,000 messages, 2-hour cooldown by default, configurable via `LLM__EXPORT_COOLDOWN_SECONDS`).
 
 ### Feedback (`/feedback`)
 Send feedback through a modal — creates a forum thread for follow-up discussion.
@@ -90,6 +90,7 @@ Configure the current channel as a honeypot for unauthorised bots. Non-whitelist
 - **Google Gemini API key** ([get one here](https://aistudio.google.com/apikey))
 - **Wolfram Alpha API key** ([get one here](https://developer.wolframalpha.com/))
 - **Discord Bot Token** ([create an app](https://discord.com/developers/applications))
+- **Privileged intents** — in the Developer Portal, open your app → **Bot** → **Privileged Gateway Intents** and enable **Message Content** and **Server Members**
 
 ---
 
@@ -128,15 +129,9 @@ Songbird loads settings from `config.toml`, environment variables, and `.env` (i
 Migrations live in `database/chat/`, `database/feedback/`, and `database/management/`. Apply them manually in numeric order across all directories:
 
 ```bash
-psql -U your_user -d your_db -f database/chat/01.schema.sql
-psql -U your_user -d your_db -f database/chat/02.types.sql
-psql -U your_user -d your_db -f database/chat/03.message.sql
-psql -U your_user -d your_db -f database/feedback/01.schema.sql
-psql -U your_user -d your_db -f database/feedback/02.thread.sql
-psql -U your_user -d your_db -f database/management/01.schema.sql
-psql -U your_user -d your_db -f database/management/02.user_ban.sql
-psql -U your_user -d your_db -f database/management/03.guild_ban.sql
-# ... etc
+for f in database/chat/*.sql database/feedback/*.sql database/management/*.sql; do
+  psql -U your_user -d your_db -v ON_ERROR_STOP=1 -f "$f" || exit 1
+done
 ```
 
 ### Run

@@ -10,10 +10,8 @@ from songbird.utils.text import (
     humanize_timedelta,
     is_codeblock,
     link,
-    sanitize_mentions,
     split_message,
     split_paragraph_to_sentences,
-    split_sentence,
     split_text_to_paragraphs,
     truncate_text,
 )
@@ -41,14 +39,6 @@ def test_truncate_text_rejects_max_shorter_than_suffix() -> None:
 
 def test_truncate_text_short_circuits_empty_before_validating_suffix() -> None:
     assert truncate_text("", 0) == ""
-
-
-def test_sanitize_mentions_leaves_empty_text() -> None:
-    assert sanitize_mentions("") == ""
-
-
-def test_sanitize_mentions_neutralizes_pings() -> None:
-    assert sanitize_mentions("@everyone @here <@123> <@!456>") == "@\u200beveryone @\u200bhere <@\u200b123> <@\u200b!456>"
 
 
 @pytest.mark.parametrize(
@@ -112,25 +102,6 @@ def test_is_codeblock(text: str, expected: bool) -> None:
 )
 def test_get_codeblock_language(text: str, expected: str) -> None:
     assert get_codeblock_language(text) == expected
-
-
-def test_split_sentence_returns_short_text_whole() -> None:
-    assert split_sentence("hello world", 100) == ["hello world"]
-
-
-def test_split_sentence_splits_on_word_boundaries_and_keeps_words() -> None:
-    chunks = split_sentence("hello world this is a test", 10)
-
-    assert len(chunks) > 1
-    assert all(chunk for chunk in chunks)
-    assert all(len(chunk) <= 10 for chunk in chunks)
-    assert " ".join(chunks).split() == ["hello", "world", "this", "is", "a", "test"]
-
-
-def test_split_sentence_hard_splits_a_word_longer_than_the_limit() -> None:
-    chunks = split_sentence("a" * 25, 10)
-
-    assert chunks == ["a" * 10, "a" * 10, "a" * 5]
 
 
 def test_split_paragraph_to_sentences_keeps_punctuation_attached() -> None:

@@ -60,7 +60,7 @@ class BlackwallCog(BaseCog):
         try:
             blackwall = await blackwall_service.get_blackwall(guild_id)
             if not blackwall:
-                blackwall = await blackwall_service.create_blackwall(guild_id, channel_id)
+                blackwall = await blackwall_service.create_blackwall(guild_id)
         except Exception as e:
             self.logger.exception("Failed to get blackwall config", guild_id=guild_id, error=e)
             await self.send_error(ctx, "Failed to check blackwall status.")
@@ -224,12 +224,13 @@ class BlackwallCog(BaseCog):
                 await interaction.edit_original_response(view=new_view)
 
             async def on_cancel_edit(interaction: discord.Interaction) -> None:
+                current = await blackwall_service.get_blackwall(guild_id) or blackwall
                 current_view = _make_view(
-                    blackwall.channel_id,
-                    blackwall.log_channel_id,
-                    current_roles,
-                    blackwall.banned_count,
-                    blackwall.punishment,
+                    current.channel_id,
+                    current.log_channel_id,
+                    current.whitelisted_roles,
+                    current.banned_count,
+                    current.punishment,
                     on_set_channel,
                     on_remove_channel,
                     on_set_log_channel,
@@ -249,10 +250,13 @@ class BlackwallCog(BaseCog):
             await interaction.response.edit_message(view=edit_view)
 
         async def on_edit_punishment(interaction: discord.Interaction) -> None:
+            latest = await blackwall_service.get_blackwall(guild_id)
+            current_punishment = latest.punishment if latest else blackwall.punishment
+
             async def on_save_punishment(interaction: discord.Interaction) -> None:
                 await interaction.response.defer()
                 selected = edit_view.punishment_select.values
-                new_punishment = BlackwallPunishment(selected[0]) if selected else blackwall.punishment
+                new_punishment = BlackwallPunishment(selected[0]) if selected else current_punishment
 
                 try:
                     updated = await blackwall_service.update_punishment(
@@ -281,12 +285,13 @@ class BlackwallCog(BaseCog):
                 await interaction.edit_original_response(view=new_view)
 
             async def on_cancel_edit(interaction: discord.Interaction) -> None:
+                current = await blackwall_service.get_blackwall(guild_id) or blackwall
                 current_view = _make_view(
-                    blackwall.channel_id,
-                    blackwall.log_channel_id,
-                    blackwall.whitelisted_roles,
-                    blackwall.banned_count,
-                    blackwall.punishment,
+                    current.channel_id,
+                    current.log_channel_id,
+                    current.whitelisted_roles,
+                    current.banned_count,
+                    current.punishment,
                     on_set_channel,
                     on_remove_channel,
                     on_set_log_channel,
@@ -298,7 +303,7 @@ class BlackwallCog(BaseCog):
                 await interaction.response.edit_message(view=current_view)
 
             edit_view = BlackwallEditPunishmentView(
-                current_punishment=blackwall.punishment,
+                current_punishment=current_punishment,
                 on_save=on_save_punishment,
                 on_cancel=on_cancel_edit,
                 settings=self.settings,

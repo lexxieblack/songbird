@@ -1,12 +1,15 @@
 import re
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+import httpx
 import tldextract
-from aiohttp import ClientError, ClientSession, ClientTimeout
 from structlog import BoundLogger
 
 from songbird.config import PaginationSettings, Settings
 from songbird.utils.logging import get_logger
+
+# Empty suffix_list_urls: use the bundled snapshot and never fetch the list on the event loop.
+_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
 
 
 class LinkFixerService:
@@ -18,6 +21,11 @@ class LinkFixerService:
         self.settings = settings
         self.logger = logger or get_logger(__name__)
         self.domain_mapping = self.settings.links
+        # One client for the process: a session per URL paid a fresh TLS handshake every time.
+        self._client = httpx.AsyncClient(timeout=5.0, follow_redirects=False)
+
+    async def close(self) -> None:
+        await self._client.aclose()
 
     async def fix(self, text: str) -> list[str]:
         urls = self._extract_urls(text)
@@ -56,36 +64,31 @@ class LinkFixerService:
         return [url]
 
     def _get_domain_suffix(self, url: str) -> str:
-        ext = tldextract.extract(url)
+        ext = _EXTRACT(url)
         return f"{ext.domain}.{ext.suffix}"
 
     async def _follow_url(self, url: str) -> str:
-        session = ClientSession(timeout=ClientTimeout(total=5))
         try:
-            async with session.head(url, allow_redirects=False) as response:
-                return response.headers.get("Location", url)
-        except (TimeoutError, ClientError) as e:
+            response = await self._client.head(url)
+            location = response.headers.get("location")
+            return location if isinstance(location, str) else url
+        except httpx.HTTPError as e:
             self.logger.error("Failed to follow link", url=url, error=e)
             return url
-        finally:
-            await session.close()
 
     async def _media_count(self, url: str, pagination: PaginationSettings) -> int:
         parsed = urlparse(url)
         # shortcut: assumes the fixer service exposes an api.<host> media endpoint; add an explicit `api` key when a second provider needs one
         api = pagination.api or f"https://api.{parsed.hostname}{parsed.path}"
-        session = ClientSession(timeout=ClientTimeout(total=5))
         try:
-            async with session.get(api) as response:
-                data = await response.json(content_type=None)
+            response = await self._client.get(api)
+            data = response.json()
             if not isinstance(data, dict):
                 return 0
             return len(data.get("media_extended") or data.get("mediaURLs") or [])
-        except (TimeoutError, ClientError, ValueError) as e:
+        except (httpx.HTTPError, ValueError) as e:
             self.logger.error("Failed to fetch media count", url=url, error=e)
             return 0
-        finally:
-            await session.close()
 
     def _page_urls(self, url: str, count: int, pagination: PaginationSettings) -> list[str]:
         if count <= pagination.per_page:

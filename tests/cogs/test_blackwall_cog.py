@@ -141,7 +141,7 @@ async def test_missing_config_is_created(
 
     await invoke(cog, "blackwall", fake_ctx)
 
-    service.create_blackwall.assert_awaited_once_with(1, 10)
+    service.create_blackwall.assert_awaited_once_with(1)
     assert isinstance(ctx.respond_calls[0]["view"], BlackwallView)
 
 
@@ -176,6 +176,39 @@ async def test_remove_log_channel_clears_only_log_channel(
     service.update_log_channel.assert_awaited_once_with(1, None)
     service.update_channel.assert_not_awaited()
     interaction.edit_original_response.assert_awaited_once()
+
+
+async def test_edit_punishment_reads_current_config(
+    monkeypatch: pytest.MonkeyPatch,
+    cog: BlackwallCog,
+    fake_bot: SongbirdBot,
+    fake_ctx: discord.ApplicationContext,
+) -> None:
+    # Regression: the edit view was built from the config captured when /blackwall ran,
+    # so opening it after an update showed (and re-saved) the old punishment.
+    stale = _config(punishment=BlackwallPunishment.BAN)
+    fresh = _config(punishment=BlackwallPunishment.WARN)
+    service = _service(stale)
+    service.get_blackwall = AsyncMock(side_effect=[stale, fresh])
+    _services(fake_bot).blackwall = service
+    _admin_ctx(fake_ctx)
+
+    captured: list[tuple[Any, ...]] = []
+
+    def capture(*args: Any, **_kwargs: Any) -> object:
+        captured.append(args)
+        return object()
+
+    monkeypatch.setattr("songbird.cogs.blackwall._make_view", capture)
+
+    await invoke(cog, "blackwall", fake_ctx)
+
+    interaction = SimpleNamespace(response=SimpleNamespace(defer=AsyncMock(), edit_message=AsyncMock()))
+    await captured[0][10](interaction)
+
+    view = interaction.response.edit_message.await_args.kwargs["view"]
+    text = cast(Any, view).children[0].items[2].content
+    assert "Current: **warn**" in text
 
 
 async def test_config_lookup_failure_sends_error(

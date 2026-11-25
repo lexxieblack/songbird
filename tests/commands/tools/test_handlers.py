@@ -48,15 +48,14 @@ class FakeTranslation:
         self.translated = "Hallo"
         self.detected = "de"
         self.calls: list[tuple[str, str, str]] = []
-        self.detections: list[str] = []
 
     async def translate(self, text: str, target_lang: str, source_lang: str) -> str:
         self.calls.append((text, target_lang, source_lang))
         return self.translated
 
-    async def detect_language(self, text: str) -> str:
-        self.detections.append(text)
-        return self.detected
+    async def translate_with_source(self, text: str, target_lang: str, source_lang: str) -> tuple[str, str]:
+        self.calls.append((text, target_lang, source_lang))
+        return self.translated, self.detected
 
     def get_language_name(self, language: str) -> str:
         return {"en": "English", "de": "German", "auto": "Auto"}.get(language, language)
@@ -175,10 +174,9 @@ async def test_translate_with_explicit_source_skips_detection() -> None:
 
     assert result == ("English", "German", "Hallo")
     assert service.calls == [("hello", "de", "en")]
-    assert service.detections == []
 
 
-async def test_translate_auto_detects_source() -> None:
+async def test_translate_auto_uses_source_from_the_translation() -> None:
     service = FakeTranslation()
     handler = TranslateHandler(cast(Any, service))
 
@@ -186,7 +184,6 @@ async def test_translate_auto_detects_source() -> None:
 
     assert result == ("German", "German", "Hallo")
     assert service.calls == [("hello", "de", "auto")]
-    assert service.detections == ["hello"]
 
 
 async def test_translate_defaults_to_auto_source_and_english_target() -> None:

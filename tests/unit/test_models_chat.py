@@ -10,7 +10,7 @@ from sqlalchemy import BigInteger, Text
 from songbird.models.chat.base import MessageRole, MessageRoleEnum
 from songbird.models.chat.exceptions import MessageAlreadyExistsError, UserInfoAlreadyExistsError, UserInfoNotFoundError
 from songbird.models.chat.guild_message import GuildMessage, guild_message_table
-from songbird.models.chat.message import Message, UserStats, message_table
+from songbird.models.chat.message import Message, message_table
 from songbird.models.chat.user_info import UserInfo, user_info_table
 from songbird.models.exception import SongbirdException
 
@@ -95,12 +95,6 @@ def test_user_info_allows_a_null_info_value() -> None:
     info = UserInfo(user_id=1, user_info=None, created_at=NOW, updated_at=NOW)
 
     assert info.user_info is None
-
-
-def test_user_stats_reads_attributes() -> None:
-    stats = UserStats.model_validate(SimpleNamespace(user_id=1, message_count=3, first_message=NOW, last_message=NOW))
-
-    assert stats.message_count == 3
 
 
 @pytest.mark.parametrize(

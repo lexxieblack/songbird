@@ -28,17 +28,15 @@ class BaseCog(commands.Cog):
     def settings(self) -> "Settings":
         return self.bot.settings
 
-    async def send_error(
+    async def _send_embed(
         self,
         ctx: discord.ApplicationContext,
+        title: str,
         message: str,
-        ephemeral: bool = True,
+        colour: discord.Colour,
+        ephemeral: bool,
     ) -> None:
-        embed = discord.Embed(
-            title="Error",
-            description=message,
-            colour=discord.Color.red(),
-        )
+        embed = discord.Embed(title=title, description=message, colour=colour)
 
         try:
             await ctx.respond(embed=embed, ephemeral=ephemeral, allowed_mentions=discord.AllowedMentions.none())
@@ -48,10 +46,15 @@ class BaseCog(commands.Cog):
                 await ctx.followup.send(embed=embed, ephemeral=ephemeral, allowed_mentions=discord.AllowedMentions.none())
             except discord.HTTPException:
                 # If that fails too, log it but don't crash
-                self.logger.warning(
-                    "Failed to send error message",
-                    error_message=message,
-                )
+                self.logger.warning("Failed to send message", title=title, error_message=message)
+
+    async def send_error(
+        self,
+        ctx: discord.ApplicationContext,
+        message: str,
+        ephemeral: bool = True,
+    ) -> None:
+        await self._send_embed(ctx, "Error", message, discord.Color.red(), ephemeral)
 
     async def send_success(
         self,
@@ -59,24 +62,7 @@ class BaseCog(commands.Cog):
         message: str,
         ephemeral: bool = False,
     ) -> None:
-        embed = discord.Embed(
-            title="Success",
-            description=message,
-            colour=discord.Colour.green(),
-        )
-
-        try:
-            await ctx.respond(embed=embed, ephemeral=ephemeral, allowed_mentions=discord.AllowedMentions.none())
-        except discord.HTTPException:
-            # If respond fails (e.g., already responded), try followup
-            try:
-                await ctx.followup.send(embed=embed, ephemeral=ephemeral, allowed_mentions=discord.AllowedMentions.none())
-            except discord.HTTPException:
-                # If that fails too, log it but don't crash
-                self.logger.warning(
-                    "Failed to send success message",
-                    success_message=message,
-                )
+        await self._send_embed(ctx, "Success", message, discord.Colour.green(), ephemeral)
 
     async def is_owner(self, ctx: discord.ApplicationContext) -> bool:
         return await self.bot.is_owner(ctx.author)

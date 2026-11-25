@@ -1,8 +1,9 @@
+import asyncio
 import contextlib
 import re
 
 from discord import AllowedMentions, Forbidden, HTTPException, Message, TextChannel, Thread
-from tldextract import tldextract
+from tldextract import TLDExtract
 
 from songbird.bot import SongbirdBot
 from songbird.config import LinksSettings
@@ -15,6 +16,9 @@ logger = get_logger(__name__)
 
 CACHED_MESSAGES: set[int] = set()
 
+# Empty suffix_list_urls: use the bundled snapshot and never fetch the list on the event loop.
+_EXTRACT = TLDExtract(suffix_list_urls=())
+
 
 def load_fix(bot: SongbirdBot) -> None:
     settings = bot.settings
@@ -22,7 +26,8 @@ def load_fix(bot: SongbirdBot) -> None:
 
     @bot.listen()
     async def on_message_edit(before: Message, after: Message) -> None:
-        if before.id not in CACHED_MESSAGES:
+        # suppress_embeds edits do not change the content; only real user edits get handled.
+        if before.content == after.content or before.id not in CACHED_MESSAGES:
             return
 
         CACHED_MESSAGES.discard(before.id)
@@ -46,11 +51,9 @@ def load_fix(bot: SongbirdBot) -> None:
 
         fixed_urls: list[str] = []
         links_settings = settings.links
-        for url in urls:
-            if not _check_domain_setting(url, links_settings):
-                continue
-
-            fixed_urls.extend(await services.link_fixer.fix(url))
+        fixable = [url for url in urls if _check_domain_setting(url, links_settings)]
+        for fixed in await asyncio.gather(*(services.link_fixer.fix(url) for url in fixable)):
+            fixed_urls.extend(fixed)
 
         if not fixed_urls:
             return
@@ -115,5 +118,5 @@ def _check_domain_setting(url: str, links_settings: LinksSettings) -> bool:
 
 
 def _get_domain_with_suffix(url: str) -> str:
-    ext = tldextract.extract(url)
+    ext = _EXTRACT(url)
     return f"{ext.domain}.{ext.suffix}"

@@ -1,6 +1,6 @@
 # pyright: reportPrivateUsage=false
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -75,7 +75,7 @@ async def test_quota_error_falls_back_and_keeps_using_fallback(settings: Setting
     assert await service.call(LLMRequest(user_prompt="two")) == "fallback answer"
 
     assert seen == [settings.llm.model, settings.llm.fallback_model, settings.llm.fallback_model]
-    assert service._primary_exhausted  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+    assert service._primary_blocked_until is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
 
 async def test_non_quota_error_propagates(settings: Settings) -> None:
@@ -87,13 +87,13 @@ async def test_non_quota_error_propagates(settings: Settings) -> None:
 
 async def test_quota_error_on_fallback_propagates(settings: Settings) -> None:
     service = _service(settings, _raise(RuntimeError("quota exceeded")))
-    service._primary_exhausted = True  # noqa: SLF001
+    service._primary_blocked_until = datetime.now(UTC) + timedelta(hours=1)  # noqa: SLF001
 
     with pytest.raises(RuntimeError, match="quota exceeded"):
         await service.call(LLMRequest(user_prompt="hi"))
 
 
-async def test_primary_tries_again_on_a_new_day(settings: Settings) -> None:
+async def test_primary_is_retried_after_the_block_expires(settings: Settings) -> None:
     models: list[str] = []
 
     def handler(**kwargs: Any) -> SimpleNamespace:
@@ -101,13 +101,12 @@ async def test_primary_tries_again_on_a_new_day(settings: Settings) -> None:
         return SimpleNamespace(text="ok")
 
     service = _service(settings, handler)
-    service._primary_exhausted = True  # noqa: SLF001
-    service._exhausted_date = date(2000, 1, 1)  # noqa: SLF001
+    service._primary_blocked_until = datetime.now(UTC) - timedelta(seconds=1)  # noqa: SLF001
 
     assert await service.call(LLMRequest(user_prompt="hi")) == "ok"
 
     assert models == [settings.llm.model]
-    assert service._primary_exhausted is False  # noqa: SLF001
+    assert service._primary_blocked_until is None  # noqa: SLF001
 
 
 class _CodedError(Exception):

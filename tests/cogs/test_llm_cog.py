@@ -91,8 +91,8 @@ class FakeMessageRepo:
     def __init__(self, messages: list[Message]) -> None:
         self.messages = messages
 
-    async def get_all_messages(self, _user_id: int) -> list[Message]:
-        return self.messages
+    async def get_newest_messages(self, _user_id: int, _limit: int) -> list[Message]:
+        return list(reversed(self.messages))
 
 
 @pytest.fixture

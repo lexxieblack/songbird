@@ -14,10 +14,14 @@ class TranslateHandler:
         source_lang: str | None = "auto",
     ) -> tuple[str, str, str]:
         source_lang = source_lang or "auto"
-        translated_text = await self.translate(text, target_lang, source_lang)
+        translated_text, detected_lang = await self.translation_service.translate_with_source(
+            text=text,
+            target_lang=target_lang,
+            source_lang=source_lang,
+        )
 
         if source_lang == "auto":
-            source_lang = await self.detect_language(text)
+            source_lang = detected_lang
 
         source_name = self.get_language_name(source_lang)
         target_name = self.get_language_name(target_lang)
@@ -41,6 +45,3 @@ class TranslateHandler:
 
     def get_language_name(self, lang: str) -> str:
         return self.translation_service.get_language_name(lang)
-
-    async def detect_language(self, text: str) -> str:
-        return await self.translation_service.detect_language(text)
