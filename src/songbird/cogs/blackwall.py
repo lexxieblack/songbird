@@ -1,18 +1,27 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, NamedTuple
 
 import discord
 
 from songbird.bot import SongbirdBot
 from songbird.cogs.base import BaseCog
 from songbird.config import Settings
-from songbird.models.management.blackwall import BlackwallPunishment
+from songbird.models.management.blackwall import Blackwall, BlackwallPunishment
 from songbird.ui.views.blackwall.__main__ import BlackwallView
 from songbird.ui.views.blackwall.edit_punishment import BlackwallEditPunishmentView
 from songbird.ui.views.blackwall.edit_roles import BlackwallEditRolesView
 from songbird.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class _Callbacks(NamedTuple):
+    on_set_channel: Callable[[discord.Interaction], Any]
+    on_remove_channel: Callable[[discord.Interaction], Any]
+    on_set_log_channel: Callable[[discord.Interaction], Any]
+    on_remove_log_channel: Callable[[discord.Interaction], Any]
+    on_edit_roles: Callable[[discord.Interaction], Any]
+    on_edit_punishment: Callable[[discord.Interaction], Any]
 
 
 class BlackwallCog(BaseCog):
@@ -85,21 +94,7 @@ class BlackwallCog(BaseCog):
                 await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
                 return
 
-            new_view = _make_view(
-                new_config.channel_id,
-                new_config.log_channel_id,
-                new_config.whitelisted_roles,
-                new_config.banned_count,
-                new_config.punishment,
-                on_set_channel,
-                on_remove_channel,
-                on_set_log_channel,
-                on_remove_log_channel,
-                on_edit_roles,
-                on_edit_punishment,
-                self.settings,
-            )
-            await interaction.edit_original_response(view=new_view)
+            await interaction.edit_original_response(view=_make_view(new_config, callbacks, self.settings))
 
         async def on_remove_channel(interaction: discord.Interaction) -> None:
             await interaction.response.defer()
@@ -111,21 +106,7 @@ class BlackwallCog(BaseCog):
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
                 return
 
-            new_view = _make_view(
-                None,
-                updated.log_channel_id,
-                updated.whitelisted_roles,
-                updated.banned_count,
-                updated.punishment,
-                on_set_channel,
-                on_remove_channel,
-                on_set_log_channel,
-                on_remove_log_channel,
-                on_edit_roles,
-                on_edit_punishment,
-                self.settings,
-            )
-            await interaction.edit_original_response(view=new_view)
+            await interaction.edit_original_response(view=_make_view(updated, callbacks, self.settings))
 
         async def on_set_log_channel(interaction: discord.Interaction) -> None:
             await interaction.response.defer()
@@ -144,21 +125,7 @@ class BlackwallCog(BaseCog):
                 await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
                 return
 
-            new_view = _make_view(
-                new_config.channel_id,
-                new_config.log_channel_id,
-                new_config.whitelisted_roles,
-                new_config.banned_count,
-                new_config.punishment,
-                on_set_channel,
-                on_remove_channel,
-                on_set_log_channel,
-                on_remove_log_channel,
-                on_edit_roles,
-                on_edit_punishment,
-                self.settings,
-            )
-            await interaction.edit_original_response(view=new_view)
+            await interaction.edit_original_response(view=_make_view(new_config, callbacks, self.settings))
 
         async def on_remove_log_channel(interaction: discord.Interaction) -> None:
             await interaction.response.defer()
@@ -170,21 +137,7 @@ class BlackwallCog(BaseCog):
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
                 return
 
-            new_view = _make_view(
-                updated.channel_id,
-                None,
-                updated.whitelisted_roles,
-                updated.banned_count,
-                updated.punishment,
-                on_set_channel,
-                on_remove_channel,
-                on_set_log_channel,
-                on_remove_log_channel,
-                on_edit_roles,
-                on_edit_punishment,
-                self.settings,
-            )
-            await interaction.edit_original_response(view=new_view)
+            await interaction.edit_original_response(view=_make_view(updated, callbacks, self.settings))
 
         async def on_edit_roles(interaction: discord.Interaction) -> None:
             try:
@@ -201,45 +154,17 @@ class BlackwallCog(BaseCog):
                 new_roles = [r.id for r in selected] if selected is not None else current_roles
 
                 try:
-                    updated_blackwall = await blackwall_service.update_roles(guild_id, new_roles)
+                    updated = await blackwall_service.update_roles(guild_id, new_roles)
                 except Exception as e:
                     self.logger.exception("Failed to update blackwall roles", guild_id=guild_id, error=e)
                     await interaction.followup.send("Failed to update roles.", ephemeral=True)
                     return
 
-                new_view = _make_view(
-                    updated_blackwall.channel_id,
-                    updated_blackwall.log_channel_id,
-                    updated_blackwall.whitelisted_roles,
-                    updated_blackwall.banned_count,
-                    updated_blackwall.punishment,
-                    on_set_channel,
-                    on_remove_channel,
-                    on_set_log_channel,
-                    on_remove_log_channel,
-                    on_edit_roles,
-                    on_edit_punishment,
-                    self.settings,
-                )
-                await interaction.edit_original_response(view=new_view)
+                await interaction.edit_original_response(view=_make_view(updated, callbacks, self.settings))
 
             async def on_cancel_edit(interaction: discord.Interaction) -> None:
                 current = await blackwall_service.get_blackwall(guild_id) or blackwall
-                current_view = _make_view(
-                    current.channel_id,
-                    current.log_channel_id,
-                    current.whitelisted_roles,
-                    current.banned_count,
-                    current.punishment,
-                    on_set_channel,
-                    on_remove_channel,
-                    on_set_log_channel,
-                    on_remove_log_channel,
-                    on_edit_roles,
-                    on_edit_punishment,
-                    self.settings,
-                )
-                await interaction.response.edit_message(view=current_view)
+                await interaction.response.edit_message(view=_make_view(current, callbacks, self.settings))
 
             edit_view = BlackwallEditRolesView(
                 current_roles=current_roles,
@@ -259,48 +184,17 @@ class BlackwallCog(BaseCog):
                 new_punishment = BlackwallPunishment(selected[0]) if selected else current_punishment
 
                 try:
-                    updated = await blackwall_service.update_punishment(
-                        guild_id,
-                        new_punishment,
-                    )
+                    updated = await blackwall_service.update_punishment(guild_id, new_punishment)
                 except Exception as e:
                     self.logger.exception("Failed to update blackwall punishment", guild_id=guild_id, error=e)
                     await interaction.followup.send("Failed to update punishment.", ephemeral=True)
                     return
 
-                new_view = _make_view(
-                    updated.channel_id,
-                    updated.log_channel_id,
-                    updated.whitelisted_roles,
-                    updated.banned_count,
-                    updated.punishment,
-                    on_set_channel,
-                    on_remove_channel,
-                    on_set_log_channel,
-                    on_remove_log_channel,
-                    on_edit_roles,
-                    on_edit_punishment,
-                    self.settings,
-                )
-                await interaction.edit_original_response(view=new_view)
+                await interaction.edit_original_response(view=_make_view(updated, callbacks, self.settings))
 
             async def on_cancel_edit(interaction: discord.Interaction) -> None:
                 current = await blackwall_service.get_blackwall(guild_id) or blackwall
-                current_view = _make_view(
-                    current.channel_id,
-                    current.log_channel_id,
-                    current.whitelisted_roles,
-                    current.banned_count,
-                    current.punishment,
-                    on_set_channel,
-                    on_remove_channel,
-                    on_set_log_channel,
-                    on_remove_log_channel,
-                    on_edit_roles,
-                    on_edit_punishment,
-                    self.settings,
-                )
-                await interaction.response.edit_message(view=current_view)
+                await interaction.response.edit_message(view=_make_view(current, callbacks, self.settings))
 
             edit_view = BlackwallEditPunishmentView(
                 current_punishment=current_punishment,
@@ -310,49 +204,30 @@ class BlackwallCog(BaseCog):
             )
             await interaction.response.edit_message(view=edit_view)
 
-        new_view = _make_view(
-            blackwall.channel_id,
-            blackwall.log_channel_id,
-            blackwall.whitelisted_roles,
-            blackwall.banned_count,
-            blackwall.punishment,
-            on_set_channel,
-            on_remove_channel,
-            on_set_log_channel,
-            on_remove_log_channel,
-            on_edit_roles,
-            on_edit_punishment,
-            self.settings,
+        callbacks = _Callbacks(
+            on_set_channel=on_set_channel,
+            on_remove_channel=on_remove_channel,
+            on_set_log_channel=on_set_log_channel,
+            on_remove_log_channel=on_remove_log_channel,
+            on_edit_roles=on_edit_roles,
+            on_edit_punishment=on_edit_punishment,
         )
-        await ctx.respond(view=new_view)
+        await ctx.respond(view=_make_view(blackwall, callbacks, self.settings))
 
 
-def _make_view(
-    channel_id: int | None,
-    log_channel_id: int | None,
-    whitelisted_roles: list[int],
-    banned_count: int,
-    punishment: BlackwallPunishment,
-    on_set_channel: Callable[[discord.Interaction], Any],
-    on_remove_channel: Callable[[discord.Interaction], Any],
-    on_set_log_channel: Callable[[discord.Interaction], Any],
-    on_remove_log_channel: Callable[[discord.Interaction], Any],
-    on_edit_roles: Callable[[discord.Interaction], Any],
-    on_edit_punishment: Callable[[discord.Interaction], Any],
-    settings: Settings,
-) -> BlackwallView:
+def _make_view(config: Blackwall, callbacks: _Callbacks, settings: Settings) -> BlackwallView:
     return BlackwallView(
-        channel_id=channel_id,
-        log_channel_id=log_channel_id,
-        roles=whitelisted_roles,
-        banned_count=banned_count,
-        punishment=punishment,
-        on_set_channel=on_set_channel,
-        on_remove_channel=on_remove_channel,
-        on_set_log_channel=on_set_log_channel,
-        on_remove_log_channel=on_remove_log_channel,
-        on_edit_roles=on_edit_roles,
-        on_edit_punishment=on_edit_punishment,
+        channel_id=config.channel_id,
+        log_channel_id=config.log_channel_id,
+        roles=config.whitelisted_roles,
+        banned_count=config.banned_count,
+        punishment=config.punishment,
+        on_set_channel=callbacks.on_set_channel,
+        on_remove_channel=callbacks.on_remove_channel,
+        on_set_log_channel=callbacks.on_set_log_channel,
+        on_remove_log_channel=callbacks.on_remove_log_channel,
+        on_edit_roles=callbacks.on_edit_roles,
+        on_edit_punishment=callbacks.on_edit_punishment,
         settings=settings,
     )
 

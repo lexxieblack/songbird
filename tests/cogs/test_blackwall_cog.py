@@ -171,7 +171,7 @@ async def test_remove_log_channel_clears_only_log_channel(
         followup=SimpleNamespace(send=AsyncMock()),
         edit_original_response=AsyncMock(),
     )
-    await captured[0][8](interaction)
+    await captured[0][1].on_remove_log_channel(interaction)
 
     service.update_log_channel.assert_awaited_once_with(1, None)
     service.update_channel.assert_not_awaited()
@@ -204,7 +204,7 @@ async def test_edit_punishment_reads_current_config(
     await invoke(cog, "blackwall", fake_ctx)
 
     interaction = SimpleNamespace(response=SimpleNamespace(defer=AsyncMock(), edit_message=AsyncMock()))
-    await captured[0][10](interaction)
+    await captured[0][1].on_edit_punishment(interaction)
 
     view = interaction.response.edit_message.await_args.kwargs["view"]
     text = cast(Any, view).children[0].items[2].content
