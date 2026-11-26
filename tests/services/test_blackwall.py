@@ -12,7 +12,7 @@ pytestmark = pytest.mark.db
 
 
 async def test_create_persists_and_caches(db_container: ServiceContainer, session: AsyncSession) -> None:
-    service = BlackwallService(db_container)
+    service = BlackwallService(db_container.session_factory)
 
     created = await service.create_blackwall(1, channel_id=2, log_channel_id=3, whitelisted_roles=[4])
 
@@ -30,7 +30,7 @@ async def test_get_reads_database_then_serves_from_cache(db_container: ServiceCo
     created = await repo.create(CreateBlackwall(guild_id=1, channel_id=None))
     await session.commit()
 
-    service = BlackwallService(db_container)
+    service = BlackwallService(db_container.session_factory)
     first = await service.get_blackwall(1)
     await session.execute(delete(blackwall_table))
     await session.commit()
@@ -40,11 +40,11 @@ async def test_get_reads_database_then_serves_from_cache(db_container: ServiceCo
 
 
 async def test_get_missing_returns_none(db_container: ServiceContainer) -> None:
-    assert await BlackwallService(db_container).get_blackwall(999) is None
+    assert await BlackwallService(db_container.session_factory).get_blackwall(999) is None
 
 
 async def test_get_missing_is_cached(db_container: ServiceContainer, session: AsyncSession) -> None:
-    service = BlackwallService(db_container)
+    service = BlackwallService(db_container.session_factory)
     assert await service.get_blackwall(999) is None
 
     await BlackwallRepository(session).create(CreateBlackwall(guild_id=999, channel_id=None))
@@ -54,7 +54,7 @@ async def test_get_missing_is_cached(db_container: ServiceContainer, session: As
 
 
 async def test_increment_counts_bans(db_container: ServiceContainer) -> None:
-    service = BlackwallService(db_container)
+    service = BlackwallService(db_container.session_factory)
     await service.create_blackwall(1)
 
     assert (await service.increment_blackwall(1)).banned_count == 1
@@ -63,11 +63,11 @@ async def test_increment_counts_bans(db_container: ServiceContainer) -> None:
 
 async def test_increment_missing_raises(db_container: ServiceContainer) -> None:
     with pytest.raises(BlackwallNotFoundError):
-        await BlackwallService(db_container).increment_blackwall(999)
+        await BlackwallService(db_container.session_factory).increment_blackwall(999)
 
 
 async def test_updates_persist_and_refresh_cache(db_container: ServiceContainer, session: AsyncSession) -> None:
-    service = BlackwallService(db_container)
+    service = BlackwallService(db_container.session_factory)
     await service.create_blackwall(1)
 
     await service.update(1, channel_id=20)
@@ -91,11 +91,11 @@ async def test_updates_persist_and_refresh_cache(db_container: ServiceContainer,
 
 async def test_update_missing_raises(db_container: ServiceContainer) -> None:
     with pytest.raises(BlackwallNotFoundError):
-        await BlackwallService(db_container).update(999, channel_id=1)
+        await BlackwallService(db_container.session_factory).update(999, channel_id=1)
 
 
 async def test_duplicate_guild_raises(db_container: ServiceContainer) -> None:
-    service = BlackwallService(db_container)
+    service = BlackwallService(db_container.session_factory)
     await service.create_blackwall(1)
 
     with pytest.raises(BlackwallAlreadyExistsError):

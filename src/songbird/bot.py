@@ -14,6 +14,9 @@ logger = structlog.get_logger(__name__)
 
 
 class SongbirdBot(discord.Bot):
+    # py-cord assigns owner_id from an untyped dict, so annotate it for type checkers.
+    owner_id: int | None
+
     def __init__(self, settings: "Settings", services: ServiceContainer) -> None:
         # Configure intents
         intents = discord.Intents.none()
@@ -25,7 +28,7 @@ class SongbirdBot(discord.Bot):
 
         # Initialise parent class with intents
         debug_guilds = [settings.bot.debug_guild_id] if settings.bot.debug_guild_id else None
-        super().__init__(
+        super().__init__(  # pyright: ignore[reportUnknownMemberType]
             intents=intents,
             owner_id=settings.bot.owner_id,
             debug_guilds=debug_guilds,
@@ -52,7 +55,7 @@ class SongbirdBot(discord.Bot):
         self.logger.debug("Bot presence set", activity=custom_activity)
 
         # Startup guild ban sweep
-        banned_ids = await self.services.management.get_banned_guild_ids()  # type: ignore[union-attr]
+        banned_ids = await self.services.management.get_banned_guild_ids()
         for guild in self.guilds:
             if guild.id in banned_ids:
                 self.logger.info("Leaving banned guild on startup", guild_id=guild.id, guild_name=guild.name)
@@ -74,7 +77,7 @@ class SongbirdBot(discord.Bot):
         # Log the error with context
         self.logger.error(
             "command_error",
-            command=context.command.name if context.command else "unknown",
+            command=context.command.name if context.command else "unknown",  # pyright: ignore[reportUnknownMemberType]
             user_id=context.author.id,
             guild_id=context.guild.id if context.guild else None,
             error=str(original_error),
@@ -162,9 +165,7 @@ class SongbirdBot(discord.Bot):
         except discord.HTTPException:
             self.logger.exception("Owner fetch failed", owner_id=self.owner_id)
             return False
-        if owner is None:
-            self.logger.warning("Owner not found")
-            return False
+
         try:
             await owner.send(message)
         except discord.HTTPException:

@@ -26,9 +26,6 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
         if not isinstance(author, discord.Member):
             return
 
-        if not bot.services.blackwall:
-            return
-
         guild_id = message.guild.id
         channel_id = message.channel.id
 

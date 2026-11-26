@@ -15,25 +15,25 @@ pytestmark = pytest.mark.db
 
 
 async def test_check_user_banned_reads_then_caches(db_container: ServiceContainer, session: AsyncSession) -> None:
-    service = BanEnforcementService(db_container)
+    service = BanEnforcementService(db_container.session_factory)
     assert await service.check_user_banned(1) is False
 
     await UserBanRepository(session).create_ban(1)
     await session.commit()
 
     assert await service.check_user_banned(1) is False
-    assert await BanEnforcementService(db_container).check_user_banned(1) is True
+    assert await BanEnforcementService(db_container.session_factory).check_user_banned(1) is True
 
 
 async def test_check_guild_banned_reads_then_caches(db_container: ServiceContainer, session: AsyncSession) -> None:
-    service = BanEnforcementService(db_container)
+    service = BanEnforcementService(db_container.session_factory)
     assert await service.check_guild_banned(1) is False
 
     await GuildBanRepository(session).create_ban(1)
     await session.commit()
 
     assert await service.check_guild_banned(1) is False
-    assert await BanEnforcementService(db_container).check_guild_banned(1) is True
+    assert await BanEnforcementService(db_container.session_factory).check_guild_banned(1) is True
 
 
 async def test_ban_user_deletes_history_and_info(db_container: ServiceContainer, session: AsyncSession) -> None:
@@ -43,7 +43,7 @@ async def test_ban_user_deletes_history_and_info(db_container: ServiceContainer,
     await UserInfoRepository(session).create_user_info(1, "profile")
     await session.commit()
 
-    ban = await BanEnforcementService(db_container).ban_user(1, reason="spam")
+    ban = await BanEnforcementService(db_container.session_factory).ban_user(1, reason="spam")
 
     assert ban.user_id == 1
     assert ban.reason == "spam"
@@ -53,7 +53,7 @@ async def test_ban_user_deletes_history_and_info(db_container: ServiceContainer,
 
 
 async def test_ban_user_sets_cache_and_duplicate_raises(db_container: ServiceContainer) -> None:
-    service = BanEnforcementService(db_container)
+    service = BanEnforcementService(db_container.session_factory)
     await service.ban_user(1)
 
     assert await service.check_user_banned(1) is True
@@ -66,8 +66,8 @@ async def test_ban_guild_deletes_history_and_sets_cache(db_container: ServiceCon
     await guild_messages.create_message(1, MessageRole.USER, "hello")
     await session.commit()
 
-    ban = await BanEnforcementService(db_container).ban_guild(1, reason="raid")
-    service = BanEnforcementService(db_container)
+    ban = await BanEnforcementService(db_container.session_factory).ban_guild(1, reason="raid")
+    service = BanEnforcementService(db_container.session_factory)
 
     assert ban.reason == "raid"
     assert await GuildMessageRepository(session).get_newest_messages(1) == []
@@ -77,7 +77,7 @@ async def test_ban_guild_deletes_history_and_sets_cache(db_container: ServiceCon
 async def test_unban_user_clears_cache(db_container: ServiceContainer, session: AsyncSession) -> None:
     await UserBanRepository(session).create_ban(1)
     await session.commit()
-    service = BanEnforcementService(db_container)
+    service = BanEnforcementService(db_container.session_factory)
     assert await service.check_user_banned(1) is True
 
     await service.unban_user(1)
@@ -88,13 +88,13 @@ async def test_unban_user_clears_cache(db_container: ServiceContainer, session: 
 
 async def test_unban_missing_raises(db_container: ServiceContainer) -> None:
     with pytest.raises(UserBanNotFoundError):
-        await BanEnforcementService(db_container).unban_user(999)
+        await BanEnforcementService(db_container.session_factory).unban_user(999)
 
 
 async def test_unban_guild_clears_cache(db_container: ServiceContainer, session: AsyncSession) -> None:
     await GuildBanRepository(session).create_ban(1)
     await session.commit()
-    service = BanEnforcementService(db_container)
+    service = BanEnforcementService(db_container.session_factory)
     assert await service.check_guild_banned(1) is True
 
     await service.unban_guild(1)
@@ -109,7 +109,7 @@ async def test_list_and_startup_ids(db_container: ServiceContainer, session: Asy
     await GuildBanRepository(session).create_ban(20)
     await session.commit()
 
-    service = BanEnforcementService(db_container)
+    service = BanEnforcementService(db_container.session_factory)
 
     assert {ban.user_id for ban in await service.list_user_bans()} == {1, 2}
     assert {ban.guild_id for ban in await service.list_guild_bans()} == {10, 20}

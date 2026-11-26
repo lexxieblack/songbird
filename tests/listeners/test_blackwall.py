@@ -140,15 +140,6 @@ async def test_message_outside_guild_is_ignored(fake_bot: SongbirdBot, monkeypat
     service.get_blackwall.assert_not_awaited()
 
 
-async def test_missing_blackwall_service_is_ignored(fake_bot: SongbirdBot) -> None:
-    message = _trigger_message(_member())
-    blackwall_module.load_blackwall_listener(fake_bot)
-
-    await _listener(fake_bot)(message)
-
-    message.author.ban.assert_not_awaited()
-
-
 async def test_unconfigured_guild_is_ignored(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
     member = _member()
     service, _ = _install(monkeypatch, fake_bot, _blackwall())

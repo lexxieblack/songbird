@@ -21,13 +21,13 @@ async def _is_message_relevant(bot: SongbirdBot, message: Message) -> bool:
     is_guild = isinstance(message.channel, (TextChannel, Thread))
 
     if is_dm:
-        return not await bot.services.management.check_user_banned(message.author.id)  # type: ignore[union-attr]
+        return not await bot.services.management.check_user_banned(message.author.id)
 
     if is_guild and bot.user and bot.user in message.mentions:
         if await bot.services.management.check_guild_banned(message.guild.id):  # type: ignore[union-attr]
             await message.guild.leave()  # type: ignore
             return False
-        return not await bot.services.management.check_user_banned(message.author.id)  # type: ignore[union-attr]
+        return not await bot.services.management.check_user_banned(message.author.id)
 
     return False
 

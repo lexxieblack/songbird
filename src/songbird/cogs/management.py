@@ -50,7 +50,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.ban_user(uid, reason)  # type: ignore[union-attr]
+            await self.services.management.ban_user(uid, reason)
         except UserBanAlreadyExistsError:
             await self.send_error(ctx, "User already banned.")
             return
@@ -76,7 +76,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.unban_user(uid)  # type: ignore[union-attr]
+            await self.services.management.unban_user(uid)
         except UserBanNotFoundError:
             await self.send_error(ctx, "User not found in ban list.")
             return
@@ -91,7 +91,7 @@ class ManagementCog(BaseCog):
     ) -> None:
         await ctx.defer(ephemeral=True)
 
-        bans = await self.services.management.list_user_bans()  # type: ignore[union-attr]
+        bans = await self.services.management.list_user_bans()
 
         if not bans:
             await self.send_success(ctx, "No users are currently banned.", ephemeral=True)
@@ -129,7 +129,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.ban_guild(gid, reason)  # type: ignore[union-attr]
+            await self.services.management.ban_guild(gid, reason)
         except GuildBanAlreadyExistsError:
             await self.send_error(ctx, "Guild already banned.")
             return
@@ -155,7 +155,7 @@ class ManagementCog(BaseCog):
             return
 
         try:
-            await self.services.management.unban_guild(gid)  # type: ignore[union-attr]
+            await self.services.management.unban_guild(gid)
         except GuildBanNotFoundError:
             await self.send_error(ctx, "Guild not found in ban list.")
             return
@@ -170,7 +170,7 @@ class ManagementCog(BaseCog):
     ) -> None:
         await ctx.defer(ephemeral=True)
 
-        bans = await self.services.management.list_guild_bans()  # type: ignore[union-attr]
+        bans = await self.services.management.list_guild_bans()
 
         if not bans:
             await self.send_success(ctx, "No guilds are currently banned.", ephemeral=True)

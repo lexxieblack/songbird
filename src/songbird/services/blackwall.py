@@ -1,20 +1,21 @@
 from typing import Any
 
 from cachetools import TTLCache
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from structlog import BoundLogger
 
 from songbird.models.management.blackwall import Blackwall, CreateBlackwall
-from songbird.services.container import ServiceContainer, get_blackwall_repo, get_session
+from songbird.services.container import get_blackwall_repo, get_session
 from songbird.utils.logging import get_logger
 
 
 class BlackwallService:
     def __init__(
         self,
-        container: "ServiceContainer",
+        session_factory: async_sessionmaker[AsyncSession],
         logger: BoundLogger | None = None,
     ):
-        self._container = container
+        self.session_factory = session_factory
         self._cache: TTLCache[int, Blackwall | None] = TTLCache[int, Blackwall | None](maxsize=1024, ttl=30)
         self.logger = logger or get_logger(__name__)
 
@@ -32,7 +33,7 @@ class BlackwallService:
             whitelisted_roles=whitelisted_roles or [],
         )
 
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.create(input)
 
@@ -41,7 +42,7 @@ class BlackwallService:
 
     async def increment_blackwall(self, guild_id: int) -> Blackwall:
 
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.increment(guild_id)
 
@@ -50,7 +51,7 @@ class BlackwallService:
         return blackwall
 
     async def update(self, guild_id: int, **fields: Any) -> Blackwall:
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.update(guild_id, **fields)
 
@@ -62,7 +63,7 @@ class BlackwallService:
         if guild_id in self._cache:
             return self._cache[guild_id]
 
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_blackwall_repo(session)
             blackwall = await repo.get(guild_id)
 

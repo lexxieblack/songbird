@@ -47,9 +47,9 @@ async def test_create_container_wires_every_service(settings: Settings, fake_gen
         assert container.session_factory is not None
 
         assert isinstance(container.blackwall, BlackwallService)
-        assert container.blackwall._container is container
+        assert container.blackwall.session_factory is container.session_factory
         assert isinstance(container.management, BanEnforcementService)
-        assert container.management._container is container
+        assert container.management.session_factory is container.session_factory
     finally:
         await close_container(container)
 

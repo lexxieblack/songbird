@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from discord import Bot
 from sqlalchemy.ext.asyncio import (
@@ -48,8 +48,12 @@ class ServiceContainer:
     wolfram: WolframService
     currency: CurrencyService
     settings: "Settings"
-    blackwall: "BlackwallService | None" = None
-    management: "BanEnforcementService | None" = None
+    blackwall: "BlackwallService"
+    management: "BanEnforcementService"
+
+
+class SessionFactoryProvider(Protocol):
+    session_factory: async_sessionmaker[AsyncSession]
 
 
 async def create_container(settings: "Settings") -> ServiceContainer:
@@ -96,6 +100,13 @@ async def create_container(settings: "Settings") -> ServiceContainer:
     wolfram_service = WolframService(settings, logger=log.bind(service="wolfram"))
     currency_service = CurrencyService(logger=log.bind(service="currency"))
 
+    # Imported here to avoid a cycle: both modules import get_session from this one.
+    from songbird.services.blackwall import BlackwallService
+    from songbird.services.management import BanEnforcementService
+
+    blackwall_service = BlackwallService(session_factory)
+    management_service = BanEnforcementService(session_factory)
+
     log.info("services_created")
 
     container = ServiceContainer(
@@ -107,16 +118,9 @@ async def create_container(settings: "Settings") -> ServiceContainer:
         wolfram=wolfram_service,
         currency=currency_service,
         settings=settings,
-        blackwall=None,  # set below
-        management=None,  # set below
+        blackwall=blackwall_service,
+        management=management_service,
     )
-
-    # Services that need a fully constructed container set post-construction.
-    from songbird.services.blackwall import BlackwallService
-    from songbird.services.management import BanEnforcementService
-
-    container.blackwall = BlackwallService(container)
-    container.management = BanEnforcementService(container)
 
     log.info("Service container ready")
 
@@ -158,14 +162,14 @@ async def close_container(container: ServiceContainer) -> None:
 
 
 @asynccontextmanager
-async def get_session(container: ServiceContainer) -> AsyncGenerator[AsyncSession]:
+async def get_session(provider: SessionFactoryProvider) -> AsyncGenerator[AsyncSession]:
     """Context manager for obtaining a database session.
 
     Provides a database session that automatically commits on success and rolls back on exception.
     The session is closed when the context manager exits.
 
     Args:
-        container: The service container with the session factory.
+        provider: Anything exposing a ``session_factory`` (the container or a service that holds one).
 
     Yields:
         An AsyncSession for database operations.
@@ -175,7 +179,7 @@ async def get_session(container: ServiceContainer) -> AsyncGenerator[AsyncSessio
         >>>    repo = ConversationRepository(session)
         >>>    messages = await repo.get_user_messages(user_id)
     """
-    session = container.session_factory()
+    session = provider.session_factory()
     try:
         yield session
         await session.commit()

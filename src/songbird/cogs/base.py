@@ -71,7 +71,7 @@ class BaseCog(commands.Cog):
         """Runs before every application command in every cog, including message commands."""
         if await self.is_owner(ctx):
             return
-        if await self.services.management.check_user_banned(ctx.author.id):  # type: ignore[union-attr]
+        if await self.services.management.check_user_banned(ctx.author.id):
             self.logger.info("Blocked banned user", user_id=ctx.author.id, username=ctx.author.name)
             raise commands.CheckFailure("User is banned")
 

@@ -1,12 +1,16 @@
-from typing import TYPE_CHECKING
-
 from cachetools import TTLCache
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from songbird.models.management.guild_ban import GuildBan
 from songbird.models.management.user_ban import UserBan
-
-if TYPE_CHECKING:
-    from songbird.services.container import ServiceContainer
+from songbird.services.container import (
+    get_guild_ban_repo,
+    get_guild_message_repo,
+    get_message_repo,
+    get_session,
+    get_user_ban_repo,
+    get_user_info_repo,
+)
 
 
 class BanEnforcementService:
@@ -16,8 +20,8 @@ class BanEnforcementService:
     automatic deletion of conversation history on ban creation.
     """
 
-    def __init__(self, container: "ServiceContainer") -> None:
-        self._container = container
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+        self.session_factory = session_factory
         self._user_cache: TTLCache[int, bool] = TTLCache[int, bool](maxsize=1024, ttl=60)
         self._guild_cache: TTLCache[int, bool] = TTLCache[int, bool](maxsize=1024, ttl=60)
 
@@ -27,9 +31,7 @@ class BanEnforcementService:
         if cached is not None:
             return cached
 
-        from songbird.services.container import get_session, get_user_ban_repo
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_user_ban_repo(session)
             banned = await repo.is_banned(user_id)
 
@@ -42,9 +44,7 @@ class BanEnforcementService:
         if cached is not None:
             return cached
 
-        from songbird.services.container import get_guild_ban_repo, get_session
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_guild_ban_repo(session)
             banned = await repo.is_banned(guild_id)
 
@@ -53,14 +53,7 @@ class BanEnforcementService:
 
     async def ban_user(self, user_id: int, reason: str | None = None) -> UserBan:
         """Ban a user, delete all their stored data, and invalidate the cache."""
-        from songbird.services.container import (
-            get_message_repo,
-            get_session,
-            get_user_ban_repo,
-            get_user_info_repo,
-        )
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             ban_repo = get_user_ban_repo(session)
             user_ban = await ban_repo.create_ban(user_id, reason=reason)
 
@@ -75,9 +68,7 @@ class BanEnforcementService:
 
     async def ban_guild(self, guild_id: int, reason: str | None = None) -> GuildBan:
         """Ban a guild, delete its conversation history, and invalidate the cache."""
-        from songbird.services.container import get_guild_ban_repo, get_guild_message_repo, get_session
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             ban_repo = get_guild_ban_repo(session)
             guild_ban = await ban_repo.create_ban(guild_id, reason=reason)
 
@@ -89,9 +80,7 @@ class BanEnforcementService:
 
     async def unban_user(self, user_id: int) -> None:
         """Remove a user ban and invalidate the cache."""
-        from songbird.services.container import get_session, get_user_ban_repo
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_user_ban_repo(session)
             await repo.delete_ban(user_id)
 
@@ -99,9 +88,7 @@ class BanEnforcementService:
 
     async def unban_guild(self, guild_id: int) -> None:
         """Remove a guild ban and invalidate the cache."""
-        from songbird.services.container import get_guild_ban_repo, get_session
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_guild_ban_repo(session)
             await repo.delete_ban(guild_id)
 
@@ -109,25 +96,19 @@ class BanEnforcementService:
 
     async def list_user_bans(self) -> list[UserBan]:
         """Return all user bans."""
-        from songbird.services.container import get_session, get_user_ban_repo
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_user_ban_repo(session)
             return await repo.list_bans()
 
     async def list_guild_bans(self) -> list[GuildBan]:
         """Return all guild bans."""
-        from songbird.services.container import get_guild_ban_repo, get_session
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_guild_ban_repo(session)
             return await repo.list_bans()
 
     async def get_banned_guild_ids(self) -> set[int]:
         """Return a set of all banned guild IDs (for startup sweep)."""
-        from songbird.services.container import get_guild_ban_repo, get_session
-
-        async with get_session(self._container) as session:
+        async with get_session(self) as session:
             repo = get_guild_ban_repo(session)
             bans = await repo.list_bans()
             return {ban.guild_id for ban in bans}
