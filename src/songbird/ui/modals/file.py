@@ -30,7 +30,7 @@ class FileModal(Modal):
 
     async def callback(self, interaction: Interaction) -> None:
         text = self.text.value or ""
-        extension = self.extension.value.strip() or "txt"  # type: ignore
+        extension = (self.extension.value or "").strip() or "txt"
 
         file = File(
             # fp=text.encode("utf-8"),
