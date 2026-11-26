@@ -5,7 +5,7 @@ image_url = "https://raw.githubusercontent.com/lexxieblack/songbird/main/assets/
 warning_url = "https://raw.githubusercontent.com/lexxieblack/songbird/main/assets/blackwall_warning.png"
 
 [llm]
-model = "gemini-2.5-flash"
+model = "gemma-4-31b-it"
 fallback_model = "gemma-4-31b-it" # Model used when primary hits daily quota limit
 system_prompt_path = "prompts/system.xml"
 
