@@ -23,41 +23,6 @@ STMT_CREATE_BLACKWALL = (
     .returning(blackwall_table)
 )
 
-STMT_INCREMENT_BANNED = (
-    update(blackwall_table)
-    .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
-    .values(banned_count=blackwall_table.c.banned_count + 1)
-    .returning(blackwall_table)
-)
-
-STMT_UPDATE_CHANNEL = (
-    update(blackwall_table)
-    .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
-    .values(channel_id=bindparam("b_channel_id"))
-    .returning(blackwall_table)
-)
-
-STMT_UPDATE_LOG_CHANNEL = (
-    update(blackwall_table)
-    .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
-    .values(log_channel_id=bindparam("b_log_channel_id"))
-    .returning(blackwall_table)
-)
-
-STMT_UPDATE_ROLES = (
-    update(blackwall_table)
-    .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
-    .values(whitelisted_roles=bindparam("b_whitelisted_roles"))
-    .returning(blackwall_table)
-)
-
-STMT_UPDATE_PUNISHMENT = (
-    update(blackwall_table)
-    .where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
-    .values(punishment=bindparam("b_punishment"))
-    .returning(blackwall_table)
-)
-
 STMT_GET_BLACKWALL = select(blackwall_table).where(blackwall_table.c.guild_id == bindparam("b_guild_id"))
 
 
@@ -86,65 +51,17 @@ class BlackwallRepository:
         return Blackwall.model_validate(result.mappings().one())
 
     async def increment(self, guild_id: int) -> Blackwall:
-        params: dict[str, Any] = {"b_guild_id": guild_id}
+        return await self.update(guild_id, banned_count=blackwall_table.c.banned_count + 1)
 
-        result = await self.session.execute(STMT_INCREMENT_BANNED, params)
-        row = result.mappings().one_or_none()
+    async def update(self, guild_id: int, **values: Any) -> Blackwall:
+        stmt = (
+            update(blackwall_table)
+            .where(blackwall_table.c.guild_id == guild_id)
+            .values(**{k: v.value if isinstance(v, BlackwallPunishment) else v for k, v in values.items()})
+            .returning(blackwall_table)
+        )
 
-        if row is None:
-            raise BlackwallNotFoundError(data={"guild_id": guild_id})
-
-        return Blackwall.model_validate(row)
-
-    async def update_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
-        params: dict[str, Any] = {
-            "b_guild_id": guild_id,
-            "b_channel_id": channel_id,
-        }
-
-        result = await self.session.execute(STMT_UPDATE_CHANNEL, params)
-        row = result.mappings().one_or_none()
-
-        if row is None:
-            raise BlackwallNotFoundError(data={"guild_id": guild_id})
-
-        return Blackwall.model_validate(row)
-
-    async def update_log_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
-        params: dict[str, Any] = {
-            "b_guild_id": guild_id,
-            "b_log_channel_id": channel_id,
-        }
-
-        result = await self.session.execute(STMT_UPDATE_LOG_CHANNEL, params)
-        row = result.mappings().one_or_none()
-
-        if row is None:
-            raise BlackwallNotFoundError(data={"guild_id": guild_id})
-
-        return Blackwall.model_validate(row)
-
-    async def update_roles(self, guild_id: int, roles: list[int]) -> Blackwall:
-        params: dict[str, Any] = {
-            "b_guild_id": guild_id,
-            "b_whitelisted_roles": roles,
-        }
-
-        result = await self.session.execute(STMT_UPDATE_ROLES, params)
-        row = result.mappings().one_or_none()
-
-        if row is None:
-            raise BlackwallNotFoundError(data={"guild_id": guild_id})
-
-        return Blackwall.model_validate(row)
-
-    async def update_punishment(self, guild_id: int, punishment: BlackwallPunishment) -> Blackwall:
-        params: dict[str, Any] = {
-            "b_guild_id": guild_id,
-            "b_punishment": punishment.value,
-        }
-
-        result = await self.session.execute(STMT_UPDATE_PUNISHMENT, params)
+        result = await self.session.execute(stmt)
         row = result.mappings().one_or_none()
 
         if row is None:

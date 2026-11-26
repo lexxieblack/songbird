@@ -70,10 +70,10 @@ async def test_updates_persist_and_refresh_cache(db_container: ServiceContainer,
     service = BlackwallService(db_container)
     await service.create_blackwall(1)
 
-    await service.update_channel(1, 20)
-    await service.update_log_channel(1, 30)
-    await service.update_roles(1, [7, 8])
-    updated = await service.update_punishment(1, BlackwallPunishment.KICK)
+    await service.update(1, channel_id=20)
+    await service.update(1, log_channel_id=30)
+    await service.update(1, whitelisted_roles=[7, 8])
+    updated = await service.update(1, punishment=BlackwallPunishment.KICK)
 
     assert updated.channel_id == 20
     assert updated.log_channel_id == 30
@@ -91,7 +91,7 @@ async def test_updates_persist_and_refresh_cache(db_container: ServiceContainer,
 
 async def test_update_missing_raises(db_container: ServiceContainer) -> None:
     with pytest.raises(BlackwallNotFoundError):
-        await BlackwallService(db_container).update_channel(999, 1)
+        await BlackwallService(db_container).update(999, channel_id=1)
 
 
 async def test_duplicate_guild_raises(db_container: ServiceContainer) -> None:

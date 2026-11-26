@@ -88,7 +88,7 @@ class BlackwallCog(BaseCog):
                 return
 
             try:
-                new_config = await blackwall_service.update_channel(guild_id, channel_id)
+                new_config = await blackwall_service.update(guild_id, channel_id=channel_id)
             except Exception as e:
                 self.logger.exception("Failed to set blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
@@ -100,7 +100,7 @@ class BlackwallCog(BaseCog):
             await interaction.response.defer()
 
             try:
-                updated = await blackwall_service.update_channel(guild_id, None)
+                updated = await blackwall_service.update(guild_id, channel_id=None)
             except Exception as e:
                 self.logger.exception("Failed to remove blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
@@ -119,7 +119,7 @@ class BlackwallCog(BaseCog):
                 return
 
             try:
-                new_config = await blackwall_service.update_log_channel(guild_id, channel_id)
+                new_config = await blackwall_service.update(guild_id, log_channel_id=channel_id)
             except Exception as e:
                 self.logger.exception("Failed to set blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to set blackwall channel.", ephemeral=True)
@@ -131,7 +131,7 @@ class BlackwallCog(BaseCog):
             await interaction.response.defer()
 
             try:
-                updated = await blackwall_service.update_log_channel(guild_id, None)
+                updated = await blackwall_service.update(guild_id, log_channel_id=None)
             except Exception as e:
                 self.logger.exception("Failed to remove blackwall channel", guild_id=guild_id, error=e)
                 await interaction.followup.send("Failed to remove blackwall channel.", ephemeral=True)
@@ -154,7 +154,7 @@ class BlackwallCog(BaseCog):
                 new_roles = [r.id for r in selected] if selected is not None else current_roles
 
                 try:
-                    updated = await blackwall_service.update_roles(guild_id, new_roles)
+                    updated = await blackwall_service.update(guild_id, whitelisted_roles=new_roles)
                 except Exception as e:
                     self.logger.exception("Failed to update blackwall roles", guild_id=guild_id, error=e)
                     await interaction.followup.send("Failed to update roles.", ephemeral=True)
@@ -184,7 +184,7 @@ class BlackwallCog(BaseCog):
                 new_punishment = BlackwallPunishment(selected[0]) if selected else current_punishment
 
                 try:
-                    updated = await blackwall_service.update_punishment(guild_id, new_punishment)
+                    updated = await blackwall_service.update(guild_id, punishment=new_punishment)
                 except Exception as e:
                     self.logger.exception("Failed to update blackwall punishment", guild_id=guild_id, error=e)
                     await interaction.followup.send("Failed to update punishment.", ephemeral=True)

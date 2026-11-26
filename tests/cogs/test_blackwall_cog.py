@@ -47,10 +47,7 @@ def _service(config: Blackwall | None = None) -> Any:
     return SimpleNamespace(
         get_blackwall=AsyncMock(return_value=config),
         create_blackwall=AsyncMock(return_value=config or _config()),
-        update_channel=AsyncMock(return_value=config or _config()),
-        update_log_channel=AsyncMock(return_value=config or _config()),
-        update_roles=AsyncMock(return_value=config or _config()),
-        update_punishment=AsyncMock(return_value=config or _config()),
+        update=AsyncMock(return_value=config or _config()),
     )
 
 
@@ -173,8 +170,7 @@ async def test_remove_log_channel_clears_only_log_channel(
     )
     await captured[0][1].on_remove_log_channel(interaction)
 
-    service.update_log_channel.assert_awaited_once_with(1, None)
-    service.update_channel.assert_not_awaited()
+    service.update.assert_awaited_once_with(1, log_channel_id=None)
     interaction.edit_original_response.assert_awaited_once()
 
 

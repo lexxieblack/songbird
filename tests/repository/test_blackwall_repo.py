@@ -67,10 +67,10 @@ async def test_updates_change_single_column(session: AsyncSession) -> None:
     await repo.create(CreateBlackwall(guild_id=1, channel_id=10, log_channel_id=20, whitelisted_roles=[3]))
     await session.commit()
 
-    assert (await repo.update_channel(1, 11)).channel_id == 11
-    assert (await repo.update_log_channel(1, 21)).log_channel_id == 21
-    assert (await repo.update_roles(1, [5, 6])).whitelisted_roles == [5, 6]
-    assert (await repo.update_punishment(1, BlackwallPunishment.KICK)).punishment is BlackwallPunishment.KICK
+    assert (await repo.update(1, channel_id=11)).channel_id == 11
+    assert (await repo.update(1, log_channel_id=21)).log_channel_id == 21
+    assert (await repo.update(1, whitelisted_roles=[5, 6])).whitelisted_roles == [5, 6]
+    assert (await repo.update(1, punishment=BlackwallPunishment.KICK)).punishment is BlackwallPunishment.KICK
     await session.commit()
 
     fetched = await repo.get(1)
@@ -84,7 +84,7 @@ async def test_update_roles_accepts_empty_list(session: AsyncSession) -> None:
     repo = BlackwallRepository(session)
     await repo.create(CreateBlackwall(guild_id=1, channel_id=10, whitelisted_roles=[3]))
 
-    assert (await repo.update_roles(1, [])).whitelisted_roles == []
+    assert (await repo.update(1, whitelisted_roles=[])).whitelisted_roles == []
 
 
 async def test_increment_returns_new_count(session: AsyncSession) -> None:
@@ -102,20 +102,18 @@ async def test_increment_returns_new_count(session: AsyncSession) -> None:
 
 
 @pytest.mark.parametrize(
-    ("method", "args"),
+    ("method", "kwargs"),
     [
-        ("increment", ()),
-        ("update_channel", (1,)),
-        ("update_log_channel", (1,)),
-        ("update_roles", ([1],)),
-        ("update_punishment", (BlackwallPunishment.LOG,)),
+        ("increment", {}),
+        ("update", {"channel_id": None}),
+        ("update", {"punishment": BlackwallPunishment.LOG}),
     ],
 )
-async def test_missing_guild_raises_not_found(session: AsyncSession, method: str, args: tuple[object, ...]) -> None:
+async def test_missing_guild_raises_not_found(session: AsyncSession, method: str, kwargs: dict[str, object]) -> None:
     repo = BlackwallRepository(session)
 
     with pytest.raises(BlackwallNotFoundError) as exc_info:
-        await getattr(repo, method)(404, *args)
+        await getattr(repo, method)(404, **kwargs)
 
     assert str(exc_info.value) == "Blackwall config not found for this guild"
     assert exc_info.value.data == {"guild_id": 404}

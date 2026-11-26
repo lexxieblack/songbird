@@ -1,7 +1,9 @@
+from typing import Any
+
 from cachetools import TTLCache
 from structlog import BoundLogger
 
-from songbird.models.management.blackwall import Blackwall, BlackwallPunishment, CreateBlackwall
+from songbird.models.management.blackwall import Blackwall, CreateBlackwall
 from songbird.services.container import ServiceContainer, get_blackwall_repo, get_session
 from songbird.utils.logging import get_logger
 
@@ -47,34 +49,10 @@ class BlackwallService:
 
         return blackwall
 
-    async def update_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
+    async def update(self, guild_id: int, **fields: Any) -> Blackwall:
         async with get_session(self._container) as session:
             repo = get_blackwall_repo(session)
-            blackwall = await repo.update_channel(guild_id, channel_id)
-
-        self._cache[guild_id] = blackwall
-        return blackwall
-
-    async def update_log_channel(self, guild_id: int, channel_id: int | None) -> Blackwall:
-        async with get_session(self._container) as session:
-            repo = get_blackwall_repo(session)
-            blackwall = await repo.update_log_channel(guild_id, channel_id)
-
-        self._cache[guild_id] = blackwall
-        return blackwall
-
-    async def update_roles(self, guild_id: int, roles: list[int]) -> Blackwall:
-        async with get_session(self._container) as session:
-            repo = get_blackwall_repo(session)
-            blackwall = await repo.update_roles(guild_id, roles)
-
-        self._cache[guild_id] = blackwall
-        return blackwall
-
-    async def update_punishment(self, guild_id: int, punishment: BlackwallPunishment) -> Blackwall:
-        async with get_session(self._container) as session:
-            repo = get_blackwall_repo(session)
-            blackwall = await repo.update_punishment(guild_id, punishment)
+            blackwall = await repo.update(guild_id, **fields)
 
         self._cache[guild_id] = blackwall
         return blackwall
