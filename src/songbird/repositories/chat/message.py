@@ -1,102 +1,86 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import ClassVar
 
-from sqlalchemy import bindparam, delete, insert, select
+from sqlalchemy import Table, delete, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from songbird.models._base_db_model import BaseDBModel
 from songbird.models.chat.base import MessageRole
 from songbird.models.chat.exceptions import MessageAlreadyExistsError
+from songbird.models.chat.guild_message import GuildMessage, guild_message_table
 from songbird.models.chat.message import Message, message_table
 from songbird.utils.id_factory import make_id
 
-STMT_CREATE_MESSAGE = (
-    insert(message_table)
-    .values(
-        id=bindparam("b_id"),
-        user_id=bindparam("b_user_id"),
-        role=bindparam("b_role"),
-        content=bindparam("b_content"),
-    )
-    .returning(message_table)
-)
-
-STMT_GET_NEWEST_MESSAGES = (
-    select(message_table)
-    .where(message_table.c.user_id == bindparam("b_user_id"))
-    .order_by(message_table.c.created_at.desc(), message_table.c.id.desc())
-    .limit(bindparam("b_limit"))
-)
-
-STMT_GET_ALL_MESSAGES = (
-    select(message_table)
-    .where(message_table.c.user_id == bindparam("b_user_id"))
-    .order_by(message_table.c.created_at.asc(), message_table.c.id.asc())
-)
-
-STMT_GET_NEWEST_MESSAGE_ID = (
-    select(message_table.c.id)
-    .where(message_table.c.user_id == bindparam("b_user_id"))
-    .order_by(message_table.c.created_at.desc(), message_table.c.id.desc())
-    .limit(1)
-)
-
-STMT_DELETE_MESSAGE = delete(message_table).where(message_table.c.id == bindparam("b_id"))
-
-STMT_DELETE_MESSAGES = delete(message_table).where(message_table.c.user_id == bindparam("b_user_id"))
-
 
 @dataclass
-class MessageRepository:
+class BaseMessageRepository[T: BaseDBModel]:
+    """Shared SQL for the two history tables, which differ only by their key column."""
+
     session: AsyncSession
 
-    async def create_message(self, user_id: int, role: MessageRole, content: str) -> Message:
-        params: dict[str, Any] = {
-            "b_id": make_id(),
-            "b_user_id": user_id,
-            "b_role": role.value,
-            "b_content": content,
-        }
+    table: ClassVar[Table]
+    model: ClassVar[type[T]]
+    key: ClassVar[str]
+
+    async def create_message(self, key: int, role: MessageRole, content: str) -> T:
+        stmt = insert(self.table).values(id=make_id(), role=role.value, content=content, **{self.key: key}).returning(self.table)
 
         try:
-            result = await self.session.execute(STMT_CREATE_MESSAGE, params)
+            result = await self.session.execute(stmt)
         except IntegrityError as e:
-            raise MessageAlreadyExistsError(data={"user_id": user_id}) from e
+            raise MessageAlreadyExistsError(data={self.key: key}) from e
 
-        return Message.model_validate(result.mappings().one())
+        return self.model.model_validate(result.mappings().one())
 
-    async def get_newest_messages(self, user_id: int, limit: int = 100) -> list[Message]:
-        params: dict[str, Any] = {
-            "b_user_id": user_id,
-            "b_limit": limit,
-        }
+    async def get_newest_messages(self, key: int, limit: int = 100) -> list[T]:
+        stmt = (
+            select(self.table)
+            .where(self.table.c[self.key] == key)
+            .order_by(self.table.c.created_at.desc(), self.table.c.id.desc())
+            .limit(limit)
+        )
 
-        result = await self.session.execute(STMT_GET_NEWEST_MESSAGES, params)
-        return [Message.model_validate(row) for row in result.mappings()]
+        result = await self.session.execute(stmt)
+        return [self.model.model_validate(row) for row in result.mappings()]
 
-    async def get_all_messages(self, user_id: int, limit: int | None = None) -> list[Message]:
-        params: dict[str, Any] = {"b_user_id": user_id}
-
-        stmt = STMT_GET_ALL_MESSAGES
+    async def get_all_messages(self, key: int, limit: int | None = None) -> list[T]:
+        stmt = (
+            select(self.table).where(self.table.c[self.key] == key).order_by(self.table.c.created_at.asc(), self.table.c.id.asc())
+        )
         if limit is not None:
-            stmt = stmt.limit(bindparam("b_limit"))
-            params["b_limit"] = limit
+            stmt = stmt.limit(limit)
 
-        result = await self.session.execute(stmt, params)
-        return [Message.model_validate(row) for row in result.mappings()]
+        result = await self.session.execute(stmt)
+        return [self.model.model_validate(row) for row in result.mappings()]
 
-    async def delete_messages(self, user_id: int) -> int:
-        params: dict[str, Any] = {"b_user_id": user_id}
-
-        result = await self.session.execute(STMT_DELETE_MESSAGES, params)
+    async def delete_messages(self, key: int) -> int:
+        result = await self.session.execute(delete(self.table).where(self.table.c[self.key] == key))
         return int(result.rowcount)  # type: ignore[attr-defined]
 
-    async def delete_last_message(self, user_id: int) -> None:
-        params: dict[str, Any] = {"b_user_id": user_id}
+    async def delete_last_message(self, key: int) -> None:
+        stmt = (
+            select(self.table.c.id)
+            .where(self.table.c[self.key] == key)
+            .order_by(self.table.c.created_at.desc(), self.table.c.id.desc())
+            .limit(1)
+        )
 
-        result = await self.session.execute(STMT_GET_NEWEST_MESSAGE_ID, params)
+        result = await self.session.execute(stmt)
         message_id = result.scalar_one_or_none()
         if message_id is None:
             return
 
-        await self.session.execute(STMT_DELETE_MESSAGE, {"b_id": message_id})
+        await self.session.execute(delete(self.table).where(self.table.c.id == message_id))
+
+
+class MessageRepository(BaseMessageRepository[Message]):
+    table = message_table
+    model = Message
+    key = "user_id"
+
+
+class GuildMessageRepository(BaseMessageRepository[GuildMessage]):
+    table = guild_message_table
+    model = GuildMessage
+    key = "guild_id"

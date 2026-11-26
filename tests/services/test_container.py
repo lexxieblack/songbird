@@ -9,8 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from songbird.bot import SongbirdBot
 from songbird.config import Settings
 from songbird.models.chat.base import MessageRole
-from songbird.repositories.chat.guild_message import GuildMessageRepository
-from songbird.repositories.chat.message import MessageRepository
+from songbird.repositories.chat.message import GuildMessageRepository, MessageRepository
 from songbird.repositories.chat.user_info import UserInfoRepository
 from songbird.services.audit_log import AuditLogService
 from songbird.services.blackwall import BlackwallService
@@ -157,7 +156,7 @@ async def test_request_scoped_service_factories(
 
         guild = create_guild_conversation_service(dummy_session, container)
         assert guild.llm is container.llm
-        assert guild.guild_message_repo.session is dummy_session
+        assert guild.message_repo.session is dummy_session
         assert guild.settings is settings
 
         feedback = create_feedback_service(dummy_session, container, fake_bot)

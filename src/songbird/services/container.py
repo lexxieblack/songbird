@@ -11,17 +11,16 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from songbird.repositories.chat.guild_message import GuildMessageRepository
-from songbird.repositories.chat.message import MessageRepository
+from songbird.repositories.chat.message import GuildMessageRepository, MessageRepository
 from songbird.repositories.chat.user_info import UserInfoRepository
 from songbird.repositories.feedback.thread import ThreadRepository
 from songbird.repositories.management.audit_log import AuditLogRepository
 from songbird.repositories.management.blackwall import BlackwallRepository
 from songbird.repositories.management.guild_ban import GuildBanRepository
 from songbird.repositories.management.user_ban import UserBanRepository
+from songbird.services.conversation import GuildConversationService
 from songbird.services.currency import CurrencyService
 from songbird.services.feedback import FeedbackService
-from songbird.services.guild_conversation import GuildConversationService
 from songbird.services.link_fixer import LinkFixerService
 from songbird.services.llm import LLMService
 from songbird.services.translation import TranslationService
@@ -32,8 +31,8 @@ if TYPE_CHECKING:
     from songbird.config import Settings
     from songbird.services.audit_log import AuditLogService
     from songbird.services.blackwall import BlackwallService
+    from songbird.services.conversation import PrivateConversationService
     from songbird.services.management import BanEnforcementService
-    from songbird.services.private_conversation import PrivateConversationService
 
 
 logger = get_logger(__name__)
@@ -220,7 +219,7 @@ def get_audit_log_repo(session: AsyncSession) -> AuditLogRepository:
 
 
 def create_private_conversation_service(session: AsyncSession, container: ServiceContainer) -> "PrivateConversationService":
-    from songbird.services.private_conversation import PrivateConversationService
+    from songbird.services.conversation import PrivateConversationService
 
     message_repo = get_message_repo(session)
     user_info_repo = get_user_info_repo(session)
@@ -234,13 +233,11 @@ def create_private_conversation_service(session: AsyncSession, container: Servic
 
 
 def create_guild_conversation_service(session: AsyncSession, container: ServiceContainer) -> "GuildConversationService":
-    from songbird.services.guild_conversation import GuildConversationService
-
-    guild_message_repo = get_guild_message_repo(session)
+    message_repo = get_guild_message_repo(session)
 
     return GuildConversationService(
         llm=container.llm,
-        guild_message_repo=guild_message_repo,
+        message_repo=message_repo,
         settings=container.settings,
     )
 

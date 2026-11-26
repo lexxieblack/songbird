@@ -80,10 +80,10 @@ class FakeConversation:
         self.error: Exception | None = None
         self.calls: list[dict[str, Any]] = []
 
-    async def chat(self, user_id: int, message: str, context: Any) -> str | None:
+    async def chat(self, key: int, message: str, context: Any) -> str | None:
         if self.error is not None:
             raise self.error
-        self.calls.append({"user_id": user_id, "message": message, "context": context})
+        self.calls.append({"user_id": key, "message": message, "context": context})
         return self.answer
 
 

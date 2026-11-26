@@ -1,6 +1,6 @@
 from songbird.config import Settings
 from songbird.models.conversation import ConversationContext
-from songbird.services.private_conversation import PrivateConversationService
+from songbird.services.conversation import PrivateConversationService
 from songbird.utils.logging import get_logger
 
 
@@ -30,4 +30,4 @@ class PrivateChatHandler:
             channel_name=channel_name,
         )
 
-        return await self.conversation_service.chat(user_id=user_id, message=message, context=context)
+        return await self.conversation_service.chat(key=user_id, message=message, context=context)

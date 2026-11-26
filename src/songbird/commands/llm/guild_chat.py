@@ -1,6 +1,6 @@
 from songbird.config import Settings
 from songbird.models.conversation import ConversationContext
-from songbird.services.guild_conversation import GuildConversationService
+from songbird.services.conversation import GuildConversationService
 from songbird.utils.logging import get_logger
 
 
@@ -31,4 +31,4 @@ class GuildChatHandler:
             channel_name=channel_name,
         )
 
-        return await self.conversation_service.chat(guild_id=guild_id, message=message, context=context)
+        return await self.conversation_service.chat(key=guild_id, message=message, context=context)

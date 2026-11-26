@@ -16,8 +16,8 @@ class FakeGuildService:
         self.answer = answer
         self.calls: list[dict[str, Any]] = []
 
-    async def chat(self, guild_id: int, message: str, context: ConversationContext) -> str:
-        self.calls.append({"guild_id": guild_id, "message": message, "context": context})
+    async def chat(self, key: int, message: str, context: ConversationContext) -> str:
+        self.calls.append({"guild_id": key, "message": message, "context": context})
         return self.answer
 
 
@@ -26,8 +26,8 @@ class FakePrivateService:
         self.answer = answer
         self.calls: list[dict[str, Any]] = []
 
-    async def chat(self, user_id: int, message: str, context: ConversationContext) -> str:
-        self.calls.append({"user_id": user_id, "message": message, "context": context})
+    async def chat(self, key: int, message: str, context: ConversationContext) -> str:
+        self.calls.append({"user_id": key, "message": message, "context": context})
         return self.answer
 
 

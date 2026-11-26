@@ -4,8 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from songbird.models.chat.base import MessageRole
 from songbird.models.chat.exceptions import UserInfoNotFoundError
 from songbird.models.management.exceptions import UserBanAlreadyExistsError, UserBanNotFoundError
-from songbird.repositories.chat.guild_message import GuildMessageRepository
-from songbird.repositories.chat.message import MessageRepository
+from songbird.repositories.chat.message import GuildMessageRepository, MessageRepository
 from songbird.repositories.chat.user_info import UserInfoRepository
 from songbird.repositories.management.guild_ban import GuildBanRepository
 from songbird.repositories.management.user_ban import UserBanRepository

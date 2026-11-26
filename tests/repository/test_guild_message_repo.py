@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from songbird.models.chat.base import MessageRole
 from songbird.models.chat.exceptions import MessageAlreadyExistsError
-from songbird.repositories.chat.guild_message import GuildMessageRepository
+from songbird.repositories.chat.message import GuildMessageRepository
 
 pytestmark = pytest.mark.db
 
@@ -82,7 +82,7 @@ async def test_tied_timestamps_are_ordered_by_id(session: AsyncSession) -> None:
 
 async def test_create_message_translates_integrity_error(session: AsyncSession, monkeypatch: pytest.MonkeyPatch) -> None:
     fixed_id = uuid.uuid4()
-    monkeypatch.setattr("songbird.repositories.chat.guild_message.make_id", lambda: fixed_id)
+    monkeypatch.setattr("songbird.repositories.chat.message.make_id", lambda: fixed_id)
     repo = GuildMessageRepository(session)
     await repo.create_message(7, MessageRole.USER, "hello")
     await session.commit()
