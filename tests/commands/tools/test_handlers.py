@@ -1,4 +1,4 @@
-"""Tool command handlers: currency formatting, link fixing, translation and wolfram IO."""
+"""Tool command handlers: currency formatting, translation and wolfram IO."""
 
 from datetime import date
 from decimal import Decimal
@@ -7,7 +7,6 @@ from typing import Any, cast
 import pytest
 
 from songbird.commands.tools.currency import CurrencyHandler
-from songbird.commands.tools.fix import FixHandler
 from songbird.commands.tools.translate import TranslateHandler
 from songbird.commands.tools.wolfram import WolframHandler
 from songbird.models.currency import ConversionResult, Currency, CurrencyError
@@ -31,16 +30,6 @@ class FakeCurrencyService:
         if self.error is not None:
             raise self.error
         return self.currencies
-
-
-class FakeLinkFixer:
-    def __init__(self, result: list[str]) -> None:
-        self.result = result
-        self.links: list[str] = []
-
-    async def fix(self, text: str) -> list[str]:
-        self.links.append(text)
-        return self.result
 
 
 class FakeTranslation:
@@ -154,16 +143,6 @@ def test_currency_format_amount_trims_and_keeps_precision() -> None:
 
     assert handler.format_result(_conversion(amount="0.0001", converted="10")).splitlines()[0] == "**0.0001 USD = 10 EUR**"
     assert handler.format_result(_conversion(amount="1234567.891")).splitlines()[0] == "**1,234,567.89 USD = 9.1 EUR**"
-
-
-async def test_fix_handler_delegates_and_records() -> None:
-    service = FakeLinkFixer(["https://example.com/fixed"])
-    handler = FixHandler(cast(Any, service))
-
-    result = await handler.fix_link("https://example.com")
-
-    assert result == ["https://example.com/fixed"]
-    assert service.links == ["https://example.com"]
 
 
 async def test_translate_with_explicit_source_skips_detection() -> None:

@@ -7,7 +7,6 @@ from tldextract import TLDExtract
 
 from songbird.cogs.base import BaseCog
 from songbird.commands.tools.currency import CurrencyHandler
-from songbird.commands.tools.fix import FixHandler
 from songbird.commands.tools.translate import TranslateHandler
 from songbird.commands.tools.wolfram import WolframHandler
 from songbird.models.currency import CurrencyError
@@ -29,7 +28,6 @@ class ToolsCog(BaseCog):
 
         self.translate_handler = TranslateHandler(self.services.translation)
         self.wolfram_handler = WolframHandler(self.services.wolfram)
-        self.fix_handler = FixHandler(self.services.link_fixer)
         self.currency_handler = CurrencyHandler(self.services.currency)
 
         self.logger.debug("Tool handlers initialized")
@@ -205,7 +203,7 @@ class ToolsCog(BaseCog):
         self.logger.info("Fix command", user_id=ctx.author.id, text_length=len(link))
 
         try:
-            fixed_links = await self.fix_handler.fix_link(link)
+            fixed_links = await self.services.link_fixer.fix(link)
 
             for fixed_link in fixed_links:
                 ext = _EXTRACT(fixed_link)

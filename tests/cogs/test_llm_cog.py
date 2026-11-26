@@ -57,7 +57,7 @@ class FakeSummary:
         self.error: Exception | None = None
         self.texts: list[str] = []
 
-    async def summarize(self, text: str) -> str | None:
+    async def generate(self, text: str) -> str | None:
         if self.error is not None:
             raise self.error
         self.texts.append(text)
@@ -69,7 +69,7 @@ class FakeQuickchat:
         self.answer = answer
         self.messages: list[str] = []
 
-    async def quickchat(self, message: str) -> str:
+    async def generate(self, message: str) -> str:
         self.messages.append(message)
         return self.answer
 

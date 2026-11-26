@@ -3,9 +3,8 @@ from contextlib import suppress
 from discord import AllowedMentions, DeletedReferencedMessage, DMChannel, HTTPException, Message, TextChannel, Thread
 
 from songbird.bot import SongbirdBot
-from songbird.commands.llm.guild_chat import GuildChatHandler
-from songbird.commands.llm.private_chat import PrivateChatHandler
 from songbird.listeners.common import send_messages
+from songbird.models.conversation import ConversationContext
 from songbird.services.container import create_guild_conversation_service, create_private_conversation_service, get_session
 from songbird.utils.logging import get_logger
 
@@ -65,6 +64,9 @@ async def _get_reply_context(message: Message, user_message: str) -> str:
 
 
 async def _handle_dm_message(bot: SongbirdBot, message: Message, user_message: str) -> str | None:
+    if not user_message.strip():
+        return None
+
     logger.info(
         "Message is DM",
         user_id=message.author.id,
@@ -75,27 +77,30 @@ async def _handle_dm_message(bot: SongbirdBot, message: Message, user_message: s
     async with get_session(bot.services) as session:
         await message.channel.trigger_typing()
         conversation_service = create_private_conversation_service(session, bot.services)
-        chat_handler = PrivateChatHandler(bot.settings, conversation_service)
 
         channel_name = f"DM with {message.author.name}"
 
-        logger.info("Calling chat handler", user_id=message.author.id, channel_name=channel_name)
+        logger.info("Calling chat service", user_id=message.author.id, channel_name=channel_name)
+
+        context = ConversationContext(
+            user_id=message.author.id,
+            username=message.author.name,
+            display_name=message.author.display_name,
+            guild_name=message.guild.name if message.guild else None,
+            channel_name=channel_name,
+        )
 
         try:
-            return await chat_handler.chat(
-                user_id=message.author.id,
-                message=user_message,
-                username=message.author.name,
-                display_name=message.author.display_name,
-                guild_name=message.guild.name if message.guild else None,
-                channel_name=channel_name,
-            )
+            return await conversation_service.chat(key=message.author.id, message=user_message, context=context)
         except Exception:
-            logger.exception("DM chat handler failed", user_id=message.author.id)
+            logger.exception("DM chat failed", user_id=message.author.id)
     return None
 
 
 async def _handle_guild_message(bot: SongbirdBot, message: Message, user_message: str) -> str | None:
+    if not user_message.strip():
+        return None
+
     logger.info(
         "Message is in guild",
         user_id=message.author.id,
@@ -105,24 +110,27 @@ async def _handle_guild_message(bot: SongbirdBot, message: Message, user_message
     async with get_session(bot.services) as session:
         await message.channel.trigger_typing()
         guild_conversation_service = create_guild_conversation_service(session, bot.services)
-        guild_chat_handler = GuildChatHandler(bot.settings, guild_conversation_service)
 
         guild_channel_name = message.channel.name  # type: ignore[union-attr]
 
-        logger.info("Calling chat handler", user_id=message.author.id, channel_name=guild_channel_name)
+        logger.info("Calling chat service", user_id=message.author.id, channel_name=guild_channel_name)
+
+        context = ConversationContext(
+            user_id=message.author.id,
+            username=message.author.name,
+            display_name=message.author.display_name,
+            guild_name=message.guild.name if message.guild else None,
+            channel_name=guild_channel_name,  # pyright: ignore[reportUnknownArgumentType]
+        )
 
         try:
-            return await guild_chat_handler.chat(
-                guild_id=message.guild.id,  # type: ignore[union-attr]
+            return await guild_conversation_service.chat(
+                key=message.guild.id,  # type: ignore[union-attr]
                 message=user_message,
-                user_id=message.author.id,
-                username=message.author.name,
-                display_name=message.author.display_name,
-                guild_name=message.guild.name if message.guild else None,
-                channel_name=guild_channel_name,  # pyright: ignore[reportUnknownArgumentType]
+                context=context,
             )
         except Exception:
-            logger.exception("Guild chat handler failed", user_id=message.author.id)
+            logger.exception("Guild chat failed", user_id=message.author.id)
     return None
 
 

@@ -89,7 +89,7 @@ class FakeFix:
         self.error: Exception | None = None
         self.links: list[str] = []
 
-    async def fix_link(self, link: str) -> list[str]:
+    async def fix(self, link: str) -> list[str]:
         if self.error is not None:
             raise self.error
         self.links.append(link)
@@ -288,7 +288,7 @@ async def test_fix_sends_formatted_links(
     fake_ctx: discord.ApplicationContext,
 ) -> None:
     handler = FakeFix(["https://example.com/a"])
-    monkeypatch.setattr(cog, "fix_handler", handler)
+    monkeypatch.setattr(cog.services, "link_fixer", handler)
 
     def extract(_url: str) -> SimpleNamespace:
         return SimpleNamespace(domain="example", suffix="com")
@@ -318,7 +318,7 @@ async def test_fix_rejects_non_url(
     fake_ctx: discord.ApplicationContext,
 ) -> None:
     handler = FakeFix([])
-    monkeypatch.setattr(cog, "fix_handler", handler)
+    monkeypatch.setattr(cog.services, "link_fixer", handler)
     ctx = _fake(fake_ctx)
 
     await invoke(cog, "fix", fake_ctx, link="not a link")

@@ -31,13 +31,11 @@ def _listener(bot: SongbirdBot) -> Listener:
 
 
 def _install_handler(monkeypatch: pytest.MonkeyPatch, response: str | None = "reply") -> SimpleNamespace:
-    handler = SimpleNamespace(chat=AsyncMock(return_value=response))
+    conversation = SimpleNamespace(chat=AsyncMock(return_value=response))
     monkeypatch.setattr(chat, "get_session", _session)
-    monkeypatch.setattr(chat, "create_private_conversation_service", lambda *_, **__: object())
-    monkeypatch.setattr(chat, "create_guild_conversation_service", lambda *_, **__: object())
-    monkeypatch.setattr(chat, "PrivateChatHandler", lambda *_, **__: handler)
-    monkeypatch.setattr(chat, "GuildChatHandler", lambda *_, **__: handler)
-    return handler
+    monkeypatch.setattr(chat, "create_private_conversation_service", lambda *_, **__: conversation)
+    monkeypatch.setattr(chat, "create_guild_conversation_service", lambda *_, **__: conversation)
+    return conversation
 
 
 def _management(
@@ -115,10 +113,10 @@ async def test_dm_from_allowed_user_gets_private_chat(fake_bot: SongbirdBot, mon
     handler.chat.assert_awaited_once()
     assert handler.chat.await_args is not None
     kwargs = handler.chat.await_args.kwargs
-    assert kwargs["user_id"] == 7
+    assert kwargs["key"] == 7
     assert kwargs["message"] == "hi there"
-    assert kwargs["username"] == "bob"
-    assert kwargs["channel_name"] == "DM with bob"
+    assert kwargs["context"].username == "bob"
+    assert kwargs["context"].channel_name == "DM with bob"
 
     send.assert_awaited_once()
     assert send.await_args is not None
@@ -173,9 +171,9 @@ async def test_guild_message_mentioning_bot_gets_guild_chat(fake_bot: SongbirdBo
     handler.chat.assert_awaited_once()
     assert handler.chat.await_args is not None
     kwargs = handler.chat.await_args.kwargs
-    assert kwargs["guild_id"] == 3
-    assert kwargs["channel_name"] == "general"
-    assert kwargs["guild_name"] == "Test Guild"
+    assert kwargs["key"] == 3
+    assert kwargs["context"].channel_name == "general"
+    assert kwargs["context"].guild_name == "Test Guild"
     assert send.await_args is not None
     assert send.await_args.args == ("a reply",)
 

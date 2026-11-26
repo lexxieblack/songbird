@@ -120,10 +120,14 @@ async def test_message_owner_returns_false_without_owner(bot: SongbirdBot, monke
     assert await bot.message_owner("hi") is False
 
 
-async def test_message_owner_returns_false_when_user_missing(bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_message_owner_returns_false_when_user_fetch_fails(bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(bot, "owner_id", 5)
     monkeypatch.setattr(bot, "get_user", lambda _user_id: None)
-    monkeypatch.setattr(bot, "fetch_user", AsyncMock(return_value=None))
+    monkeypatch.setattr(
+        bot,
+        "fetch_user",
+        AsyncMock(side_effect=discord.NotFound(_response(404, "Not Found"), "x")),
+    )
 
     assert await bot.message_owner("hi") is False
 

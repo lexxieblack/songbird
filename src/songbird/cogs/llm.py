@@ -5,10 +5,9 @@ import discord
 from discord.ext import commands
 
 from songbird.cogs.base import BaseCog
-from songbird.commands.llm.private_chat import PrivateChatHandler
-from songbird.commands.llm.quickchat import QuickchatHandler
-from songbird.commands.llm.summary import SummaryHandler
+from songbird.commands.llm.handler import LLMHandler
 from songbird.listeners.common import send_messages
+from songbird.models.conversation import ConversationContext
 from songbird.services.container import (
     create_private_conversation_service,
     get_message_repo,
@@ -29,8 +28,13 @@ class LLMCog(BaseCog):
     def __init__(self, bot: "SongbirdBot") -> None:
         super().__init__(bot)
 
-        self.summary_handler = SummaryHandler(self.settings, self.services.llm)
-        self.quickchat_handler = QuickchatHandler(self.settings, self.services.llm)
+        self.summary_handler = LLMHandler(
+            self.services.llm,
+            self.settings.llm.summary_system_prompt,
+            empty_result=None,
+            error_result="Error: failed to generate summary",
+        )
+        self.quickchat_handler = LLMHandler(self.services.llm, self.settings.llm.quickchat_system_prompt)
         # Decorator cooldowns are fixed at import time, so /export enforces the configured window itself.
         self._export_cooldown: commands.CooldownMapping = commands.CooldownMapping.from_cooldown(  # pyright: ignore[reportUnknownMemberType]
             1, self.settings.llm.export_cooldown_seconds, commands.BucketType.user
@@ -52,7 +56,7 @@ class LLMCog(BaseCog):
         self.logger.info("Summary command", user_id=ctx.author.id, text=text)
 
         try:
-            summary_result = await self.summary_handler.summarize(text or "")
+            summary_result = await self.summary_handler.generate(text or "")
             if not summary_result:
                 await ctx.delete()
                 return
@@ -78,8 +82,8 @@ class LLMCog(BaseCog):
         self.logger.info("Quickchat command", user_id=ctx.author.id, question=question)
 
         try:
-            answer = await self.quickchat_handler.quickchat(question)
-            await send_messages(ctx.followup, answer)
+            answer = await self.quickchat_handler.generate(question)
+            await send_messages(ctx.followup, answer or "")
             self.logger.info("Quickchat success", user_id=ctx.author.id)
 
         except Exception as e:
@@ -99,21 +103,25 @@ class LLMCog(BaseCog):
 
         self.logger.info("Chat command", user_id=ctx.author.id, message=message)
 
+        if not message.strip():
+            await ctx.delete()
+            return
+
         try:
             async with get_session(self.services) as session:
                 conversation_service = create_private_conversation_service(session, self.services)
-                chat_handler = PrivateChatHandler(self.settings, conversation_service)
 
                 channel_name = f"DM with {ctx.author.name}" if type(ctx.channel) is discord.DMChannel else ctx.channel.name  # type: ignore
 
-                answer = await chat_handler.chat(
+                context = ConversationContext(
                     user_id=ctx.author.id,
-                    message=message,
                     username=ctx.author.name,
                     display_name=ctx.author.display_name,
                     guild_name=ctx.guild.name if ctx.guild else None,
                     channel_name=channel_name,  # pyright: ignore[reportUnknownArgumentType]
                 )
+
+                answer = await conversation_service.chat(key=ctx.author.id, message=message, context=context)
 
                 if answer:
                     await send_messages(ctx.followup, answer)
