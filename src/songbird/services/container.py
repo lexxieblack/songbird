@@ -15,9 +15,6 @@ from songbird.repositories.chat.message import GuildMessageRepository, MessageRe
 from songbird.repositories.chat.user_info import UserInfoRepository
 from songbird.repositories.feedback.thread import ThreadRepository
 from songbird.repositories.management.audit_log import AuditLogRepository
-from songbird.repositories.management.blackwall import BlackwallRepository
-from songbird.repositories.management.guild_ban import GuildBanRepository
-from songbird.repositories.management.user_ban import UserBanRepository
 from songbird.services.conversation import GuildConversationService
 from songbird.services.currency import CurrencyService
 from songbird.services.feedback import FeedbackService
@@ -184,58 +181,21 @@ async def get_session(provider: SessionFactoryProvider) -> AsyncGenerator[AsyncS
         await session.close()
 
 
-def get_message_repo(session: AsyncSession) -> MessageRepository:
-    return MessageRepository(session)
-
-
-def get_guild_message_repo(session: AsyncSession) -> GuildMessageRepository:
-    return GuildMessageRepository(session)
-
-
-def get_user_info_repo(session: AsyncSession) -> UserInfoRepository:
-    return UserInfoRepository(session)
-
-
-def get_feedback_repo(session: AsyncSession) -> ThreadRepository:
-    return ThreadRepository(session)
-
-
-def get_user_ban_repo(session: AsyncSession) -> UserBanRepository:
-    return UserBanRepository(session)
-
-
-def get_guild_ban_repo(session: AsyncSession) -> GuildBanRepository:
-    return GuildBanRepository(session)
-
-
-def get_blackwall_repo(session: AsyncSession) -> BlackwallRepository:
-    return BlackwallRepository(session)
-
-
-def get_audit_log_repo(session: AsyncSession) -> AuditLogRepository:
-    return AuditLogRepository(session)
-
-
 def create_private_conversation_service(session: AsyncSession, container: ServiceContainer) -> "PrivateConversationService":
     from songbird.services.conversation import PrivateConversationService
 
-    message_repo = get_message_repo(session)
-    user_info_repo = get_user_info_repo(session)
-
     return PrivateConversationService(
         llm=container.llm,
-        message_repo=message_repo,
-        user_info_repo=user_info_repo,
+        message_repo=MessageRepository(session),
+        user_info_repo=UserInfoRepository(session),
         settings=container.settings,
     )
 
 
 def create_guild_conversation_service(session: AsyncSession, container: ServiceContainer) -> "GuildConversationService":
-    message_repo = get_guild_message_repo(session)
-
     return GuildConversationService(
         llm=container.llm,
-        message_repo=message_repo,
+        message_repo=GuildMessageRepository(session),
         settings=container.settings,
     )
 
@@ -243,14 +203,10 @@ def create_guild_conversation_service(session: AsyncSession, container: ServiceC
 def create_feedback_service(session: AsyncSession, container: ServiceContainer, bot: Bot) -> "FeedbackService":
     from songbird.services.feedback import FeedbackService
 
-    thread_repo = get_feedback_repo(session)
-
-    return FeedbackService(bot=bot, thread_repo=thread_repo, settings=container.settings)
+    return FeedbackService(bot=bot, thread_repo=ThreadRepository(session), settings=container.settings)
 
 
 def create_audit_log_service(session: AsyncSession) -> "AuditLogService":
     from songbird.services.audit_log import AuditLogService
 
-    audit_log_repo = get_audit_log_repo(session)
-
-    return AuditLogService(audit_log_repository=audit_log_repo)
+    return AuditLogService(audit_log_repository=AuditLogRepository(session))

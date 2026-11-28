@@ -8,9 +8,9 @@ from songbird.cogs.base import BaseCog
 from songbird.commands.llm.handler import LLMHandler
 from songbird.listeners.common import send_messages
 from songbird.models.conversation import ConversationContext
+from songbird.repositories.chat.message import MessageRepository
 from songbird.services.container import (
     create_private_conversation_service,
-    get_message_repo,
     get_session,
 )
 from songbird.ui.views.manage import ManageView
@@ -157,7 +157,7 @@ class LLMCog(BaseCog):
 
         try:
             async with get_session(self.services) as session:
-                repo = get_message_repo(session)
+                repo = MessageRepository(session)
                 messages = list(reversed(await repo.get_newest_messages(ctx.author.id, _EXPORT_MESSAGE_LIMIT)))
 
                 if not messages:

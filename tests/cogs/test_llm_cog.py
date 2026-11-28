@@ -290,7 +290,7 @@ async def test_export_sends_json_file(
         yield SimpleNamespace()
 
     monkeypatch.setattr(llm_cog_module, "get_session", session)
-    monkeypatch.setattr(llm_cog_module, "get_message_repo", lambda _session: FakeMessageRepo([message]))
+    monkeypatch.setattr(llm_cog_module, "MessageRepository", lambda _session: FakeMessageRepo([message]))
 
     await invoke(cog, "export", fake_ctx)
 
@@ -313,7 +313,7 @@ async def test_export_without_history_sends_error(
         yield SimpleNamespace()
 
     monkeypatch.setattr(llm_cog_module, "get_session", session)
-    monkeypatch.setattr(llm_cog_module, "get_message_repo", lambda _session: FakeMessageRepo([]))
+    monkeypatch.setattr(llm_cog_module, "MessageRepository", lambda _session: FakeMessageRepo([]))
 
     await invoke(cog, "export", fake_ctx)
 
@@ -336,7 +336,7 @@ async def test_export_uses_the_configured_cooldown(
         yield SimpleNamespace()
 
     monkeypatch.setattr(llm_cog_module, "get_session", session)
-    monkeypatch.setattr(llm_cog_module, "get_message_repo", lambda _session: FakeMessageRepo([]))
+    monkeypatch.setattr(llm_cog_module, "MessageRepository", lambda _session: FakeMessageRepo([]))
 
     await invoke(cog, "export", fake_ctx)
 

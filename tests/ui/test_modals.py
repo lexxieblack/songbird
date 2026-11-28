@@ -187,7 +187,7 @@ def _patch_info_session(monkeypatch: pytest.MonkeyPatch, repo: _Repo) -> None:
         yield object()
 
     monkeypatch.setattr("songbird.ui.modals.info.get_session", fake_session)
-    monkeypatch.setattr("songbird.ui.modals.info.get_user_info_repo", lambda _session: repo)  # pyright: ignore[reportUnknownLambdaType, reportUnknownArgumentType]
+    monkeypatch.setattr("songbird.ui.modals.info.UserInfoRepository", lambda _session: repo)  # pyright: ignore[reportUnknownLambdaType, reportUnknownArgumentType]
 
 
 async def test_user_info_modal_create_loads_existing(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> None:

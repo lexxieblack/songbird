@@ -3,14 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from songbird.models.management.guild_ban import GuildBan
 from songbird.models.management.user_ban import UserBan
-from songbird.services.container import (
-    get_guild_ban_repo,
-    get_guild_message_repo,
-    get_message_repo,
-    get_session,
-    get_user_ban_repo,
-    get_user_info_repo,
-)
+from songbird.repositories.chat.message import GuildMessageRepository, MessageRepository
+from songbird.repositories.chat.user_info import UserInfoRepository
+from songbird.repositories.management.guild_ban import GuildBanRepository
+from songbird.repositories.management.user_ban import UserBanRepository
+from songbird.services.container import get_session
 
 
 class BanEnforcementService:
@@ -32,7 +29,7 @@ class BanEnforcementService:
             return cached
 
         async with get_session(self) as session:
-            repo = get_user_ban_repo(session)
+            repo = UserBanRepository(session)
             banned = await repo.is_banned(user_id)
 
         self._user_cache[user_id] = banned
@@ -45,7 +42,7 @@ class BanEnforcementService:
             return cached
 
         async with get_session(self) as session:
-            repo = get_guild_ban_repo(session)
+            repo = GuildBanRepository(session)
             banned = await repo.is_banned(guild_id)
 
         self._guild_cache[guild_id] = banned
@@ -54,13 +51,13 @@ class BanEnforcementService:
     async def ban_user(self, user_id: int, reason: str | None = None) -> UserBan:
         """Ban a user, delete all their stored data, and invalidate the cache."""
         async with get_session(self) as session:
-            ban_repo = get_user_ban_repo(session)
+            ban_repo = UserBanRepository(session)
             user_ban = await ban_repo.create_ban(user_id, reason=reason)
 
-            message_repo = get_message_repo(session)
+            message_repo = MessageRepository(session)
             await message_repo.delete_messages(user_id)
 
-            user_info_repo = get_user_info_repo(session)
+            user_info_repo = UserInfoRepository(session)
             await user_info_repo.delete_user_info(user_id)
 
         self._user_cache[user_id] = True
@@ -69,10 +66,10 @@ class BanEnforcementService:
     async def ban_guild(self, guild_id: int, reason: str | None = None) -> GuildBan:
         """Ban a guild, delete its conversation history, and invalidate the cache."""
         async with get_session(self) as session:
-            ban_repo = get_guild_ban_repo(session)
+            ban_repo = GuildBanRepository(session)
             guild_ban = await ban_repo.create_ban(guild_id, reason=reason)
 
-            message_repo = get_guild_message_repo(session)
+            message_repo = GuildMessageRepository(session)
             await message_repo.delete_messages(guild_id)
 
         self._guild_cache[guild_id] = True
@@ -81,7 +78,7 @@ class BanEnforcementService:
     async def unban_user(self, user_id: int) -> None:
         """Remove a user ban and invalidate the cache."""
         async with get_session(self) as session:
-            repo = get_user_ban_repo(session)
+            repo = UserBanRepository(session)
             await repo.delete_ban(user_id)
 
         self._user_cache.pop(user_id, None)
@@ -89,7 +86,7 @@ class BanEnforcementService:
     async def unban_guild(self, guild_id: int) -> None:
         """Remove a guild ban and invalidate the cache."""
         async with get_session(self) as session:
-            repo = get_guild_ban_repo(session)
+            repo = GuildBanRepository(session)
             await repo.delete_ban(guild_id)
 
         self._guild_cache.pop(guild_id, None)
@@ -97,18 +94,18 @@ class BanEnforcementService:
     async def list_user_bans(self) -> list[UserBan]:
         """Return all user bans."""
         async with get_session(self) as session:
-            repo = get_user_ban_repo(session)
+            repo = UserBanRepository(session)
             return await repo.list_bans()
 
     async def list_guild_bans(self) -> list[GuildBan]:
         """Return all guild bans."""
         async with get_session(self) as session:
-            repo = get_guild_ban_repo(session)
+            repo = GuildBanRepository(session)
             return await repo.list_bans()
 
     async def get_banned_guild_ids(self) -> set[int]:
         """Return a set of all banned guild IDs (for startup sweep)."""
         async with get_session(self) as session:
-            repo = get_guild_ban_repo(session)
+            repo = GuildBanRepository(session)
             bans = await repo.list_bans()
             return {ban.guild_id for ban in bans}

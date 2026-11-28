@@ -9,8 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from songbird.bot import SongbirdBot
 from songbird.config import Settings
 from songbird.models.chat.base import MessageRole
-from songbird.repositories.chat.message import GuildMessageRepository, MessageRepository
-from songbird.repositories.chat.user_info import UserInfoRepository
+from songbird.repositories.chat.message import MessageRepository
 from songbird.services.audit_log import AuditLogService
 from songbird.services.blackwall import BlackwallService
 from songbird.services.container import (
@@ -21,10 +20,7 @@ from songbird.services.container import (
     create_feedback_service,
     create_guild_conversation_service,
     create_private_conversation_service,
-    get_guild_message_repo,
-    get_message_repo,
     get_session,
-    get_user_info_repo,
 )
 from songbird.services.currency import CurrencyService
 from songbird.services.link_fixer import LinkFixerService
@@ -116,22 +112,6 @@ async def test_get_session_rolls_back_on_error(db_container: ServiceContainer, s
             raise RuntimeError("boom")
 
     assert await MessageRepository(session).get_newest_messages(5) == []
-
-
-@pytest.mark.db
-@pytest.mark.parametrize(
-    ("factory", "repository"),
-    [
-        (get_message_repo, MessageRepository),
-        (get_guild_message_repo, GuildMessageRepository),
-        (get_user_info_repo, UserInfoRepository),
-    ],
-)
-async def test_repository_factories_bind_the_session(session: AsyncSession, factory: Any, repository: type[object]) -> None:
-    repo: Any = factory(session)
-
-    assert repo.session is session
-    assert isinstance(repo, repository)
 
 
 async def test_request_scoped_service_factories(

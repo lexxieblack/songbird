@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from structlog import BoundLogger
 
 from songbird.models.management.blackwall import Blackwall, CreateBlackwall
-from songbird.services.container import get_blackwall_repo, get_session
+from songbird.repositories.management.blackwall import BlackwallRepository
+from songbird.services.container import get_session
 from songbird.utils.logging import get_logger
 
 
@@ -34,7 +35,7 @@ class BlackwallService:
         )
 
         async with get_session(self) as session:
-            repo = get_blackwall_repo(session)
+            repo = BlackwallRepository(session)
             blackwall = await repo.create(input)
 
         self._cache[guild_id] = blackwall
@@ -43,7 +44,7 @@ class BlackwallService:
     async def increment_blackwall(self, guild_id: int) -> Blackwall:
 
         async with get_session(self) as session:
-            repo = get_blackwall_repo(session)
+            repo = BlackwallRepository(session)
             blackwall = await repo.increment(guild_id)
 
         self._cache[guild_id] = blackwall
@@ -52,7 +53,7 @@ class BlackwallService:
 
     async def update(self, guild_id: int, **fields: Any) -> Blackwall:
         async with get_session(self) as session:
-            repo = get_blackwall_repo(session)
+            repo = BlackwallRepository(session)
             blackwall = await repo.update(guild_id, **fields)
 
         self._cache[guild_id] = blackwall
@@ -64,7 +65,7 @@ class BlackwallService:
             return self._cache[guild_id]
 
         async with get_session(self) as session:
-            repo = get_blackwall_repo(session)
+            repo = BlackwallRepository(session)
             blackwall = await repo.get(guild_id)
 
         self._cache[guild_id] = blackwall

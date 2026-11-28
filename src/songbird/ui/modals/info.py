@@ -2,7 +2,8 @@ from discord import InputTextStyle, Interaction
 from discord.ui import InputText, Modal
 
 from songbird.models.chat.exceptions import UserInfoNotFoundError
-from songbird.services.container import ServiceContainer, get_session, get_user_info_repo
+from songbird.repositories.chat.user_info import UserInfoRepository
+from songbird.services.container import ServiceContainer, get_session
 from songbird.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -27,7 +28,7 @@ class UserInfoModal(Modal):
     @classmethod
     async def create(cls, user_id: int, services: ServiceContainer) -> "UserInfoModal":
         async with get_session(services) as session:
-            user_info_repo = get_user_info_repo(session)
+            user_info_repo = UserInfoRepository(session)
             try:
                 info = await user_info_repo.get_user_info(user_id)
                 user_info = info.user_info
@@ -45,6 +46,6 @@ class UserInfoModal(Modal):
 
         logger.debug("Saving user info", user_id=interaction.user.id, username=interaction.user.name, info=text)
         async with get_session(self.services) as session:
-            user_info_repo = get_user_info_repo(session)
+            user_info_repo = UserInfoRepository(session)
             await user_info_repo.update_user_info(interaction.user.id, text)
         await interaction.response.send_message("Information saved successfully!", ephemeral=True)
