@@ -1,33 +1,25 @@
-from typing import Any
-
 from songbird.models.exception import SongbirdException
 
 
 class UserBanAlreadyExistsError(SongbirdException):
-    def __init__(self, message: str | None = None, data: dict[str, Any] | None = None) -> None:
-        super().__init__(message or "User ban already exists", data)
+    default_message = "User ban already exists"
 
 
 class UserBanNotFoundError(SongbirdException):
-    def __init__(self, message: str | None = None, data: dict[str, Any] | None = None) -> None:
-        super().__init__(message or "User ban not found", data)
+    default_message = "User ban not found"
 
 
 class GuildBanAlreadyExistsError(SongbirdException):
-    def __init__(self, message: str | None = None, data: dict[str, Any] | None = None) -> None:
-        super().__init__(message or "Guild ban already exists", data)
+    default_message = "Guild ban already exists"
 
 
 class GuildBanNotFoundError(SongbirdException):
-    def __init__(self, message: str | None = None, data: dict[str, Any] | None = None) -> None:
-        super().__init__(message or "Guild ban not found", data)
+    default_message = "Guild ban not found"
 
 
 class BlackwallAlreadyExistsError(SongbirdException):
-    def __init__(self, message: str | None = None, data: dict[str, Any] | None = None) -> None:
-        super().__init__(message or "Blackwall config already exists for this guild", data)
+    default_message = "Blackwall config already exists for this guild"
 
 
 class BlackwallNotFoundError(SongbirdException):
-    def __init__(self, message: str | None = None, data: dict[str, Any] | None = None) -> None:
-        super().__init__(message or "Blackwall config not found for this guild", data)
+    default_message = "Blackwall config not found for this guild"
