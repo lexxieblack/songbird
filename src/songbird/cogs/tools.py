@@ -52,6 +52,7 @@ class ToolsCog(BaseCog):
         self.logger.info(
             "Translate command",
             user_id=ctx.author.id,
+            username=ctx.author.name,
             to_lang=to_lang,
             from_lang=from_lang,
             text_length=len(text),
@@ -70,12 +71,13 @@ class ToolsCog(BaseCog):
             self.logger.info(
                 "Translate success",
                 user_id=ctx.author.id,
+                username=ctx.author.name,
                 source_lang=from_lang,
                 target_lang=to_lang,
             )
 
         except Exception as e:
-            self.logger.error("translate_error", user_id=ctx.author.id, error=e)
+            self.logger.exception("translate_error", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, "Translation failed.")
 
     @discord.message_command(
@@ -112,19 +114,19 @@ class ToolsCog(BaseCog):
 
         await ctx.defer()
 
-        self.logger.info("Wolfram command", user_id=ctx.author.id, query=query)
+        self.logger.info("Wolfram command", user_id=ctx.author.id, username=ctx.author.name, query=query)
 
         try:
             reply_gif = await self.wolfram_handler.query(query)
             if reply_gif:
                 embed = discord.Embed().set_image(url=f"attachment://{reply_gif.filename}")
                 await ctx.followup.send(file=reply_gif, embed=embed, allowed_mentions=discord.AllowedMentions.none())
-                self.logger.info("Wolfram query completed", user_id=ctx.author.id, query=query)
+                self.logger.info("Wolfram query completed", user_id=ctx.author.id, username=ctx.author.name, query=query)
             else:
                 await self.send_error(ctx, "Wolfram query failed.")
 
         except Exception as e:
-            self.logger.error("Wolfram query failed", user_id=ctx.author.id, query=query, error=e)
+            self.logger.exception("Wolfram query failed", user_id=ctx.author.id, username=ctx.author.name, query=query, error=e)
             await self.send_error(ctx, "Wolfram query failed.")
 
     async def currency_autocomplete(self, ctx: AutocompleteContext) -> list[discord.OptionChoice]:
@@ -157,16 +159,16 @@ class ToolsCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        self.logger.info("Convert command", user_id=ctx.author.id, amount=amount, base=from_, to=to_)
+        self.logger.info("Convert command", user_id=ctx.author.id, username=ctx.author.name, amount=amount, base=from_, to=to_)
 
         try:
             result = await self.currency_handler.convert(amount, from_, to_)
         except CurrencyError as e:
-            self.logger.error("Currency conversion rejected", user_id=ctx.author.id, error=e)
+            self.logger.exception("Currency conversion rejected", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, str(e))
             return
         except Exception as e:
-            self.logger.error("Currency conversion failed", user_id=ctx.author.id, error=e, exc_info=True)
+            self.logger.exception("Currency conversion failed", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, "Currency conversion failed.")
             return
 
@@ -197,7 +199,7 @@ class ToolsCog(BaseCog):
 
         await ctx.defer()
 
-        self.logger.info("Fix command", user_id=ctx.author.id, text_length=len(link))
+        self.logger.info("Fix command", user_id=ctx.author.id, username=ctx.author.name, text_length=len(link))
 
         try:
             fixed_links = await self.services.link_fixer.fix(link)
@@ -206,10 +208,10 @@ class ToolsCog(BaseCog):
                 domain = domain_of(fixed_link)
                 await ctx.followup.send(format_link(domain, fixed_link), allowed_mentions=discord.AllowedMentions.none())
 
-            self.logger.info("Fix success", user_id=ctx.author.id)
+            self.logger.info("Fix success", user_id=ctx.author.id, username=ctx.author.name)
 
         except Exception as e:
-            self.logger.error("Fix error", user_id=ctx.author.id, error=e, exc_info=True)
+            self.logger.exception("Fix error", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, "Link fixing failed.")
 
     @discord.slash_command(

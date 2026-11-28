@@ -98,10 +98,10 @@ class CurrencyService:
             async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
                 response = await client.get(f"{self._api_url}{path}")
         except httpx.TimeoutException as e:
-            self._logger.error("Currency request timed out", path=path, error=e)
+            self._logger.exception("Currency request timed out", path=path, error=e)
             raise CurrencyError("Request to the currency service timed out.") from e
         except httpx.RequestError as e:
-            self._logger.error("Currency request failed", path=path, error=e)
+            self._logger.exception("Currency request failed", path=path, error=e)
             raise CurrencyError("Network error while querying the currency service.") from e
 
         if response.status_code == 422:

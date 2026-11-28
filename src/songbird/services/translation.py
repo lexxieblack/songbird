@@ -60,5 +60,5 @@ class TranslationService:
             )
             return result.text, result.src
         except Exception as e:
-            self.logger.error("Failed to translate text", error=e)
+            self.logger.exception("Failed to translate text", error=e)
             return "Error: failed to translate text", sl

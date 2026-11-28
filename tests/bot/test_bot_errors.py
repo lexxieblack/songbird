@@ -16,7 +16,7 @@ pytestmark = pytest.mark.discord
 class _Ctx:
     def __init__(self) -> None:
         self.command: Any = SimpleNamespace(name="chat")
-        self.author: Any = SimpleNamespace(id=9)
+        self.author: Any = SimpleNamespace(id=9, name="tester")
         self.guild: Any = SimpleNamespace(id=3)
         self.responses: list[dict[str, Any]] = []
 

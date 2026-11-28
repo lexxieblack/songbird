@@ -79,9 +79,11 @@ class SongbirdBot(discord.Bot):
             "command_error",
             command=context.command.name if context.command else "unknown",  # pyright: ignore[reportUnknownMemberType]
             user_id=context.author.id,
+            username=context.author.name,
             guild_id=context.guild.id if context.guild else None,
             error=str(original_error),
             error_type=type(original_error).__name__,
+            exc_info=original_error,
         )
 
         # Handle specific error types

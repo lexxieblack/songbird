@@ -54,7 +54,7 @@ class WolframService:
                 return result_gif
 
         except httpx.TimeoutException as e:
-            self._logger.error(
+            self._logger.exception(
                 "Wolfram query timed out",
                 query=question,
                 error=e,
@@ -62,7 +62,7 @@ class WolframService:
             raise Exception("Request to Wolfram Alpha timed out") from e
 
         except httpx.RequestError as e:
-            self._logger.error(
+            self._logger.exception(
                 "Wolfram query failed",
                 query=question,
                 error=e,
@@ -70,7 +70,7 @@ class WolframService:
             raise Exception("Network error while querying Wolfram Alpha") from e
 
         except Exception as e:
-            self._logger.error(
+            self._logger.exception(
                 "Wolfram query failed",
                 query=question,
                 error=e,

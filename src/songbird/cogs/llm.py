@@ -53,7 +53,7 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        self.logger.info("Summary command", user_id=ctx.author.id, text=text)
+        self.logger.info("Summary command", user_id=ctx.author.id, username=ctx.author.name, text=text)
 
         try:
             summary_result = await self.summary_handler.generate(text or "")
@@ -62,10 +62,10 @@ class LLMCog(BaseCog):
                 return
 
             await ctx.followup.send(truncate_text(summary_result, 2000), allowed_mentions=discord.AllowedMentions.none())
-            self.logger.info("Summary success", user_id=ctx.author.id)
+            self.logger.info("Summary success", user_id=ctx.author.id, username=ctx.author.name)
 
         except Exception as e:
-            self.logger.error("Summarization failed", user_id=ctx.author.id, error=e)
+            self.logger.exception("Summarization failed", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, "Summarization failed.")
 
     @discord.slash_command(
@@ -79,15 +79,15 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        self.logger.info("Quickchat command", user_id=ctx.author.id, question=question)
+        self.logger.info("Quickchat command", user_id=ctx.author.id, username=ctx.author.name, question=question)
 
         try:
             answer = await self.quickchat_handler.generate(question)
             await send_messages(ctx.followup, answer or "")
-            self.logger.info("Quickchat success", user_id=ctx.author.id)
+            self.logger.info("Quickchat success", user_id=ctx.author.id, username=ctx.author.name)
 
         except Exception as e:
-            self.logger.error("Quickchat failed", user_id=ctx.author.id, error=e)
+            self.logger.exception("Quickchat failed", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, "Quickchat failed.")
 
     @discord.slash_command(
@@ -101,7 +101,7 @@ class LLMCog(BaseCog):
     ) -> None:
         await ctx.defer()
 
-        self.logger.info("Chat command", user_id=ctx.author.id, message=message)
+        self.logger.info("Chat command", user_id=ctx.author.id, username=ctx.author.name, message=message)
 
         if not message.strip():
             await ctx.delete()
@@ -125,12 +125,12 @@ class LLMCog(BaseCog):
 
                 if answer:
                     await send_messages(ctx.followup, answer)
-                    self.logger.info("Chat success", user_id=ctx.author.id)
+                    self.logger.info("Chat success", user_id=ctx.author.id, username=ctx.author.name)
                 else:
                     await ctx.delete()
 
         except Exception as e:
-            self.logger.error("Chat failed", user_id=ctx.author.id, error=e)
+            self.logger.exception("Chat failed", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, "Chat failed.")
 
     @discord.slash_command(
@@ -153,7 +153,7 @@ class LLMCog(BaseCog):
 
         await ctx.defer(ephemeral=True)
 
-        self.logger.info("Export command", user_id=ctx.author.id)
+        self.logger.info("Export command", user_id=ctx.author.id, username=ctx.author.name)
 
         try:
             async with get_session(self.services) as session:
@@ -172,10 +172,15 @@ class LLMCog(BaseCog):
                 file = create_file_text(json_str, "conversation_export.json")
                 await ctx.followup.send(file=file, allowed_mentions=discord.AllowedMentions.none())
 
-                self.logger.info("Export command success", user_id=ctx.author.id, message_count=len(messages))
+                self.logger.info(
+                    "Export command success",
+                    user_id=ctx.author.id,
+                    username=ctx.author.name,
+                    message_count=len(messages),
+                )
 
         except Exception as e:
-            self.logger.error("Export failed", user_id=ctx.author.id, error=e)
+            self.logger.exception("Export failed", user_id=ctx.author.id, username=ctx.author.name, error=e)
             await self.send_error(ctx, "Export failed.")
 
 

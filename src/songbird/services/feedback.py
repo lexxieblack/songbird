@@ -39,16 +39,18 @@ class FeedbackService:
             await self.thread_repo.create_thread(user_id, thread.id)
             return thread.id
         except Forbidden:
-            self.logger.error(
+            self.logger.exception(
                 "No permissions to create a thread",
                 user_id=user_id,
+                username=user_name,
                 channel_id=self.thread_channel_id,
             )
 
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 "Error creating thread",
                 user_id=user_id,
+                username=user_name,
                 channel_id=self.thread_channel_id,
                 error=e,
             )
@@ -68,20 +70,20 @@ class FeedbackService:
             thread_id = thread.thread_id
             if thread_channel(thread_id) is None:
                 # The stored thread was deleted; forget it and open a fresh one instead of failing forever.
-                self.logger.info("Feedback thread missing, recreating", user_id=user_id, thread_id=thread_id)
+                self.logger.info("Feedback thread missing, recreating", user_id=user_id, username=user_name, thread_id=thread_id)
                 await self.thread_repo.delete_thread(user_id)
                 thread_id = await self._create_thread(user_name, user_id)
 
         channel = thread_channel(thread_id)
         if channel is None:
             if thread_id:
-                self.logger.error("Feedback thread unavailable", user_id=user_id, thread_id=thread_id)
+                self.logger.error("Feedback thread unavailable", user_id=user_id, username=user_name, thread_id=thread_id)
             return False
 
         try:
             await channel.send(message, allowed_mentions=AllowedMentions.none())
         except DiscordException as e:
-            self.logger.error("Feedback message failed", user_id=user_id, thread_id=thread_id, error=e)
+            self.logger.exception("Feedback message failed", user_id=user_id, username=user_name, thread_id=thread_id, error=e)
             return False
 
         return True

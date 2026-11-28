@@ -45,6 +45,7 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
             guild_id=guild_id,
             channel_id=channel_id,
             user_id=author.id,
+            username=author.name,
             punishment=blackwall.punishment.value,
         )
 
@@ -70,7 +71,9 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
                     )
             except Exception:
                 # Bookkeeping failure must not leave the triggering message in the honeypot.
-                logger.exception("Blackwall: failed to record punishment", guild_id=guild_id, user_id=author.id)
+                logger.exception(
+                    "Blackwall: failed to record punishment", guild_id=guild_id, user_id=author.id, username=author.name
+                )
 
         with contextlib.suppress(discord.HTTPException):
             await message.delete()
@@ -84,9 +87,11 @@ async def _apply_punishment(author: discord.Member, guild: discord.Guild, punish
         try:
             await author.kick(reason="Blackwall honeypot - unauthorised bot detection")
         except discord.Forbidden:
-            logger.warning("Blackwall: missing kick permission", guild_id=guild.id, user_id=author.id)
+            logger.warning("Blackwall: missing kick permission", guild_id=guild.id, user_id=author.id, username=author.name)
         except discord.HTTPException as e:
-            logger.error("Blackwall: failed to kick user", guild_id=guild.id, user_id=author.id, error=str(e))
+            logger.exception(
+                "Blackwall: failed to kick user", guild_id=guild.id, user_id=author.id, username=author.name, error=str(e)
+            )
         else:
             return True
         return False
@@ -95,9 +100,11 @@ async def _apply_punishment(author: discord.Member, guild: discord.Guild, punish
         try:
             await author.ban(reason="Blackwall honeypot - unauthorised bot detection", delete_message_seconds=86400)
         except discord.Forbidden:
-            logger.warning("Blackwall: missing ban permission", guild_id=guild.id, user_id=author.id)
+            logger.warning("Blackwall: missing ban permission", guild_id=guild.id, user_id=author.id, username=author.name)
         except discord.HTTPException as e:
-            logger.error("Blackwall: failed to ban user", guild_id=guild.id, user_id=author.id, error=str(e))
+            logger.exception(
+                "Blackwall: failed to ban user", guild_id=guild.id, user_id=author.id, username=author.name, error=str(e)
+            )
         else:
             return True
         return False
@@ -120,10 +127,10 @@ async def _apply_warn(author: discord.Member, guild: discord.Guild) -> bool:
             f"Continued violations may result in a permanent ban."
         )
     except discord.Forbidden:
-        logger.warning("Blackwall: could not DM user", guild_id=guild.id, user_id=author.id)
+        logger.warning("Blackwall: could not DM user", guild_id=guild.id, user_id=author.id, username=author.name)
         return False
     except discord.HTTPException as e:
-        logger.error("Blackwall: failed to DM user", guild_id=guild.id, user_id=author.id, error=str(e))
+        logger.exception("Blackwall: failed to DM user", guild_id=guild.id, user_id=author.id, username=author.name, error=str(e))
         return False
 
     return True

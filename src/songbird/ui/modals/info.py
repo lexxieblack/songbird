@@ -43,7 +43,7 @@ class UserInfoModal(Modal):
             await interaction.response.send_message("Error: user not found", ephemeral=True)
             return
 
-        logger.debug("Saving user info", user_id=interaction.user.id, info=text)
+        logger.debug("Saving user info", user_id=interaction.user.id, username=interaction.user.name, info=text)
         async with get_session(self.services) as session:
             user_info_repo = get_user_info_repo(session)
             await user_info_repo.update_user_info(interaction.user.id, text)

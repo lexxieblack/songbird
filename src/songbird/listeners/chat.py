@@ -80,7 +80,12 @@ async def _handle_dm_message(bot: SongbirdBot, message: Message, user_message: s
 
         channel_name = f"DM with {message.author.name}"
 
-        logger.info("Calling chat service", user_id=message.author.id, channel_name=channel_name)
+        logger.info(
+            "Calling chat service",
+            user_id=message.author.id,
+            username=message.author.name,
+            channel_name=channel_name,
+        )
 
         context = ConversationContext(
             user_id=message.author.id,
@@ -93,7 +98,7 @@ async def _handle_dm_message(bot: SongbirdBot, message: Message, user_message: s
         try:
             return await conversation_service.chat(key=message.author.id, message=user_message, context=context)
         except Exception:
-            logger.exception("DM chat failed", user_id=message.author.id)
+            logger.exception("DM chat failed", user_id=message.author.id, username=message.author.name)
     return None
 
 
@@ -104,6 +109,7 @@ async def _handle_guild_message(bot: SongbirdBot, message: Message, user_message
     logger.info(
         "Message is in guild",
         user_id=message.author.id,
+        username=message.author.name,
         guild_name=message.guild.name if message.guild else None,
     )
 
@@ -113,7 +119,12 @@ async def _handle_guild_message(bot: SongbirdBot, message: Message, user_message
 
         guild_channel_name = message.channel.name  # type: ignore[union-attr]
 
-        logger.info("Calling chat service", user_id=message.author.id, channel_name=guild_channel_name)
+        logger.info(
+            "Calling chat service",
+            user_id=message.author.id,
+            username=message.author.name,
+            channel_name=guild_channel_name,
+        )
 
         context = ConversationContext(
             user_id=message.author.id,
@@ -130,7 +141,7 @@ async def _handle_guild_message(bot: SongbirdBot, message: Message, user_message
                 context=context,
             )
         except Exception:
-            logger.exception("Guild chat failed", user_id=message.author.id)
+            logger.exception("Guild chat failed", user_id=message.author.id, username=message.author.name)
     return None
 
 
@@ -140,7 +151,7 @@ def load_chat(bot: SongbirdBot) -> None:
         if not await _is_message_relevant(bot, message):
             return
 
-        logger.info("Message received", user_id=message.author.id, content=message.content)
+        logger.info("Message received", user_id=message.author.id, username=message.author.name, content=message.content)
 
         user_message = message.content
         if bot.user is not None:
@@ -155,17 +166,17 @@ def load_chat(bot: SongbirdBot) -> None:
             response = await _handle_guild_message(bot, message, user_message)
 
         if not response:
-            logger.info("No response generated", user_id=message.author.id)
+            logger.info("No response generated", user_id=message.author.id, username=message.author.name)
             await message.channel.send("My neural pathways got a bit scrambled.", allowed_mentions=AllowedMentions.none())
             return
 
-        logger.info("Response received", user_id=message.author.id, response_length=len(response))
+        logger.info("Response received", user_id=message.author.id, username=message.author.name, response_length=len(response))
 
         try:
             await send_messages(message.channel, response)
-            logger.info("Response sent successfully", user_id=message.author.id)
+            logger.info("Response sent successfully", user_id=message.author.id, username=message.author.name)
         except Exception:
-            logger.exception("Response send failed", user_id=message.author.id)
+            logger.exception("Response send failed", user_id=message.author.id, username=message.author.name)
             await message.channel.send(
                 "I couldn't deliver my full reply. Please try again.", allowed_mentions=AllowedMentions.none()
             )

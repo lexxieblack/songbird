@@ -32,5 +32,5 @@ class LLMHandler:
             self.logger.info("Generating response", text_length=len(message))
             return await self.llm.call(llm_request)
         except Exception as e:
-            self.logger.error("Failed to generate response", error=e)
+            self.logger.exception("Failed to generate response", error=e)
             return self.error_result

@@ -46,12 +46,13 @@ class ConversationService:
         self.logger.info(
             "Chat started",
             **{self.message_repo.key: key},
+            username=context.username,
             message=message,
             context=context.model_dump_json(),
         )
 
-        user_info = await self._get_user_info(context.user_id)
-        messages = await self._get_past_messages(key)
+        user_info = await self._get_user_info(context.user_id, context.username)
+        messages = await self._get_past_messages(key, context.username)
         system_prompt = self._build_system_prompt(context, user_info)
 
         # End the read transaction so the pooled connection is not held through the model call.
@@ -66,41 +67,46 @@ class ConversationService:
             reply = await self.llm.call(llm_request)
 
             if not reply or not reply.strip():
-                self.logger.warning("Empty LLM response, skipping save", **{self.message_repo.key: key})
+                self.logger.warning("Empty LLM response, skipping save", **{self.message_repo.key: key}, username=context.username)
                 return ""
 
-            save = await self._save_message(key=key, message=llm_request.user_prompt, role=MessageRole.USER)
+            save = await self._save_message(
+                key=key, message=llm_request.user_prompt, role=MessageRole.USER, username=context.username
+            )
             if not save:
                 return "Error: failed to save message"
 
-            await self._save_message(key=key, message=reply, role=MessageRole.MODEL)
+            await self._save_message(key=key, message=reply, role=MessageRole.MODEL, username=context.username)
 
             return reply
         except Exception as e:
-            self.logger.error("Chat failed", error=e)
+            self.logger.exception("Chat failed", username=context.username, error=e)
             return STATIC_REPLY
 
-    async def _save_message(self, key: int, message: str, role: MessageRole) -> bool:
+    async def _save_message(self, key: int, message: str, role: MessageRole, username: str) -> bool:
         try:
             await self.message_repo.create_message(key, role, message)
             self.logger.debug(
                 "Message saved",
                 **{self.message_repo.key: key},
+                username=username,
                 role=role.value,
                 content=message,
             )
             return True
         except MessageAlreadyExistsError:
-            self.logger.error(
+            self.logger.exception(
                 "Message already exists",
                 **{self.message_repo.key: key},
+                username=username,
                 role=role.value,
                 message=message,
             )
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 "Failed to save message",
                 **{self.message_repo.key: key},
+                username=username,
                 role=role.value,
                 message=message,
                 error=e,
@@ -108,19 +114,21 @@ class ConversationService:
 
         return False
 
-    async def _get_past_messages(self, key: int) -> list[Message] | list[GuildMessage]:
-        self.logger.debug("Getting previous messages", **{self.message_repo.key: key})
+    async def _get_past_messages(self, key: int, username: str) -> list[Message] | list[GuildMessage]:
+        self.logger.debug("Getting previous messages", **{self.message_repo.key: key}, username=username)
         try:
             messages = await self.message_repo.get_newest_messages(key=key, limit=self.settings.llm.message_count)
-            self.logger.debug("Got previous message", **{self.message_repo.key: key}, message_count=len(messages))
+            self.logger.debug(
+                "Got previous message", **{self.message_repo.key: key}, username=username, message_count=len(messages)
+            )
             return messages[::-1]
 
         except Exception as e:
-            self.logger.error("Error getting previous messages", **{self.message_repo.key: key}, error=e)
+            self.logger.exception("Error getting previous messages", **{self.message_repo.key: key}, username=username, error=e)
 
         return []
 
-    async def _get_user_info(self, _user_id: int) -> str | None:
+    async def _get_user_info(self, _user_id: int, _username: str) -> str | None:
         return None
 
     def _format_user_message(self, _context: ConversationContext, message: str) -> str:
@@ -151,20 +159,21 @@ class PrivateConversationService(ConversationService):
         super().__init__(llm, message_repo, settings, logger)
         self.user_info_repo = user_info_repo
 
-    async def _get_user_info(self, user_id: int) -> str | None:
-        self.logger.debug("Getting user info", user_id=user_id)
+    async def _get_user_info(self, user_id: int, username: str) -> str | None:
+        self.logger.debug("Getting user info", user_id=user_id, username=username)
         try:
             info = await self.user_info_repo.get_user_info(user_id)
-            self.logger.debug("Got user info", user_id=user_id)
+            self.logger.debug("Got user info", user_id=user_id, username=username)
             return info.user_info
 
         except UserInfoNotFoundError:
-            self.logger.info("User info not found", user_id=user_id)
+            self.logger.info("User info not found", user_id=user_id, username=username)
 
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 "Error getting user info",
                 user_id=user_id,
+                username=username,
                 error=e,
             )
         return None

@@ -65,7 +65,7 @@ class BotCog(BaseCog):
         try:
             await ctx.response.send_modal(modal=FeedbackModal(self.services, self.bot))
         except Exception as e:
-            self.logger.error("Feedback failed", error=e)
+            self.logger.exception("Feedback failed", error=e)
             await ctx.respond("Feedback failed.", ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
 

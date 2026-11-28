@@ -65,7 +65,7 @@ class LinkFixerService:
             location = response.headers.get("location")
             return location if isinstance(location, str) else url
         except httpx.HTTPError as e:
-            self.logger.error("Failed to follow link", url=url, error=e)
+            self.logger.exception("Failed to follow link", url=url, error=e)
             return url
 
     async def _media_count(self, url: str, pagination: PaginationSettings) -> int:
@@ -79,7 +79,7 @@ class LinkFixerService:
                 return 0
             return len(data.get("media_extended") or data.get("mediaURLs") or [])
         except (httpx.HTTPError, ValueError) as e:
-            self.logger.error("Failed to fetch media count", url=url, error=e)
+            self.logger.exception("Failed to fetch media count", url=url, error=e)
             return 0
 
     def _page_urls(self, url: str, count: int, pagination: PaginationSettings) -> list[str]:
