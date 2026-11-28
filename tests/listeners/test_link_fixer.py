@@ -16,6 +16,7 @@ from songbird.config import Settings
 from songbird.listeners import link_fixer as link_fixer_module
 from songbird.listeners.link_fixer import CACHED_MESSAGES
 from songbird.ui.views.link_fixer import RestoreLinkView
+from songbird.utils.urls import extract_urls
 from tests.support.discord import make_channel, make_fake_bot, make_member, make_message
 
 pytestmark = pytest.mark.discord
@@ -46,7 +47,7 @@ def _fake_extract(url: str) -> SimpleNamespace:
 
 @pytest.fixture(autouse=True)
 def _offline_tldextract(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(link_fixer_module, "_EXTRACT", _fake_extract)
+    monkeypatch.setattr("songbird.utils.urls._EXTRACT", _fake_extract)
 
 
 def _listener(bot: SongbirdBot, index: int) -> Listener:
@@ -291,23 +292,23 @@ def test_unload_clears_cached_messages() -> None:
     assert not CACHED_MESSAGES
 
 
-def test_get_urls_finds_http_and_https_links() -> None:
+def test_extract_urls_finds_http_and_https_links() -> None:
     text = "look at http://a.example/x and https://b.example/y?q=1"
 
-    assert link_fixer_module._get_urls(text) == ["http://a.example/x", "https://b.example/y?q=1"]
+    assert extract_urls(text) == ["http://a.example/x", "https://b.example/y?q=1"]
 
 
-def test_get_urls_ignores_links_wrapped_in_angle_brackets() -> None:
+def test_extract_urls_ignores_links_wrapped_in_angle_brackets() -> None:
     text = "hidden <https://example.com/a> shown https://example.com/b"
 
-    assert link_fixer_module._get_urls(text) == ["https://example.com/b"]
+    assert extract_urls(text) == ["https://example.com/b"]
 
 
-def test_get_urls_strips_trailing_sentence_punctuation() -> None:
+def test_extract_urls_strips_trailing_sentence_punctuation() -> None:
     # Regression: `https://x.com/user/status/123.` was fixed as if the dot were part of the URL.
     text = 'see https://example.com/a. or https://example.com/b, (https://example.com/c) "https://example.com/d"'
 
-    assert link_fixer_module._get_urls(text) == [
+    assert extract_urls(text) == [
         "https://example.com/a",
         "https://example.com/b",
         "https://example.com/c",
@@ -315,8 +316,8 @@ def test_get_urls_strips_trailing_sentence_punctuation() -> None:
     ]
 
 
-def test_get_urls_strips_markdown_link_closing_paren() -> None:
-    assert link_fixer_module._get_urls("[text](https://example.com/a)") == ["https://example.com/a"]
+def test_extract_urls_strips_markdown_link_closing_paren() -> None:
+    assert extract_urls("[text](https://example.com/a)") == ["https://example.com/a"]
 
 
 def test_domain_setting_requires_chat_enabled() -> None:

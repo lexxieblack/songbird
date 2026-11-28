@@ -6,7 +6,6 @@ import httpx
 import pytest
 
 from songbird.config import Settings
-from songbird.services import link_fixer as link_fixer_module
 from songbird.services.link_fixer import LinkFixerService
 
 
@@ -33,7 +32,7 @@ def _fake_extract(url: str) -> SimpleNamespace:
 
 @pytest.fixture(autouse=True)
 def _offline_tldextract(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(link_fixer_module, "_EXTRACT", _fake_extract)
+    monkeypatch.setattr("songbird.utils.urls._EXTRACT", _fake_extract)
 
 
 class _Response:

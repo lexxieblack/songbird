@@ -3,7 +3,6 @@ from urllib.parse import urlparse
 
 import discord
 from discord.commands import AutocompleteContext
-from tldextract import TLDExtract
 
 from songbird.cogs.base import BaseCog
 from songbird.commands.tools.currency import CurrencyHandler
@@ -14,12 +13,10 @@ from songbird.ui.modals.file import FileModal
 from songbird.ui.modals.translate import TranslateMessageModal, TranslateModal
 from songbird.ui.views.translate import TranslateView
 from songbird.utils.text import link as format_link
+from songbird.utils.urls import domain_of
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
-
-# Empty suffix_list_urls: use the bundled snapshot and never fetch the list on the event loop.
-_EXTRACT = TLDExtract(suffix_list_urls=())
 
 
 class ToolsCog(BaseCog):
@@ -206,8 +203,7 @@ class ToolsCog(BaseCog):
             fixed_links = await self.services.link_fixer.fix(link)
 
             for fixed_link in fixed_links:
-                ext = _EXTRACT(fixed_link)
-                domain = f"{ext.domain}.{ext.suffix}"
+                domain = domain_of(fixed_link)
                 await ctx.followup.send(format_link(domain, fixed_link), allowed_mentions=discord.AllowedMentions.none())
 
             self.logger.info("Fix success", user_id=ctx.author.id)

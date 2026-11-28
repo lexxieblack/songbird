@@ -1,23 +1,19 @@
 import asyncio
 import contextlib
-import re
 
 from discord import AllowedMentions, Forbidden, HTTPException, Message, TextChannel, Thread
-from tldextract import TLDExtract
 
 from songbird.bot import SongbirdBot
 from songbird.config import LinksSettings
 from songbird.ui.views.link_fixer import RestoreLinkView
 from songbird.utils.logging import get_logger
 from songbird.utils.text import link
+from songbird.utils.urls import domain_of, extract_urls
 
 logger = get_logger(__name__)
 
 
 CACHED_MESSAGES: set[int] = set()
-
-# Empty suffix_list_urls: use the bundled snapshot and never fetch the list on the event loop.
-_EXTRACT = TLDExtract(suffix_list_urls=())
 
 
 def load_fix(bot: SongbirdBot) -> None:
@@ -44,7 +40,7 @@ def load_fix(bot: SongbirdBot) -> None:
         if not is_valid_type:
             return
 
-        urls = _get_urls(message.content)
+        urls = extract_urls(message.content)
 
         if not urls:
             return
@@ -80,7 +76,7 @@ def load_fix(bot: SongbirdBot) -> None:
         first_url, *rest_urls = fixed_urls
         sent_messages.append(
             await message.channel.send(
-                link(_get_domain_with_suffix(first_url), first_url),
+                link(domain_of(first_url), first_url),
                 reference=message,
                 view=RestoreLinkView(message, CACHED_MESSAGES, sent_messages),
                 allowed_mentions=AllowedMentions.none(),
@@ -90,7 +86,7 @@ def load_fix(bot: SongbirdBot) -> None:
         for url in rest_urls:
             sent_messages.append(
                 await message.channel.send(
-                    link(_get_domain_with_suffix(url), url),
+                    link(domain_of(url), url),
                     reference=message,
                     allowed_mentions=AllowedMentions.none(),
                 )
@@ -102,21 +98,9 @@ def unload_fix() -> None:
     logger.info("Link fixer unloaded")
 
 
-def _get_urls(text: str) -> list[str]:
-    # Links wrapped in <> are intentionally embed-suppressed by the author.
-    url_pattern = r"(?<!<)https?://[^<>\s]+"
-    # Trailing sentence punctuation belongs to the prose, not the URL.
-    return [url.rstrip(".,;:!?'\")]}") for url in re.findall(url_pattern, text)]
-
-
 def _check_domain_setting(url: str, links_settings: LinksSettings) -> bool:
-    domain = _get_domain_with_suffix(url)
+    domain = domain_of(url)
     mapping = links_settings.root.get(domain)
     if mapping is None:
         return False
     return mapping.chat is True
-
-
-def _get_domain_with_suffix(url: str) -> str:
-    ext = _EXTRACT(url)
-    return f"{ext.domain}.{ext.suffix}"

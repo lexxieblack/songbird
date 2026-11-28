@@ -293,7 +293,7 @@ async def test_fix_sends_formatted_links(
     def extract(_url: str) -> SimpleNamespace:
         return SimpleNamespace(domain="example", suffix="com")
 
-    monkeypatch.setattr("songbird.cogs.tools._EXTRACT", extract)
+    monkeypatch.setattr("songbird.utils.urls._EXTRACT", extract)
     send = _capture_send(_fake(fake_ctx))
 
     await invoke(cog, "fix", fake_ctx, link="https://example.com/a")

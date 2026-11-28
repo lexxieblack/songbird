@@ -1,15 +1,11 @@
-import re
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
-import tldextract
 from structlog import BoundLogger
 
 from songbird.config import PaginationSettings, Settings
 from songbird.utils.logging import get_logger
-
-# Empty suffix_list_urls: use the bundled snapshot and never fetch the list on the event loop.
-_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
+from songbird.utils.urls import domain_of, extract_urls
 
 
 class LinkFixerService:
@@ -28,7 +24,7 @@ class LinkFixerService:
         await self._client.aclose()
 
     async def fix(self, text: str) -> list[str]:
-        urls = self._extract_urls(text)
+        urls = extract_urls(text)
         if not urls:
             return [text]
 
@@ -38,7 +34,7 @@ class LinkFixerService:
         return fixed
 
     async def _fix_url(self, url: str) -> list[str]:
-        domain = self._get_domain_suffix(url)
+        domain = domain_of(url)
         rules = self.domain_mapping.root.get(domain)
         if not rules:
             if not self._wildcard_exists():
@@ -62,10 +58,6 @@ class LinkFixerService:
             return self._page_urls(url, count, rules.pagination)
 
         return [url]
-
-    def _get_domain_suffix(self, url: str) -> str:
-        ext = _EXTRACT(url)
-        return f"{ext.domain}.{ext.suffix}"
 
     async def _follow_url(self, url: str) -> str:
         try:
@@ -129,6 +121,3 @@ class LinkFixerService:
 
     def _wildcard_exists(self) -> bool:
         return self.domain_mapping.root.get("*") is not None
-
-    def _extract_urls(self, text: str) -> list[str]:
-        return re.findall(r"https?://[^\s]+", text)
