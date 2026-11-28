@@ -14,6 +14,9 @@ from songbird.models.management.base import metadata
 
 
 class AuditLogAction(Enum):
+    BLACKWALL_LOG = "blackwall_log"
+    BLACKWALL_WARN = "blackwall_warn"
+    BLACKWALL_KICK = "blackwall_kick"
     BLACKWALL_BAN = "blackwall_ban"
 
     def __str__(self) -> str:

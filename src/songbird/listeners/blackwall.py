@@ -62,7 +62,7 @@ def load_blackwall_listener(bot: SongbirdBot) -> None:
                 async with get_session(bot.services) as session:
                     audit_log = create_audit_log_service(session)
                     await audit_log.log(
-                        action=AuditLogAction.BLACKWALL_BAN,
+                        action=AuditLogAction(f"blackwall_{blackwall.punishment.value}"),
                         target_id=author.id,
                         guild_id=guild_id,
                         channel_id=channel_id,

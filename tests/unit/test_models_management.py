@@ -46,7 +46,7 @@ def test_audit_log_action_string_and_repr() -> None:
 
 
 def test_audit_log_action_enum_metadata() -> None:
-    assert AuditLogActionEnum.enums == ["blackwall_ban"]
+    assert AuditLogActionEnum.enums == ["blackwall_log", "blackwall_warn", "blackwall_kick", "blackwall_ban"]
     assert AuditLogActionEnum.name == "log_action"
     assert AuditLogActionEnum.schema == "management"  # pyright: ignore[reportUnknownMemberType]
 

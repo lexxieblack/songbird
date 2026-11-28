@@ -11,11 +11,12 @@ from songbird.repositories.management.audit_log import AuditLogRepository
 pytestmark = pytest.mark.db
 
 
-async def test_create_returns_all_fields(session: AsyncSession) -> None:
+@pytest.mark.parametrize("action", list(AuditLogAction))
+async def test_create_returns_all_fields(session: AsyncSession, action: AuditLogAction) -> None:
     repo = AuditLogRepository(session)
     created = await repo.create(
         CreateAuditLog(
-            action=AuditLogAction.BLACKWALL_BAN,
+            action=action,
             actor_id=1,
             target_id=2,
             guild_id=3,
@@ -26,7 +27,7 @@ async def test_create_returns_all_fields(session: AsyncSession) -> None:
     await session.commit()
 
     assert isinstance(created.id, UUID)
-    assert created.action is AuditLogAction.BLACKWALL_BAN
+    assert created.action is action
     assert (created.actor_id, created.target_id, created.guild_id, created.channel_id) == (1, 2, 3, 4)
     assert created.metadata == {"nested": {"ids": [1, 2]}}
     assert created.created_at.tzinfo is not None

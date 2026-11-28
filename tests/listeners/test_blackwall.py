@@ -222,6 +222,8 @@ async def test_kick_punishes_member(fake_bot: SongbirdBot, monkeypatch: pytest.M
     kick.assert_awaited_once()
     service.increment_blackwall.assert_awaited_once_with(1)
     audit.log.assert_awaited_once()
+    assert audit.log.await_args is not None
+    assert audit.log.await_args.kwargs["action"] is AuditLogAction.BLACKWALL_KICK
 
 
 async def test_kick_forbidden_does_not_count_as_punished(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -242,7 +244,7 @@ async def test_kick_forbidden_does_not_count_as_punished(fake_bot: SongbirdBot, 
 async def test_warn_dms_once_then_respects_cooldown(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
     send = AsyncMock()
     member = _member(send=send)
-    service, _ = _install(monkeypatch, fake_bot, _blackwall(punishment=BlackwallPunishment.WARN))
+    service, audit = _install(monkeypatch, fake_bot, _blackwall(punishment=BlackwallPunishment.WARN))
     message = _trigger_message(member)
     blackwall_module.load_blackwall_listener(fake_bot)
 
@@ -255,6 +257,8 @@ async def test_warn_dms_once_then_respects_cooldown(fake_bot: SongbirdBot, monke
     assert "unauthorised bots" in send.await_args.args[0]
     assert (1, 9) in blackwall_module._warn_cooldown
     assert service.increment_blackwall.await_count == 2
+    assert audit.log.await_args is not None
+    assert audit.log.await_args.kwargs["action"] is AuditLogAction.BLACKWALL_WARN
 
 
 async def test_log_punishment_only_deletes_message(fake_bot: SongbirdBot, monkeypatch: pytest.MonkeyPatch) -> None:
