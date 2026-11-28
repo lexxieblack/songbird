@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import discord
@@ -11,6 +12,8 @@ from songbird.models.management.exceptions import (
     UserBanAlreadyExistsError,
     UserBanNotFoundError,
 )
+from songbird.models.management.guild_ban import GuildBan
+from songbird.models.management.user_ban import UserBan
 
 if TYPE_CHECKING:
     from songbird.bot import SongbirdBot
@@ -19,6 +22,13 @@ logger = structlog.get_logger(__name__)
 
 # Embed descriptions stop at 4096 characters; 30 rows plus the overflow line stay well under it.
 _MAX_BAN_ROWS = 30
+
+
+def _parse_id(value: str) -> int | None:
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 class ManagementCog(BaseCog):
@@ -43,9 +53,8 @@ class ManagementCog(BaseCog):
     ) -> None:
         await ctx.defer(ephemeral=True)
 
-        try:
-            uid = int(user_id)
-        except ValueError:
+        uid = _parse_id(user_id)
+        if uid is None:
             await self.send_error(ctx, "Invalid user ID.")
             return
 
@@ -69,9 +78,8 @@ class ManagementCog(BaseCog):
     ) -> None:
         await ctx.defer(ephemeral=True)
 
-        try:
-            uid = int(user_id)
-        except ValueError:
+        uid = _parse_id(user_id)
+        if uid is None:
             await self.send_error(ctx, "Invalid user ID.")
             return
 
@@ -83,6 +91,31 @@ class ManagementCog(BaseCog):
 
         await self.send_success(ctx, f"User **{uid}** unbanned.", ephemeral=True)
 
+    async def _send_ban_list(
+        self,
+        ctx: discord.ApplicationContext,
+        bans: Sequence[UserBan | GuildBan],
+        noun: str,
+    ) -> None:
+        if not bans:
+            await self.send_success(ctx, f"No {noun}s are currently banned.", ephemeral=True)
+            return
+
+        lines: list[str] = []
+        for ban in bans[:_MAX_BAN_ROWS]:
+            reason = f" — {ban.reason}" if ban.reason else ""
+            ts = ban.created_at.strftime("%Y-%m-%d %H:%M UTC")
+            lines.append(f"• **{getattr(ban, noun + '_id')}**{reason} (banned {ts})")
+        if len(bans) > _MAX_BAN_ROWS:
+            lines.append(f"... and {len(bans) - _MAX_BAN_ROWS} more")
+
+        embed = discord.Embed(
+            title=f"Banned {noun.title()}s",
+            description="\n".join(lines),
+            colour=discord.Color.red(),
+        )
+        await ctx.followup.send(embed=embed, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+
     @discord.slash_command(name="list-user-bans", description="List all banned users")
     @commands.is_owner()
     async def list_user_bans(
@@ -90,27 +123,7 @@ class ManagementCog(BaseCog):
         ctx: discord.ApplicationContext,
     ) -> None:
         await ctx.defer(ephemeral=True)
-
-        bans = await self.services.management.list_user_bans()
-
-        if not bans:
-            await self.send_success(ctx, "No users are currently banned.", ephemeral=True)
-            return
-
-        lines: list[str] = []
-        for ban in bans[:_MAX_BAN_ROWS]:
-            reason = f" — {ban.reason}" if ban.reason else ""
-            ts = ban.created_at.strftime("%Y-%m-%d %H:%M UTC")
-            lines.append(f"• **{ban.user_id}**{reason} (banned {ts})")
-        if len(bans) > _MAX_BAN_ROWS:
-            lines.append(f"... and {len(bans) - _MAX_BAN_ROWS} more")
-
-        embed = discord.Embed(
-            title="Banned Users",
-            description="\n".join(lines),
-            colour=discord.Color.red(),
-        )
-        await ctx.followup.send(embed=embed, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+        await self._send_ban_list(ctx, await self.services.management.list_user_bans(), "user")
 
     @discord.slash_command(name="ban-guild", description="Ban a guild from using the bot")
     @commands.is_owner()
@@ -122,9 +135,8 @@ class ManagementCog(BaseCog):
     ) -> None:
         await ctx.defer(ephemeral=True)
 
-        try:
-            gid = int(guild_id)
-        except ValueError:
+        gid = _parse_id(guild_id)
+        if gid is None:
             await self.send_error(ctx, "Invalid guild ID.")
             return
 
@@ -148,9 +160,8 @@ class ManagementCog(BaseCog):
     ) -> None:
         await ctx.defer(ephemeral=True)
 
-        try:
-            gid = int(guild_id)
-        except ValueError:
+        gid = _parse_id(guild_id)
+        if gid is None:
             await self.send_error(ctx, "Invalid guild ID.")
             return
 
@@ -169,27 +180,7 @@ class ManagementCog(BaseCog):
         ctx: discord.ApplicationContext,
     ) -> None:
         await ctx.defer(ephemeral=True)
-
-        bans = await self.services.management.list_guild_bans()
-
-        if not bans:
-            await self.send_success(ctx, "No guilds are currently banned.", ephemeral=True)
-            return
-
-        lines: list[str] = []
-        for ban in bans[:_MAX_BAN_ROWS]:
-            reason = f" — {ban.reason}" if ban.reason else ""
-            ts = ban.created_at.strftime("%Y-%m-%d %H:%M UTC")
-            lines.append(f"• **{ban.guild_id}**{reason} (banned {ts})")
-        if len(bans) > _MAX_BAN_ROWS:
-            lines.append(f"... and {len(bans) - _MAX_BAN_ROWS} more")
-
-        embed = discord.Embed(
-            title="Banned Guilds",
-            description="\n".join(lines),
-            colour=discord.Color.red(),
-        )
-        await ctx.followup.send(embed=embed, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+        await self._send_ban_list(ctx, await self.services.management.list_guild_bans(), "guild")
 
 
 def setup(bot: "SongbirdBot") -> None:
