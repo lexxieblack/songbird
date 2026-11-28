@@ -63,7 +63,6 @@ class _Engine:
 
 
 async def test_close_container_releases_clients(
-    monkeypatch: pytest.MonkeyPatch,
     settings: Settings,
     fake_genai_client: SimpleNamespace,  # noqa: ARG001
 ) -> None:
@@ -71,18 +70,13 @@ async def test_close_container_releases_clients(
     await container.engine.dispose()
     engine = _Engine()
     container.engine = cast(Any, engine)
-    closed: list[bool] = []
-    original_close = container.translation.close
-
-    async def close() -> None:
-        closed.append(True)
-        await original_close()
-
-    monkeypatch.setattr(container.translation, "close", close)
 
     await close_container(container)
 
-    assert closed == [True]
+    assert container.link_fixer._client.is_closed
+    assert container.translation.translator.client.is_closed
+    assert container.currency._client.is_closed
+    assert container.wolfram._client.is_closed
     assert engine.disposed is True
 
 

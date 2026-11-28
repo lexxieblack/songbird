@@ -139,17 +139,11 @@ async def close_container(container: ServiceContainer) -> None:
     log.info("Closing service container")
 
     # Close HTTP clients in services that have them
-    try:
-        await container.link_fixer.close()
-        log.debug("Link fixer service closed")
-    except Exception as e:
-        log.warning("Link fixer service close error", error=e)
-
-    try:
-        await container.translation.close()
-        log.debug("Translation service closed")
-    except Exception as e:
-        log.warning("Translation service close error", error=e)
+    for service in (container.link_fixer, container.translation, container.currency, container.wolfram):
+        try:
+            await service.close()
+        except Exception as e:
+            log.warning("Service close error", service=type(service).__name__, error=e)
 
     # Dispose of database engine
     try:

@@ -14,6 +14,10 @@ class WolframService:
         self._api_key = settings.wolfram.api_key
         self._api_url = "https://api.wolframalpha.com/v1/simple"
         self._logger = logger or get_logger(__name__)
+        self._client = httpx.AsyncClient(timeout=httpx.Timeout(10.0), follow_redirects=True)
+
+    async def close(self) -> None:
+        await self._client.aclose()
 
     async def query(self, question: str) -> bytes:
         # Wolfram only recolors its own text elements, never the result content, so a dark
@@ -24,34 +28,33 @@ class WolframService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-                self._logger.info(
-                    "Wolfram query started",
-                    query=question,
-                )
+            self._logger.info(
+                "Wolfram query started",
+                query=question,
+            )
 
-                response = await client.get(self._api_url, params=params, follow_redirects=True)
+            response = await self._client.get(self._api_url, params=params)
 
-                self._logger.info(
-                    "Wolfram query completed",
-                    query=question,
-                    status_code=response.status_code,
-                )
+            self._logger.info(
+                "Wolfram query completed",
+                query=question,
+                status_code=response.status_code,
+            )
 
-                # Handle different error status codes
-                if response.status_code == 501:
-                    raise Exception("Wolfram Alpha could not understand the query")
-                elif response.status_code == 400:
-                    raise Exception("Invalid query format")
-                elif response.is_error:
-                    raise Exception("Error querying Wolfram Alpha")
+            # Handle different error status codes
+            if response.status_code == 501:
+                raise Exception("Wolfram Alpha could not understand the query")
+            elif response.status_code == 400:
+                raise Exception("Invalid query format")
+            elif response.is_error:
+                raise Exception("Error querying Wolfram Alpha")
 
-                result_gif = response.content
+            result_gif = response.content
 
-                if not result_gif:
-                    raise Exception("No result returned from Wolfram Alpha")
+            if not result_gif:
+                raise Exception("No result returned from Wolfram Alpha")
 
-                return result_gif
+            return result_gif
 
         except httpx.TimeoutException as e:
             self._logger.exception(

@@ -23,6 +23,10 @@ class CurrencyService:
             maxsize=2048, ttl=_RATE_CACHE_TTL
         )
         self._currency_cache: TTLCache[str, list[Currency]] = TTLCache[str, list[Currency]](maxsize=1, ttl=_CURRENCY_CACHE_TTL)
+        self._client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+
+    async def close(self) -> None:
+        await self._client.aclose()
 
     async def convert(self, amount: Decimal, base: str, quote: str) -> ConversionResult:
         base = base.strip().upper()
@@ -95,8 +99,7 @@ class CurrencyService:
 
     async def _get(self, path: str) -> Any:
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-                response = await client.get(f"{self._api_url}{path}")
+            response = await self._client.get(f"{self._api_url}{path}")
         except httpx.TimeoutException as e:
             self._logger.exception("Currency request timed out", path=path, error=e)
             raise CurrencyError("Request to the currency service timed out.") from e
